@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>权限系统 API 接口设计 - 场景式漫画文档</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+    --ink: #1a1a2e;
+    --paper: #fefcf8;
+    --blue: #dbeafe; --blue-mid: #93c5fd; --blue-deep: #2563eb; --blue-dark: #1e3a5f;
+    --green: #dcfce7; --green-mid: #86efac; --green-deep: #16a34a; --green-dark: #166534;
+    --yellow: #fef9c3; --yellow-mid: #fde047; --yellow-deep: #ca8a04; --yellow-dark: #854d0e;
+    --purple: #f3e8ff; --purple-mid: #c4b5fd; --purple-deep: #7c3aed; --purple-dark: #5b21b6;
+    --pink: #fce7f3; --pink-mid: #f9a8d4; --pink-deep: #ec4899; --pink-dark: #9d174d;
+    --orange: #ffedd5; --orange-mid: #fdba74; --orange-deep: #ea580c; --orange-dark: #9a3412;
+    --red: #fecaca; --red-deep: #dc2626; --red-dark: #991b1b;
+    --slate: #f1f5f9; --slate-deep: #475569;
+    --indigo: #e0e7ff; --indigo-mid: #a5b4fc; --indigo-deep: #4f46e5; --indigo-dark: #312e81;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    background-image: radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 22px 22px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: var(--ink);
+    padding: 24px;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  /* ===== HEADER ===== */
+  .hero { text-align: center; padding: 40px 20px 30px; position: relative; }
+  .hero h1 {
+    font-family: var(--font-hand);
+    font-size: 52px; font-weight: 400;
+    letter-spacing: 4px; color: var(--ink);
+    position: relative; display: inline-block;
+  }
+  .hero h1::after {
+    content: ''; position: absolute;
+    bottom: -2px; left: -12px; right: -12px; height: 6px;
+    background: linear-gradient(90deg, #7c3aed, #2563eb, #16a34a, #ec4899, #ea580c);
+    border-radius: 4px; transform: rotate(-0.4deg); opacity: 0.8;
+  }
+  .hero .tagline {
+    font-family: var(--font-ui); font-size: 17px; font-weight: 600;
+    letter-spacing: 0.02em; color: #666; margin-top: 16px;
+    white-space: normal; max-width: 100%; line-height: 1.5;
+  }
+  .hero .badge-row {
+    display: flex; justify-content: center; gap: 10px; margin-top: 16px;
+    flex-wrap: wrap; overflow-x: visible; padding: 4px 0 8px;
+  }
+  .hero .badge {
+    display: inline-block; padding: 4px 16px; border-radius: 20px;
+    font-size: 14px; font-weight: 700; font-family: var(--font-ui);
+    border: 1.5px solid rgba(0,0,0,0.12);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    white-space: nowrap;
+  }
+
+  /* ===== NAV ===== */
+  .nav-bar {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+    margin: 10px auto 30px; max-width: 1200px;
+    overflow-x: visible; padding: 4px 0 10px;
+  }
+  .nav-bar a {
+    text-decoration: none; padding: 6px 18px; border: 1.5px solid #d1d5db;
+    border-radius: 14px; font-size: 15px; font-weight: 600; color: var(--ink); background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: all .2s;
+    white-space: nowrap;
+  }
+  .nav-bar a:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.10); border-color: var(--purple-mid); }
+
+  /* ===== SCENE ===== */
+  .scene {
+    background: #fff; border: 2.5px solid #d1d5db; border-radius: 22px;
+    margin-bottom: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden; position: relative;
+  }
+  .scene-header {
+    padding: 20px 28px 14px; display: flex; align-items: flex-start; gap: 16px;
+    border-bottom: 2px dashed #e5e7eb; flex-wrap: wrap;
+  }
+  .scene-num {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #818cf8, #6366f1);
+    color: #fff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; border: 2.5px solid #fff;
+    box-shadow: 0 3px 10px rgba(99,102,241,0.35);
+    font-family: var(--font-ui); flex-shrink: 0;
+  }
+  .scene-meta { flex: 1; min-width: 0; }
+  .scene-title {
+    font-family: var(--font-hand); font-size: 32px; font-weight: 400;
+    white-space: normal; line-height: 1.3;
+  }
+  .scene-subtitle { font-size: 15px; color: #555; font-family: var(--font-ui); font-weight: 600; letter-spacing: 0.02em; }
+  .scene-body { padding: 20px 28px 28px; }
+
+  .tape { position: absolute; width: 80px; height: 26px; background: rgba(255,222,89,0.55); border: 1.5px solid rgba(200,170,50,0.35); border-radius: 2px; z-index: 2; }
+  .tape-tr { top: -8px; right: 28px; transform: rotate(-32deg); }
+  .tape-tl { top: -8px; left: 28px; transform: rotate(32deg); }
+
+  .story {
+    padding: 14px 18px; border-radius: 14px; border: 1.5px dashed;
+    margin-bottom: 20px; font-size: 17px; line-height: 1.8; position: relative;
+  }
+  .story .char { font-size: 36px; float: left; margin-right: 10px; margin-top: -4px; }
+
+  /* ===== API CARD ===== */
+  .api-card {
+    border: 2px solid #e2e8f0; border-radius: 16px; margin-bottom: 20px;
+    overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    position: relative; transition: box-shadow .2s;
+  }
+  .api-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .api-card:last-child { margin-bottom: 0; }
+  .api-bar {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 18px; font-size: 17px; font-weight: 600;
+    border-bottom: 1.5px solid #e2e8f0;
+    flex-wrap: wrap; overflow-x: visible;
+  }
+  .method {
+    display: inline-block; padding: 3px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: 0.5px; border: 1.5px solid; flex-shrink: 0;
+  }
+  .method.get { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .method.post { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .method.put { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+  .method.delete { background: var(--red); color: var(--red-dark); border-color: var(--red-deep); }
+  .method.internal { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .api-path {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 14px; font-weight: 500; color: var(--ink);
+    white-space: normal;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+  .api-desc {
+    margin-left: auto; font-size: 14px; font-weight: 600; color: #666;
+    white-space: normal; flex: 0 1 auto; text-align: right; min-width: 120px;
+  }
+  .api-content { padding: 16px 18px; }
+
+  .param-section { margin-bottom: 16px; }
+  .param-label {
+    font-size: 16px; font-weight: bold; padding: 4px 12px;
+    border-radius: 8px; display: inline-block; margin-bottom: 8px; border: 1.5px solid;
+  }
+  .param-label.req { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .param-label.res { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .param-label.header { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+
+  .ptable {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; font-size: 15px;
+  }
+  .ptable th {
+    background: linear-gradient(135deg, #f1f5f9, #e8edf3); color: #475569;
+    padding: 8px 12px; text-align: left; font-size: 13px;
+    font-family: var(--font-ui); font-weight: 600;
+    letter-spacing: 0.3px; border-bottom: 1.5px solid #cbd5e1;
+  }
+  .ptable td { padding: 7px 12px; border-bottom: 1.5px dashed #e2e8f0; vertical-align: top; }
+  .ptable tr:last-child td { border-bottom: none; }
+  .ptable tr:nth-child(even) td { background: #fafafa; }
+  .ptable .fname {
+    font-weight: 600; color: var(--blue-deep);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px;
+  }
+  .ptable .ftype {
+    font-family: monospace; font-size: 13px; color: var(--purple-deep);
+    background: var(--purple); padding: 1px 6px; border-radius: 4px;
+  }
+  .ptable .freq { color: var(--red-deep); font-weight: bold; font-size: 12px; }
+  .ptable .fopt { color: #999; font-size: 12px; }
+
+  .json-block {
+    background: #f8fafc; color: #334155; border-radius: 12px; padding: 16px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px; line-height: 1.6; overflow-x: visible;
+    white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;
+    border: 1.5px solid #e2e8f0; position: relative; margin-top: 8px;
+  }
+  .json-block .jk { color: #2563eb; }
+  .json-block .jv { color: #16a34a; }
+  .json-block .jn { color: #d97706; }
+  .json-block .jc { color: #94a3b8; font-style: italic; }
+  .json-block .jb { color: #c026d3; }
+  .json-label {
+    position: absolute; top: 8px; right: 12px; font-size: 11px; color: #94a3b8;
+    font-family: var(--font-ui); letter-spacing: 0.5px; font-weight: 600;
+  }
+
+  .scene-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    height: auto; min-height: 44px; position: relative;
+    padding: 6px 0 10px;
+  }
+
+  .tip {
+    padding: 10px 16px; border-radius: 12px; font-size: 15px;
+    margin-top: 12px; border: 1.5px solid; border-left-width: 4px;
+  }
+  .tip.warn { background: #fef3c7; border-color: #d97706; color: #92400e; }
+  .tip.info { background: #dbeafe; border-color: #2563eb; color: #1e3a5f; }
+  .tip.ok { background: #dcfce7; border-color: #16a34a; color: #166534; }
+  .tip.danger { background: #fecaca; border-color: #dc2626; color: #991b1b; }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:900px){
+    .duo { grid-template-columns: 1fr; }
+    .hero .tagline { white-space: normal; }
+    .scene-title { white-space: normal; }
+  }
+
+  .internal-arrow { text-align: center; padding: 8px 0; font-size: 18px; color: #94a3b8; }
+
+  .footer { text-align: center; margin-top: 40px; padding: 20px; color: #aaa; font-size: 15px; }
+
+  .scene.bg-blue { background: linear-gradient(135deg, #f0f7ff 0%, #fff 60%); }
+  .scene.bg-green { background: linear-gradient(135deg, #f0fdf4 0%, #fff 60%); }
+  .scene.bg-yellow { background: linear-gradient(135deg, #fefce8 0%, #fff 60%); }
+  .scene.bg-purple { background: linear-gradient(135deg, #faf5ff 0%, #fff 60%); }
+  .scene.bg-pink { background: linear-gradient(135deg, #fdf2f8 0%, #fff 60%); }
+  .scene.bg-orange { background: linear-gradient(135deg, #fff7ed 0%, #fff 60%); }
+  .scene.bg-indigo { background: linear-gradient(135deg, #eef2ff 0%, #fff 60%); }
+
+  .scene-tag {
+    display: inline-block; font-size: 12px; font-weight: bold;
+    padding: 2px 10px; border-radius: 6px; margin-left: 8px; vertical-align: middle;
+  }
+  .scene-tag.internal { background: var(--purple); color: var(--purple-deep); border: 1px solid var(--purple-mid); }
+  .scene-tag.client { background: var(--blue); color: var(--blue-deep); border: 1px solid var(--blue-mid); }
+  .scene-tag.admin { background: var(--pink); color: var(--pink-deep); border: 1px solid var(--pink-mid); }
+
+  .corner-deco { position: fixed; pointer-events: none; z-index: 0; }
+  .corner-deco.tl { top: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.tr { top: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.bl { bottom: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.br { bottom: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+
+  /* ---- A4 打印稿 ---- */
+  @page {
+    size: A4 portrait;
+    margin: 10mm 11mm;
+  }
+
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      background-image: none !important;
+      font-size: 9.5pt;
+    }
+    .container {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .corner-deco,
+    .tape {
+      display: none !important;
+    }
+    .hero { padding: 4mm 0 !important; page-break-after: avoid; }
+    .hero h1 { font-size: 20pt !important; }
+    .hero .tagline { font-size: 9pt !important; }
+    .nav-bar {
+      justify-content: center !important;
+      gap: 6px !important;
+      page-break-inside: avoid;
+    }
+    .nav-bar a { padding: 4px 12px !important; font-size: 9pt !important; }
+    .scene {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      box-shadow: none !important;
+      margin-bottom: 6mm !important;
+      border-width: 1.5px !important;
+    }
+    .scene-header { padding: 10px 14px !important; }
+    .scene-body { padding: 12px 14px 16px !important; }
+    .scene-title { font-size: 13pt !important; }
+    .scene-subtitle { font-size: 9pt !important; }
+    .api-card { box-shadow: none !important; }
+    .api-bar { padding: 8px 12px !important; font-size: 10pt !important; }
+    .api-path { font-size: 9pt !important; }
+    .ptable { font-size: 9pt !important; }
+    .ptable th, .ptable td { padding: 5px 8px !important; }
+    .json-block {
+      font-size: 7.5pt !important;
+      line-height: 1.45 !important;
+      overflow: visible !important;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .story { font-size: 10pt !important; }
+    .duo { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .footer { margin-top: 6mm; font-size: 9pt; }
+    a { color: inherit !important; text-decoration: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="corner-deco tl">🛡️</div>
+<div class="corner-deco tr">🔐</div>
+<div class="corner-deco bl">🏦</div>
+<div class="corner-deco br">📋</div>
+
+<div class="container">
+
+  <!-- ===== HERO ===== -->
+  <div class="hero">
+    <h1>🛡️ 权限系统 API 接口设计</h1>
+    <div class="tagline">Permission Management System · 7 Scenes · 30+ APIs · Opaque Token · RBAC+ABAC</div>
+    <div class="badge-row">
+      <span class="badge" style="background: var(--purple); color: var(--purple-dark);">7 场景</span>
+      <span class="badge" style="background: var(--blue); color: var(--blue-dark);">30+ 接口</span>
+      <span class="badge" style="background: var(--green); color: var(--green-dark);">Opaque Token</span>
+      <span class="badge" style="background: var(--orange); color: var(--orange-dark);">mTLS 内部鉴权</span>
+      <span class="badge" style="background: var(--pink); color: var(--pink-dark);">多实体(多牌照)</span>
+    </div>
+  </div>
+
+  <!-- ===== NAV ===== -->
+  <div class="nav-bar">
+    <a href="#scene1">1. 认证接口</a>
+    <a href="#scene2">2. 权限校验 PDP</a>
+    <a href="#scene3">3. 用户自服务</a>
+    <a href="#scene4">4. 用户与角色管理</a>
+    <a href="#scene5">5. 策略与合规管理</a>
+    <a href="#scene6">6. 外部联动</a>
+    <a href="#scene7">7. 审计查询</a>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 1: 认证接口 AUTH                                                -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-purple" id="scene1">
+    <div class="tape tape-tr"></div>
+    <div class="scene-header">
+      <div class="scene-num" style="background: linear-gradient(135deg, #a78bfa, #7c3aed);">1</div>
+      <div class="scene-meta">
+        <div class="scene-title">🔑 认证接口 <span class="scene-tag client">CLIENT</span></div>
+        <div class="scene-subtitle">Authentication: Login / Logout / Refresh — Opaque Token + Redis Session</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #faf5ff; border-color: var(--purple-deep);">
+        <span class="char">👤</span>
+        用户在客户端输入账号密码登录，服务端验证凭证并检查 MFA 状态。认证通过后生成不透明 Token（Opaque Token），在 Redis 中创建 Session 并返回用户基本信息。Token 不含任何敏感信息，所有权限数据仅存储在服务端 Session 中。
+      </div>
+
+      <!-- API: Login -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/auth/login</span>
+          <span class="api-desc">用户登录</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <table class="ptable">
+              <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+              <tr><td class="fname">username</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>用户名</td></tr>
+              <tr><td class="fname">password</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>密码（加密传输）</td></tr>
+              <tr><td class="fname">mfaCode</td><td><span class="ftype">String</span></td><td class="fopt">选填</td><td>MFA 动态验证码（启用 MFA 时必填）</td></tr>
+              <tr><td class="fname">deviceId</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>设备指纹标识</td></tr>
+              <tr><td class="fname">clientIp</td><td><span class="ftype">String</span></td><td class="fopt">选填</td><td>客户端 IP（网关透传）</td></tr>
+            </table>
+          </div>
+
+          <div class="param-section">
+            <div class="param-label res">✅ Response (成功)</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"token"</span>: <span class="jv">"opaque_token_abc123def456"</span>,
+    <span class="jk">"expiresIn"</span>: <span class="jn">28800</span>,              <span class="jc">// 8小时，单位秒</span>
+    <span class="jk">"userInfo"</span>: {
+      <span class="jk">"userId"</span>: <span class="jn">100001</span>,
+      <span class="jk">"entityId"</span>: <span class="jn">1001</span>,             <span class="jc">// 法律实体ID（牌照）</span>
+      <span class="jk">"username"</span>: <span class="jv">"zhangsan"</span>,
+      <span class="jk">"realName"</span>: <span class="jv">"张三"</span>,
+      <span class="jk">"orgId"</span>: <span class="jn">2001</span>,               <span class="jc">// 所属机构</span>
+      <span class="jk">"deptId"</span>: <span class="jn">3001</span>,              <span class="jc">// 所属部门</span>
+      <span class="jk">"activeRoles"</span>: [<span class="jn">1001</span>, <span class="jn">1002</span>],  <span class="jc">// 当前激活角色</span>
+      <span class="jk">"mfaVerified"</span>: <span class="jb">true</span>
+    }
+  }
+}</div>
+          </div>
+
+          <div class="tip info">
+            📌 <strong>Opaque Token</strong>：Token 本身不含任何数据，仅作为 Redis Session Key 的引用。服务端通过 Token 查找 Session 获取权限上下文，避免 JWT 膨胀和吊销困难问题。
+          </div>
+          <div class="tip warn">
+            ⚠️ <strong>MFA 校验</strong>：若用户已启用 MFA 但未传 mfaCode，返回 HTTP 200 + code=MFA_REQUIRED，客户端需引导用户输入动态码后重新提交。
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- API: Logout -->
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/api/v1/auth/logout</span>
+            <span class="api-desc">用户登出</span>
+          </div>
+          <div class="api-content">
+            <div class="tip ok">删除 Redis Session，Token 立即失效。客户端清除本地缓存的 Token。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/api/v1/auth/refresh</span>
+            <span class="api-desc">刷新 Token</span>
+          </div>
+          <div class="api-content">
+            <div class="tip info">📌 携带旧 Token 请求，服务端验证 Session 有效性后生成新 Token，旧 Token 立即失效（Token Rotation）。延长 Session 有效期。</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 2: 权限校验 PDP                                                 -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-blue" id="scene2">
+    <div class="tape tape-tl"></div>
+    <div class="scene-header">
+      <div class="scene-num" style="background: linear-gradient(135deg, #60a5fa, #2563eb);">2</div>
+      <div class="scene-meta">
+        <div class="scene-title">🔍 权限校验 PDP <span class="scene-tag internal">INTERNAL</span></div>
+        <div class="scene-subtitle">Permission Decision Point — Core RBAC+ABAC Engine, P99 &lt; 20ms</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #eff6ff; border-color: var(--blue-deep);">
+        <span class="char">🏦</span>
+        交易引擎在处理用户下单请求前，通过内部 mTLS 通道调用 PDP（Policy Decision Point）进行权限校验。PDP 引擎在 20ms 内完成 RBAC 角色匹配 + ABAC 策略评估，返回 ALLOW/DENY 决策以及数据范围过滤规则和字段脱敏规则。所有决策记录异步写入审计日志。
+      </div>
+
+      <!-- API: Permission Check -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/internal/v1/pdp/check</span>
+          <span class="api-desc">权限校验（核心）</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label header">📋 Request Headers</div>
+            <table class="ptable">
+              <tr><th>Header</th><th>类型</th><th>必填</th><th>说明</th></tr>
+              <tr><td class="fname">X-Entity-Id</td><td><span class="ftype">Long</span></td><td class="freq">必填</td><td>法律实体ID</td></tr>
+              <tr><td class="fname">X-Trace-Id</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>全链路追踪ID</td></tr>
+              <tr><td class="fname">Authorization</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>mTLS 服务身份认证</td></tr>
+            </table>
+          </div>
+
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"requestId"</span>: <span class="jv">"req_20260419_trade_001"</span>,
+  <span class="jk">"subject"</span>: {
+    <span class="jk">"userId"</span>: <span class="jn">100001</span>
+  },
+  <span class="jk">"resource"</span>: {
+    <span class="jk">"appCode"</span>: <span class="jv">"TRADE_SYSTEM"</span>,
+    <span class="jk">"resourceCode"</span>: <span class="jv">"ORDER:CREATE"</span>,
+    <span class="jk">"dataContext"</span>: {
+      <span class="jk">"accountId"</span>: <span class="jv">"ACC_001"</span>,
+      <span class="jk">"market"</span>: <span class="jv">"HKEX"</span>
+    }
+  },
+  <span class="jk">"action"</span>: <span class="jv">"EXECUTE"</span>,
+  <span class="jk">"environment"</span>: {
+    <span class="jk">"clientIp"</span>: <span class="jv">"192.168.1.100"</span>,
+    <span class="jk">"deviceId"</span>: <span class="jv">"iphone_abc123"</span>,
+    <span class="jk">"time"</span>: <span class="jv">"2026-04-19T10:30:00Z"</span>
+  }
+}</div>
+          </div>
+
+          <div class="duo">
+            <div class="param-section">
+              <div class="param-label res">✅ Response (ALLOW)</div>
+              <div class="json-block">
+                <span class="json-label">ALLOW</span>
+{
+  <span class="jk">"decision"</span>: <span class="jv">"ALLOW"</span>,
+  <span class="jk">"decisionReason"</span>: <span class="jv">"RBAC_ROLE_MATCH + ABAC_POLICY_PASS"</span>,
+  <span class="jk">"hitPolicies"</span>: [<span class="jv">"POL_TRADE_001"</span>, <span class="jv">"POL_MARKET_HK"</span>],
+  <span class="jk">"riskScore"</span>: <span class="jn">15</span>,
+  <span class="jk">"dataScope"</span>: {
+    <span class="jk">"type"</span>: <span class="jv">"DEPARTMENT"</span>,
+    <span class="jk">"filterExpr"</span>: <span class="jv">"dept_id IN (3001, 3002)"</span>
+  },
+  <span class="jk">"maskingRules"</span>: [
+    { <span class="jk">"field"</span>: <span class="jv">"idCard"</span>, <span class="jk">"rule"</span>: <span class="jv">"MASK_MIDDLE_6"</span> },
+    { <span class="jk">"field"</span>: <span class="jv">"phone"</span>, <span class="jk">"rule"</span>: <span class="jv">"MASK_MIDDLE_4"</span> }
+  ],
+  <span class="jk">"expiresAt"</span>: <span class="jv">"2026-04-19T10:31:00Z"</span>,
+  <span class="jk">"latencyMs"</span>: <span class="jn">8</span>
+}</div>
+            </div>
+            <div class="param-section">
+              <div class="param-label" style="background: var(--red); color: var(--red-dark); border-color: var(--red-deep);">🚫 Response (DENY)</div>
+              <div class="json-block">
+                <span class="json-label">DENY</span>
+{
+  <span class="jk">"decision"</span>: <span class="jv">"DENY"</span>,
+  <span class="jk">"decisionReason"</span>: <span class="jv">"SOD_CONFLICT"</span>,
+  <span class="jk">"hitPolicies"</span>: [<span class="jv">"SOD_RULE_005"</span>],
+  <span class="jk">"denyMessage"</span>: <span class="jv">"职责分离冲突：交易员不可同时审批"</span>,
+  <span class="jk">"riskScore"</span>: <span class="jn">92</span>
+}</div>
+            </div>
+          </div>
+
+          <div class="tip danger">
+            🔒 <strong>性能要求</strong>：PDP 核心链路 P99 &lt; 20ms。采用本地缓存(Caffeine) + Redis 二级缓存 + 预计算位图实现。降级策略：缓存穿透时返回 DENY + 告警。
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- API: Batch Check -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/internal/v1/pdp/batch-check</span>
+          <span class="api-desc">批量权限校验（菜单/按钮可见性）</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"subject"</span>: { <span class="jk">"userId"</span>: <span class="jn">100001</span> },
+  <span class="jk">"appCode"</span>: <span class="jv">"TRADE_SYSTEM"</span>,
+  <span class="jk">"resourceCodes"</span>: [
+    <span class="jv">"MENU:TRADE"</span>, <span class="jv">"MENU:RISK"</span>, <span class="jv">"MENU:FUND"</span>,
+    <span class="jv">"BTN:ORDER_CREATE"</span>, <span class="jv">"BTN:ORDER_CANCEL"</span>, <span class="jv">"BTN:EXPORT"</span>
+  ],
+  <span class="jk">"action"</span>: <span class="jv">"VIEW"</span>
+}</div>
+          </div>
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"results"</span>: {
+    <span class="jk">"MENU:TRADE"</span>: <span class="jb">true</span>,
+    <span class="jk">"MENU:RISK"</span>: <span class="jb">true</span>,
+    <span class="jk">"MENU:FUND"</span>: <span class="jb">false</span>,
+    <span class="jk">"BTN:ORDER_CREATE"</span>: <span class="jb">true</span>,
+    <span class="jk">"BTN:ORDER_CANCEL"</span>: <span class="jb">true</span>,
+    <span class="jk">"BTN:EXPORT"</span>: <span class="jb">false</span>
+  },
+  <span class="jk">"latencyMs"</span>: <span class="jn">12</span>
+}</div>
+          </div>
+          <div class="tip info">📌 前端登录后一次性拉取所有菜单/按钮权限，缓存在客户端，减少逐项校验的网络开销。批量接口支持最多 200 个资源码。</div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- API: Snapshot -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method get">GET</span>
+          <span class="api-path">/internal/v1/pdp/snapshot?userId={userId}&appCode={appCode}</span>
+          <span class="api-desc">权限快照查询</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"userId"</span>: <span class="jn">100001</span>,
+  <span class="jk">"appCode"</span>: <span class="jv">"TRADE_SYSTEM"</span>,
+  <span class="jk">"roles"</span>: [
+    { <span class="jk">"roleId"</span>: <span class="jn">1001</span>, <span class="jk">"roleCode"</span>: <span class="jv">"TRADER"</span>, <span class="jk">"active"</span>: <span class="jb">true</span> },
+    { <span class="jk">"roleId"</span>: <span class="jn">1002</span>, <span class="jk">"roleCode"</span>: <span class="jv">"RISK_VIEWER"</span>, <span class="jk">"active"</span>: <span class="jb">true</span> }
+  ],
+  <span class="jk">"permissions"</span>: [<span class="jv">"ORDER:CREATE"</span>, <span class="jv">"ORDER:VIEW"</span>, <span class="jv">"RISK:VIEW"</span>],
+  <span class="jk">"abacPolicies"</span>: [<span class="jv">"POL_TRADE_001"</span>],
+  <span class="jk">"dataScope"</span>: { <span class="jk">"type"</span>: <span class="jv">"DEPARTMENT"</span>, <span class="jk">"scopeExpr"</span>: <span class="jv">"dept_id IN (3001, 3002)"</span> },
+  <span class="jk">"snapshotAt"</span>: <span class="jv">"2026-04-19T10:30:00Z"</span>
+}</div>
+          </div>
+          <div class="tip warn">⚠️ 快照用于调试和审计，不应用于实时权限判断。实时判断请使用 /pdp/check 接口。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 3: 用户自服务                                                    -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-green" id="scene3">
+    <div class="tape tape-tr"></div>
+    <div class="scene-header">
+      <div class="scene-num" style="background: linear-gradient(135deg, #4ade80, #16a34a);">3</div>
+      <div class="scene-meta">
+        <div class="scene-title">🙋 用户自服务 <span class="scene-tag client">CLIENT</span></div>
+        <div class="scene-subtitle">Self-Service: My Permissions / Activate Roles / Request Access</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #f0fdf4; border-color: var(--green-deep);">
+        <span class="char">👤</span>
+        交易员张三登录后查看自己的权限列表。需要临时审批权限时，通过自服务界面提交权限申请，系统自动触发审批流。张三也可以动态激活/去激活不同角色组合，系统实时检查 SoD（职责分离）约束，防止冲突角色同时激活。
+      </div>
+
+      <!-- API: My Permissions -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/me/permissions?appCode={appCode}</span>
+          <span class="api-desc">查询我的权限</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"userId"</span>: <span class="jn">100001</span>,
+    <span class="jk">"activeRoles"</span>: [
+      { <span class="jk">"roleId"</span>: <span class="jn">1001</span>, <span class="jk">"roleName"</span>: <span class="jv">"交易员"</span>, <span class="jk">"roleCode"</span>: <span class="jv">"TRADER"</span> },
+      { <span class="jk">"roleId"</span>: <span class="jn">1002</span>, <span class="jk">"roleName"</span>: <span class="jv">"风控查看"</span>, <span class="jk">"roleCode"</span>: <span class="jv">"RISK_VIEWER"</span> }
+    ],
+    <span class="jk">"permissions"</span>: [
+      { <span class="jk">"resourceCode"</span>: <span class="jv">"ORDER:CREATE"</span>, <span class="jk">"actions"</span>: [<span class="jv">"EXECUTE"</span>] },
+      { <span class="jk">"resourceCode"</span>: <span class="jv">"ORDER:VIEW"</span>, <span class="jk">"actions"</span>: [<span class="jv">"VIEW"</span>] },
+      { <span class="jk">"resourceCode"</span>: <span class="jv">"RISK:VIEW"</span>, <span class="jk">"actions"</span>: [<span class="jv">"VIEW"</span>] }
+    ],
+    <span class="jk">"dataScope"</span>: { <span class="jk">"type"</span>: <span class="jv">"DEPARTMENT"</span> }
+  }
+}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- API: Activate Roles -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/me/activate-roles</span>
+          <span class="api-desc">激活角色（动态 SoD）</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"roleIds"</span>: [<span class="jn">1001</span>, <span class="jn">1002</span>]
+}</div>
+          </div>
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"activatedRoles"</span>: [<span class="jn">1001</span>, <span class="jn">1002</span>],
+    <span class="jk">"sodCheckPassed"</span>: <span class="jb">true</span>,
+    <span class="jk">"sessionUpdated"</span>: <span class="jb">true</span>
+  }
+}</div>
+          </div>
+          <div class="tip danger">🔒 <strong>SoD 实时校验</strong>：若请求激活的角色组合触发 SoD 冲突规则（如交易员+审批员），返回 code=SOD_CONFLICT 并拒绝激活，附带冲突规则说明。</div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- API: Access Request -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/me/access-requests</span>
+          <span class="api-desc">申请权限</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"targetRoleId"</span>: <span class="jn">1003</span>,
+  <span class="jk">"appId"</span>: <span class="jv">"TRADE_SYSTEM"</span>,
+  <span class="jk">"orgScopeType"</span>: <span class="jv">"BRANCH"</span>,        <span class="jc">// ALL / ORG / BRANCH / SELF</span>
+  <span class="jk">"durationHours"</span>: <span class="jn">72</span>,              <span class="jc">// 申请时长（小时）</span>
+  <span class="jk">"reason"</span>: <span class="jv">"临时需要审批权限处理紧急业务"</span>
+}</div>
+          </div>
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"requestId"</span>: <span class="jv">"AR_20260419_001"</span>,
+    <span class="jk">"status"</span>: <span class="jv">"PENDING_APPROVAL"</span>,
+    <span class="jk">"approvalNo"</span>: <span class="jv">"APR_20260419_001"</span>,
+    <span class="jk">"estimatedApprovers"</span>: [<span class="jv">"李四(部门经理)"</span>, <span class="jv">"王五(合规)"</span>]
+  }
+}</div>
+          </div>
+          <div class="tip info">📌 权限申请自动推送至外部审批系统（OA/BPM），审批结果通过回调接口 /internal/v1/callbacks/approval 写回。临时权限到期后自动回收。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 4: 用户与角色管理                                                -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-pink" id="scene4">
+    <div class="tape tape-tl"></div>
+    <div class="scene-header">
+      <div class="scene-num" style="background: linear-gradient(135deg, #f472b6, #ec4899);">4</div>
+      <div class="scene-meta">
+        <div class="scene-title">👥 用户与角色管理 <span class="scene-tag admin">ADMIN</span></div>
+        <div class="scene-subtitle">User CRUD / Role Management / Grant & Revoke / Inheritance Tree</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #fdf2f8; border-color: var(--pink-deep);">
+        <span class="char">⚙️</span>
+        管理员在权限管理后台创建用户、配置角色、绑定权限资源。角色支持层级继承（如"高级交易员"继承"交易员"的所有权限），管理员可随时查看继承树。通过 Grant/Revoke 精确控制权限分配，支持用户禁用、离职冻结、强制踢出等生命周期管理操作。
+      </div>
+
+      <!-- User Management APIs -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/admin/v1/users</span>
+          <span class="api-desc">创建用户</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"entityId"</span>: <span class="jn">1001</span>,
+  <span class="jk">"username"</span>: <span class="jv">"zhangsan"</span>,
+  <span class="jk">"realName"</span>: <span class="jv">"张三"</span>,
+  <span class="jk">"email"</span>: <span class="jv">"zhangsan@company.com"</span>,
+  <span class="jk">"phone"</span>: <span class="jv">"138****1234"</span>,
+  <span class="jk">"orgId"</span>: <span class="jn">2001</span>,
+  <span class="jk">"deptId"</span>: <span class="jn">3001</span>,
+  <span class="jk">"initialRoleIds"</span>: [<span class="jn">1001</span>]
+}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method get">GET</span>
+            <span class="api-path">/admin/v1/users/{userId}</span>
+            <span class="api-desc">用户详情</span>
+          </div>
+          <div class="api-content">
+            <div class="tip info">返回用户基本信息、所属机构/部门、已分配角色列表、账户状态、最后登录时间等。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/users/{userId}/disable</span>
+            <span class="api-desc">禁用用户</span>
+          </div>
+          <div class="api-content">
+            <div class="tip warn">⚠️ 禁用后用户无法登录，已有 Session 在下次校验时失效。不删除数据，可恢复启用。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/users/{userId}/offboard</span>
+            <span class="api-desc">离职冻结</span>
+          </div>
+          <div class="api-content">
+            <div class="tip danger">🔒 离职冻结：1) 立即清除所有 Session 2) 回收全部角色 3) 标记 OFFBOARDED 4) 保留审计数据。不可恢复，需重新走入职流程。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/users/{userId}/kick</span>
+            <span class="api-desc">强制踢出所有会话</span>
+          </div>
+          <div class="api-content">
+            <div class="tip warn">⚠️ 清除用户在 Redis 中所有 Session，强制所有设备重新登录。用于安全事件应急响应。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- Role Management APIs -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/admin/v1/roles</span>
+          <span class="api-desc">创建角色</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"entityId"</span>: <span class="jn">1001</span>,
+  <span class="jk">"roleCode"</span>: <span class="jv">"SENIOR_TRADER"</span>,
+  <span class="jk">"roleName"</span>: <span class="jv">"高级交易员"</span>,
+  <span class="jk">"roleType"</span>: <span class="jv">"BUSINESS"</span>,         <span class="jc">// SYSTEM / BUSINESS / TEMPORARY</span>
+  <span class="jk">"parentRoleId"</span>: <span class="jn">1001</span>,             <span class="jc">// 继承自"交易员"角色</span>
+  <span class="jk">"maxActiveSessions"</span>: <span class="jn">5</span>,
+  <span class="jk">"description"</span>: <span class="jv">"高级交易员，继承交易员权限并增加大额交易审批权"</span>
+}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/roles/{roleId}/resources</span>
+            <span class="api-desc">绑定权限资源</span>
+          </div>
+          <div class="api-content">
+            <div class="param-section">
+              <div class="param-label req">📤 Request Body</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"resources"</span>: [
+    { <span class="jk">"resourceCode"</span>: <span class="jv">"ORDER:APPROVE"</span>, <span class="jk">"actions"</span>: [<span class="jv">"EXECUTE"</span>] },
+    { <span class="jk">"resourceCode"</span>: <span class="jv">"ORDER:EXPORT"</span>, <span class="jk">"actions"</span>: [<span class="jv">"VIEW"</span>, <span class="jv">"EXPORT"</span>] }
+  ]
+}</div>
+            </div>
+            <div class="tip info">📌 绑定后立即生效。权限变更异步通知已登录用户刷新缓存（通过 WebSocket 或下次请求时 Session 版本号校验）。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method get">GET</span>
+            <span class="api-path">/admin/v1/roles/{roleId}/descendants</span>
+            <span class="api-desc">角色继承树</span>
+          </div>
+          <div class="api-content">
+            <div class="param-section">
+              <div class="param-label res">✅ Response</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"roleId"</span>: <span class="jn">1001</span>,
+  <span class="jk">"roleCode"</span>: <span class="jv">"TRADER"</span>,
+  <span class="jk">"children"</span>: [
+    {
+      <span class="jk">"roleId"</span>: <span class="jn">1010</span>,
+      <span class="jk">"roleCode"</span>: <span class="jv">"SENIOR_TRADER"</span>,
+      <span class="jk">"children"</span>: [
+        { <span class="jk">"roleId"</span>: <span class="jn">1020</span>, <span class="jk">"roleCode"</span>: <span class="jv">"TRADE_MANAGER"</span>, <span class="jk">"children"</span>: [] }
+      ]
+    }
+  ]
+}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- Grant & Revoke -->
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/grants</span>
+            <span class="api-desc">授予角色</span>
+          </div>
+          <div class="api-content">
+            <div class="param-section">
+              <div class="param-label req">📤 Request Body</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"userId"</span>: <span class="jn">100001</span>,
+  <span class="jk">"roleId"</span>: <span class="jn">1003</span>,
+  <span class="jk">"orgScopeType"</span>: <span class="jv">"BRANCH"</span>,
+  <span class="jk">"orgScopeId"</span>: <span class="jn">2001</span>,
+  <span class="jk">"effectiveFrom"</span>: <span class="jv">"2026-04-19T00:00:00Z"</span>,
+  <span class="jk">"effectiveTo"</span>: <span class="jv">"2026-04-22T00:00:00Z"</span>,
+  <span class="jk">"approvalNo"</span>: <span class="jv">"APR_20260419_001"</span>
+}</div>
+            </div>
+            <div class="tip warn">⚠️ 授权必须关联审批单号。临时授权到期后由定时任务自动回收（effectiveTo）。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method delete">DELETE</span>
+            <span class="api-path">/admin/v1/grants/{grantId}</span>
+            <span class="api-desc">回收权限</span>
+          </div>
+          <div class="api-content">
+            <div class="param-section">
+              <div class="param-label req">📤 Request Body</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"reason"</span>: <span class="jv">"项目结束，回收临时权限"</span>,
+  <span class="jk">"operator"</span>: <span class="jn">100099</span>
+}</div>
+            </div>
+            <div class="tip danger">🔒 回收立即生效，相关用户的 Session 缓存中标记权限版本过期，下次请求时强制重新加载权限。</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 5: 策略与合规管理                                                -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-indigo" id="scene5">
+    <div class="tape tape-tr"></div>
+    <div class="scene-header">
+      <div class="scene-num" style="background: linear-gradient(135deg, #818cf8, #4f46e5);">5</div>
+      <div class="scene-meta">
+        <div class="scene-title">📜 策略与合规管理 <span class="scene-tag admin">ADMIN</span></div>
+        <div class="scene-subtitle">ABAC Policy Lifecycle / SoD Rules / Zombie Grant Cleanup</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #eef2ff; border-color: var(--indigo-deep);">
+        <span class="char">📋</span>
+        合规团队需要创建一条 ABAC 策略：限制某分支机构仅在工作日 9:00-17:00 可执行大额交易。策略经过草稿 → 审批 → 发布的完整生命周期管理。同时，系统定期扫描 SoD 冲突和僵尸权限（90天未使用），生成合规报告并支持批量回收。
+      </div>
+
+      <!-- Policy CRUD -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/admin/v1/policies</span>
+          <span class="api-desc">创建 ABAC 策略（草稿）</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"entityId"</span>: <span class="jn">1001</span>,
+  <span class="jk">"policyCode"</span>: <span class="jv">"POL_TRADE_TIME_LIMIT"</span>,
+  <span class="jk">"policyName"</span>: <span class="jv">"交易时间限制策略"</span>,
+  <span class="jk">"effect"</span>: <span class="jv">"DENY"</span>,                <span class="jc">// ALLOW / DENY</span>
+  <span class="jk">"priority"</span>: <span class="jn">100</span>,
+  <span class="jk">"conditions"</span>: {
+    <span class="jk">"allOf"</span>: [
+      { <span class="jk">"attr"</span>: <span class="jv">"environment.time.hour"</span>, <span class="jk">"op"</span>: <span class="jv">"NOT_BETWEEN"</span>, <span class="jk">"value"</span>: [<span class="jn">9</span>, <span class="jn">17</span>] },
+      { <span class="jk">"attr"</span>: <span class="jv">"resource.appCode"</span>, <span class="jk">"op"</span>: <span class="jv">"EQ"</span>, <span class="jk">"value"</span>: <span class="jv">"TRADE_SYSTEM"</span> },
+      { <span class="jk">"attr"</span>: <span class="jv">"resource.resourceCode"</span>, <span class="jk">"op"</span>: <span class="jv">"EQ"</span>, <span class="jk">"value"</span>: <span class="jv">"ORDER:CREATE"</span> }
+    ]
+  },
+  <span class="jk">"description"</span>: <span class="jv">"非工作时间(9-17点以外)禁止创建交易订单"</span>
+}</div>
+          </div>
+          <div class="tip info">📌 策略创建后状态为 DRAFT，不会立即生效。需经过审批 → 发布流程后方可在 PDP 引擎中参与决策。</div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- Policy Lifecycle -->
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/policies/{id}/submit-approval</span>
+            <span class="api-desc">提交审批</span>
+          </div>
+          <div class="api-content">
+            <div class="tip warn">⚠️ 策略变更推送至外部审批系统。高风险策略（涉及交易/资金）需双人审批。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/policies/{id}/publish</span>
+            <span class="api-desc">发布策略（支持定时）</span>
+          </div>
+          <div class="api-content">
+            <div class="param-section">
+              <div class="param-label req">📤 Request Body</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"scheduledAt"</span>: <span class="jv">"2026-04-20T09:00:00Z"</span>,  <span class="jc">// 可选，定时发布</span>
+  <span class="jk">"publishNote"</span>: <span class="jv">"审批通过，定时次日生效"</span>
+}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/policies/{id}/rollback</span>
+            <span class="api-desc">回滚策略</span>
+          </div>
+          <div class="api-content">
+            <div class="tip danger">🔒 回滚到上一个 PUBLISHED 版本。当前版本标记为 ROLLED_BACK。PDP 缓存立即刷新。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/policies/test</span>
+            <span class="api-desc">Dry-run 测试</span>
+          </div>
+          <div class="api-content">
+            <div class="param-section">
+              <div class="param-label req">📤 Request Body</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"policyId"</span>: <span class="jn">5001</span>,
+  <span class="jk">"mockRequest"</span>: {
+    <span class="jk">"subject"</span>: { <span class="jk">"userId"</span>: <span class="jn">100001</span> },
+    <span class="jk">"resource"</span>: { <span class="jk">"appCode"</span>: <span class="jv">"TRADE_SYSTEM"</span>, <span class="jk">"resourceCode"</span>: <span class="jv">"ORDER:CREATE"</span> },
+    <span class="jk">"action"</span>: <span class="jv">"EXECUTE"</span>,
+    <span class="jk">"environment"</span>: { <span class="jk">"time"</span>: <span class="jv">"2026-04-19T20:00:00Z"</span> }
+  }
+}</div>
+            </div>
+            <div class="tip ok">Dry-run 不影响线上决策，返回模拟结果 + 命中的条件分支，用于策略发布前验证。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- SoD Rules -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/admin/v1/sod-rules</span>
+          <span class="api-desc">创建 SoD 规则</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"ruleName"</span>: <span class="jv">"交易员与审批员互斥"</span>,
+  <span class="jk">"ruleType"</span>: <span class="jv">"MUTUAL_EXCLUSIVE"</span>,  <span class="jc">// MUTUAL_EXCLUSIVE / APPROVAL_REQUIRED</span>
+  <span class="jk">"conflictRoles"</span>: [<span class="jn">1001</span>, <span class="jn">1003</span>],     <span class="jc">// 交易员 vs 审批员</span>
+  <span class="jk">"enforcement"</span>: <span class="jv">"DYNAMIC"</span>,          <span class="jc">// STATIC(分配时) / DYNAMIC(激活时)</span>
+  <span class="jk">"description"</span>: <span class="jv">"同一用户不可同时激活交易员和审批员角色"</span>
+}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method get">GET</span>
+          <span class="api-path">/admin/v1/sod-rules/conflicts</span>
+          <span class="api-desc">SoD 冲突扫描报告</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"scanTime"</span>: <span class="jv">"2026-04-19T06:00:00Z"</span>,
+  <span class="jk">"totalConflicts"</span>: <span class="jn">3</span>,
+  <span class="jk">"conflicts"</span>: [
+    {
+      <span class="jk">"userId"</span>: <span class="jn">100005</span>,
+      <span class="jk">"userName"</span>: <span class="jv">"赵六"</span>,
+      <span class="jk">"conflictRoles"</span>: [
+        { <span class="jk">"roleId"</span>: <span class="jn">1001</span>, <span class="jk">"roleName"</span>: <span class="jv">"交易员"</span> },
+        { <span class="jk">"roleId"</span>: <span class="jn">1003</span>, <span class="jk">"roleName"</span>: <span class="jv">"审批员"</span> }
+      ],
+      <span class="jk">"sodRule"</span>: <span class="jv">"交易员与审批员互斥"</span>,
+      <span class="jk">"severity"</span>: <span class="jv">"HIGH"</span>
+    }
+  ]
+}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- Zombie Grants -->
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method get">GET</span>
+            <span class="api-path">/admin/v1/zombie-grants?unusedDays=90</span>
+            <span class="api-desc">僵尸权限查询</span>
+          </div>
+          <div class="api-content">
+            <div class="param-section">
+              <div class="param-label res">✅ Response</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"unusedDays"</span>: <span class="jn">90</span>,
+  <span class="jk">"totalZombies"</span>: <span class="jn">47</span>,
+  <span class="jk">"zombies"</span>: [
+    {
+      <span class="jk">"grantId"</span>: <span class="jn">9001</span>,
+      <span class="jk">"userId"</span>: <span class="jn">100010</span>,
+      <span class="jk">"userName"</span>: <span class="jv">"孙七"</span>,
+      <span class="jk">"roleCode"</span>: <span class="jv">"FUND_MANAGER"</span>,
+      <span class="jk">"lastUsedAt"</span>: <span class="jv">"2026-01-15T10:00:00Z"</span>,
+      <span class="jk">"daysSinceLastUse"</span>: <span class="jn">94</span>
+    }
+  ]
+}</div>
+            </div>
+            <div class="tip warn">⚠️ 定期生成僵尸权限报告，推送给部门负责人确认。超过阈值未确认的权限自动进入待回收队列。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/admin/v1/zombie-grants/batch-revoke</span>
+            <span class="api-desc">批量回收僵尸权限</span>
+          </div>
+          <div class="api-content">
+            <div class="param-section">
+              <div class="param-label req">📤 Request Body</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"grantIds"</span>: [<span class="jn">9001</span>, <span class="jn">9002</span>, <span class="jn">9003</span>],
+  <span class="jk">"reason"</span>: <span class="jv">"90天未使用，批量回收"</span>,
+  <span class="jk">"notifyUsers"</span>: <span class="jb">true</span>
+}</div>
+            </div>
+            <div class="tip ok">批量回收后通知相关用户。用户如仍需权限可通过自服务重新申请。回收记录写入审计日志。</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 6: 外部联动                                                      -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-orange" id="scene6">
+    <div class="tape tape-tl"></div>
+    <div class="scene-header">
+      <div class="scene-num" style="background: linear-gradient(135deg, #fb923c, #ea580c);">6</div>
+      <div class="scene-meta">
+        <div class="scene-title">🔗 外部联动 <span class="scene-tag internal">INTERNAL</span></div>
+        <div class="scene-subtitle">HR Events (Onboard/Offboard/Transfer) + Approval Callback</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #fff7ed; border-color: var(--orange-deep);">
+        <span class="char">🏢</span>
+        HR 系统在员工入职、离职、调动时自动推送事件到权限系统。入职事件触发用户创建+默认角色分配；离职事件触发权限冻结+Session 清除；调动事件触发组织归属变更+数据范围重算。外部审批系统审批完成后通过回调写回结果，权限系统据此执行授权或拒绝。
+      </div>
+
+      <!-- HR Events -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/internal/v1/events/hr/onboard</span>
+          <span class="api-desc">HR 入职事件</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"eventId"</span>: <span class="jv">"HR_ONBOARD_20260419_001"</span>,
+  <span class="jk">"entityId"</span>: <span class="jn">1001</span>,
+  <span class="jk">"employeeId"</span>: <span class="jv">"EMP_20260419"</span>,
+  <span class="jk">"realName"</span>: <span class="jv">"新员工A"</span>,
+  <span class="jk">"orgId"</span>: <span class="jn">2001</span>,
+  <span class="jk">"deptId"</span>: <span class="jn">3001</span>,
+  <span class="jk">"position"</span>: <span class="jv">"交易员"</span>,
+  <span class="jk">"effectiveDate"</span>: <span class="jv">"2026-04-20"</span>
+}</div>
+          </div>
+          <div class="tip ok">入职事件处理：1) 创建用户账号 2) 根据岗位自动分配默认角色 3) 设置初始密码（需首次登录修改）4) 发送欢迎通知。</div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/events/hr/offboard</span>
+            <span class="api-desc">HR 离职事件</span>
+          </div>
+          <div class="api-content">
+            <div class="tip danger">🔒 离职处理链：1) 冻结账号 2) 清除所有 Session 3) 回收全部角色 4) 触发数据交接流程 5) 标记 OFFBOARDED。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/events/hr/transfer</span>
+            <span class="api-desc">HR 调动事件</span>
+          </div>
+          <div class="api-content">
+            <div class="tip warn">⚠️ 调动处理：1) 更新 orgId/deptId 2) 重新计算数据范围 3) 保留通用角色，回收原部门专属角色 4) 分配新部门默认角色。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- Approval Callback -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/internal/v1/callbacks/approval</span>
+          <span class="api-desc">审批结果回调</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"approvalNo"</span>: <span class="jv">"APR_20260419_001"</span>,
+  <span class="jk">"approvalType"</span>: <span class="jv">"ROLE_GRANT"</span>,         <span class="jc">// ROLE_GRANT / POLICY_CHANGE / ACCESS_REQUEST</span>
+  <span class="jk">"result"</span>: <span class="jv">"APPROVED"</span>,                  <span class="jc">// APPROVED / REJECTED</span>
+  <span class="jk">"targetUserId"</span>: <span class="jn">100001</span>,
+  <span class="jk">"targetRoleId"</span>: <span class="jn">1003</span>,
+  <span class="jk">"payload"</span>: {
+    <span class="jk">"orgScopeType"</span>: <span class="jv">"BRANCH"</span>,
+    <span class="jk">"durationHours"</span>: <span class="jn">72</span>
+  },
+  <span class="jk">"approvedBy"</span>: [<span class="jn">100001</span>, <span class="jn">100002</span>],       <span class="jc">// 审批人列表</span>
+  <span class="jk">"approvedAt"</span>: <span class="jv">"2026-04-19T11:30:00Z"</span>
+}</div>
+          </div>
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"processed"</span>: <span class="jb">true</span>,
+    <span class="jk">"grantId"</span>: <span class="jn">9010</span>,
+    <span class="jk">"effectiveFrom"</span>: <span class="jv">"2026-04-19T11:30:00Z"</span>,
+    <span class="jk">"effectiveTo"</span>: <span class="jv">"2026-04-22T11:30:00Z"</span>
+  }
+}</div>
+          </div>
+          <div class="tip info">📌 审批通过后自动执行 Grant 操作。REJECTED 时通知申请人并记录拒绝原因。所有回调必须验签 + 幂等处理。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 7: 审计查询                                                      -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-yellow" id="scene7">
+    <div class="tape tape-tr"></div>
+    <div class="scene-header">
+      <div class="scene-num" style="background: linear-gradient(135deg, #fbbf24, #ca8a04);">7</div>
+      <div class="scene-meta">
+        <div class="scene-title">📊 审计查询 <span class="scene-tag internal">INTERNAL</span></div>
+        <div class="scene-subtitle">Audit Log Query — Full Traceability for Compliance</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #fefce8; border-color: var(--yellow-deep);">
+        <span class="char">🔍</span>
+        合规审计人员需要查询某用户在过去一个月内的所有权限变更和访问记录。审计日志包含登录/登出、权限校验决策、角色变更、策略变更等全部操作，支持按时间范围、用户、操作类型多维度检索。所有日志不可篡改，写入 WORM 存储。
+      </div>
+
+      <!-- Audit Query -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/internal/v1/audit/query</span>
+          <span class="api-desc">查询审计日志</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"entityId"</span>: <span class="jn">1001</span>,
+  <span class="jk">"userIdList"</span>: [<span class="jn">100001</span>],
+  <span class="jk">"actionList"</span>: [
+    <span class="jv">"LOGIN"</span>, <span class="jv">"LOGOUT"</span>, <span class="jv">"PDP_CHECK"</span>,
+    <span class="jv">"ROLE_GRANT"</span>, <span class="jv">"ROLE_REVOKE"</span>,
+    <span class="jv">"POLICY_PUBLISH"</span>, <span class="jv">"USER_DISABLE"</span>
+  ],
+  <span class="jk">"startTime"</span>: <span class="jv">"2026-03-19T00:00:00Z"</span>,
+  <span class="jk">"endTime"</span>: <span class="jv">"2026-04-19T23:59:59Z"</span>,
+  <span class="jk">"page"</span>: <span class="jn">1</span>,
+  <span class="jk">"pageSize"</span>: <span class="jn">50</span>
+}</div>
+          </div>
+
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">1256</span>,
+    <span class="jk">"page"</span>: <span class="jn">1</span>,
+    <span class="jk">"pageSize"</span>: <span class="jn">50</span>,
+    <span class="jk">"items"</span>: [
+      {
+        <span class="jk">"auditId"</span>: <span class="jv">"AUD_20260419_000001"</span>,
+        <span class="jk">"traceId"</span>: <span class="jv">"tr_xyz789"</span>,
+        <span class="jk">"userId"</span>: <span class="jn">100001</span>,
+        <span class="jk">"userName"</span>: <span class="jv">"张三"</span>,
+        <span class="jk">"action"</span>: <span class="jv">"PDP_CHECK"</span>,
+        <span class="jk">"resource"</span>: <span class="jv">"ORDER:CREATE"</span>,
+        <span class="jk">"decision"</span>: <span class="jv">"ALLOW"</span>,
+        <span class="jk">"clientIp"</span>: <span class="jv">"192.168.1.100"</span>,
+        <span class="jk">"deviceId"</span>: <span class="jv">"iphone_abc123"</span>,
+        <span class="jk">"timestamp"</span>: <span class="jv">"2026-04-19T10:30:00.008Z"</span>,
+        <span class="jk">"detail"</span>: {
+          <span class="jk">"hitPolicies"</span>: [<span class="jv">"POL_TRADE_001"</span>],
+          <span class="jk">"riskScore"</span>: <span class="jn">15</span>,
+          <span class="jk">"latencyMs"</span>: <span class="jn">8</span>
+        }
+      },
+      {
+        <span class="jk">"auditId"</span>: <span class="jv">"AUD_20260419_000002"</span>,
+        <span class="jk">"traceId"</span>: <span class="jv">"tr_abc456"</span>,
+        <span class="jk">"userId"</span>: <span class="jn">100001</span>,
+        <span class="jk">"userName"</span>: <span class="jv">"张三"</span>,
+        <span class="jk">"action"</span>: <span class="jv">"ROLE_GRANT"</span>,
+        <span class="jk">"resource"</span>: <span class="jv">"ROLE:SENIOR_TRADER"</span>,
+        <span class="jk">"decision"</span>: <span class="jv">"EXECUTED"</span>,
+        <span class="jk">"operator"</span>: <span class="jn">100099</span>,
+        <span class="jk">"timestamp"</span>: <span class="jv">"2026-04-19T11:30:00Z"</span>,
+        <span class="jk">"detail"</span>: {
+          <span class="jk">"approvalNo"</span>: <span class="jv">"APR_20260419_001"</span>,
+          <span class="jk">"grantId"</span>: <span class="jn">9010</span>,
+          <span class="jk">"effectiveTo"</span>: <span class="jv">"2026-04-22T11:30:00Z"</span>
+        }
+      }
+    ]
+  }
+}</div>
+          </div>
+          <div class="tip danger">🔒 <strong>合规要求</strong>：审计日志写入 WORM（Write Once Read Many）存储，不可修改、不可删除。保留期限遵循监管要求（通常 >= 7年）。</div>
+          <div class="tip info">📌 <strong>支持的 action 类型</strong>：LOGIN / LOGOUT / PDP_CHECK / ROLE_GRANT / ROLE_REVOKE / USER_CREATE / USER_DISABLE / USER_OFFBOARD / POLICY_CREATE / POLICY_PUBLISH / POLICY_ROLLBACK / SOD_VIOLATION / ZOMBIE_REVOKE</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <div class="footer">
+    <div style="font-size: 32px; margin-bottom: 8px;">🛡️🔐🏦📋</div>
+    <div>权限系统 (Permission Management System) API 接口设计</div>
+    <div style="margin-top: 4px;">7 Scenes · 30+ APIs · Opaque Token · RBAC+ABAC · mTLS Internal Auth</div>
+    <div style="margin-top: 8px; font-size: 14px; color: #bbb;">Generated on 2026-04-19</div>
+  </div>
+
+</div><!-- end container -->
+
+</body>
+</html>

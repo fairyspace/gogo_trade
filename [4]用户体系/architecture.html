@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>用户体系架构流程图</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #fefcf3;
+    background-image:
+      radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 24px 24px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: #2d2d2d;
+    min-height: 100vh;
+    padding: 30px;
+  }
+
+  .main-title { text-align: center; margin-bottom: 10px; }
+  .main-title h1 {
+    font-family: var(--font-hand);
+    font-size: 52px; color: #333; letter-spacing: 6px;
+    text-shadow: 3px 3px 0 #ffd36e;
+    position: relative; display: inline-block; font-weight: 400;
+  }
+  .main-title h1::after {
+    content: ''; position: absolute; bottom: -4px; left: -10px; right: -10px;
+    height: 6px; background: #ff6b6b; border-radius: 3px; transform: rotate(-0.5deg);
+  }
+  .main-title .subtitle {
+    font-size: 18px; color: #555; margin-top: 14px;
+    font-family: var(--font-ui); font-weight: 600;
+    white-space: normal; max-width: 100%; line-height: 1.5;
+  }
+
+  .section-title {
+    font-family: var(--font-hand); font-size: 34px; font-weight: 400;
+    color: #2d2d2d; margin: 40px 0 20px 0; padding: 8px 20px;
+    border-left: 8px solid #ff6b6b;
+    background: linear-gradient(90deg, #fff3cd 0%, transparent 100%);
+    border-radius: 0 12px 12px 0; display: inline-block;
+  }
+
+  .flow-container { max-width: 1300px; margin: 0 auto; position: relative; }
+
+  /* DB Overview */
+  .db-overview {
+    display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+    overflow-x: visible; margin-bottom: 30px; padding: 4px 0 8px;
+  }
+  .db-group {
+    background: #fff; border: 3.5px solid #2d2d2d; border-radius: 18px;
+    padding: 20px 22px; flex: 1 1 280px; max-width: 400px;
+    min-width: min(100%, 260px); position: relative;
+    box-shadow: 5px 5px 0 #2d2d2d;
+  }
+  .db-group-title {
+    font-family: var(--font-hand); font-size: 22px; font-weight: 400;
+    color: #fff; background: #2d2d2d; display: inline-block;
+    padding: 4px 16px; border-radius: 10px; margin-bottom: 14px;
+  }
+  .db-group.biz { background: #dbeafe; }
+  .db-group.rule { background: #dcfce7; }
+  .db-group.audit { background: #fef3c7; }
+  .db-group.auth { background: #f3e8ff; }
+  .db-table {
+    font-size: 15px; padding: 6px 0; border-bottom: 2px dashed #bbb;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px; flex-wrap: wrap; white-space: normal;
+  }
+  .db-table:last-child { border-bottom: none; }
+  .db-table .tname { font-weight: bold; color: #1e40af; min-width: 0; word-break: break-word; font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 13px; }
+  .db-table .tdesc { color: #555; font-size: 14px; }
+  .db-group.rule .db-table .tname { color: #16a34a; }
+  .db-group.audit .db-table .tname { color: #b45309; }
+  .db-group.auth .db-table .tname { color: #7c3aed; }
+
+  .tape {
+    position: absolute; width: 80px; height: 28px;
+    background: rgba(255, 222, 89, 0.6);
+    border: 1.5px solid rgba(200, 170, 50, 0.4);
+    transform: rotate(-35deg); top: -10px; right: 30px;
+    border-radius: 2px; z-index: 2;
+  }
+
+  /* Flow Steps */
+  .flow-steps {
+    position: relative; display: flex; flex-direction: column;
+    align-items: center; gap: 0;
+  }
+  .step-card {
+    background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px;
+    padding: 24px 30px; width: 90%; max-width: 900px;
+    position: relative; box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
+    margin-bottom: 0;
+  }
+  .step-card.blue { background: #dbeafe; }
+  .step-card.green { background: #dcfce7; }
+  .step-card.yellow { background: #fef9c3; }
+  .step-card.purple { background: #f3e8ff; }
+  .step-card.pink { background: #fce7f3; }
+  .step-card.orange { background: #ffedd5; }
+
+  .step-num {
+    position: absolute; top: -18px; left: 24px;
+    background: #ff6b6b; color: #fff;
+    font-size: 18px; font-weight: 700;
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 3px solid #2d2d2d;
+    box-shadow: 2px 2px 0 #2d2d2d; font-family: var(--font-ui);
+  }
+
+  .step-title {
+    font-family: var(--font-hand); font-size: 28px; font-weight: 400;
+    color: #1a1a2e; margin-bottom: 10px; padding-left: 36px;
+    white-space: normal; max-width: 100%; line-height: 1.35;
+  }
+
+  .step-body { font-size: 17px; line-height: 1.65; color: #333; }
+
+  .step-body .role-tag {
+    display: inline-block; background: #fbbf24; color: #78350f;
+    font-size: 14px; padding: 2px 10px; border-radius: 8px;
+    border: 2px solid #78350f; margin-right: 6px; font-weight: bold;
+  }
+  .step-body .role-tag.sys {
+    background: #93c5fd; color: #1e3a5f; border-color: #1e3a5f;
+  }
+  .step-body .role-tag.third {
+    background: #c4b5fd; color: #3b0764; border-color: #3b0764;
+  }
+
+  .table-tags {
+    margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .table-tag {
+    background: #1e293b; color: #e2e8f0;
+    font-size: 13px; padding: 3px 12px; border-radius: 10px;
+    font-family: 'JetBrains Mono', 'Consolas', var(--font-ui);
+    letter-spacing: 0.3px; white-space: nowrap;
+  }
+
+  /* Arrow */
+  .arrow-down {
+    display: flex; flex-direction: column; align-items: center;
+    height: auto; min-height: 48px; position: relative;
+    padding: 6px 0 10px;
+  }
+  .arrow-down .arrow-line {
+    width: 5px; flex: 0 0 32px; min-height: 32px;
+    background: repeating-linear-gradient(to bottom, #2d2d2d 0px, #2d2d2d 8px, transparent 8px, transparent 14px);
+    border-radius: 3px;
+  }
+  .arrow-down .arrow-head {
+    width: 0; height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 18px solid #2d2d2d; flex-shrink: 0;
+  }
+  .arrow-label {
+    position: static; margin-top: 8px;
+    background: #fff7ed; border: 2px solid #ea580c;
+    border-radius: 10px; padding: 4px 14px;
+    font-size: 15px; font-family: var(--font-ui);
+    font-weight: 600; color: #9a3412;
+    white-space: normal; max-width: 100%;
+    overflow-x: visible; text-align: center; line-height: 1.4;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  }
+
+  /* Scenario tabs */
+  .scenario-tabs {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    margin: 16px 0;
+  }
+  .scenario-tab {
+    background: #fff; border: 2.5px solid #2d2d2d;
+    border-radius: 12px; padding: 8px 16px;
+    font-size: 14px; font-weight: bold;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  }
+  .scenario-tab.a { background: #dbeafe; border-color: #1e3a5f; color: #1e3a5f; }
+  .scenario-tab.b { background: #dcfce7; border-color: #166534; color: #166534; }
+  .scenario-tab.c { background: #fef3c7; border-color: #92400e; color: #92400e; }
+  .scenario-tab.d { background: #fce7f3; border-color: #9d174d; color: #9d174d; }
+
+  /* Decision */
+  .decision-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 14px;
+  }
+  .decision-item {
+    background: #fff; border: 3px solid #2d2d2d;
+    border-radius: 14px; padding: 16px; text-align: center;
+    position: relative; box-shadow: 3px 3px 0 rgba(0,0,0,0.12);
+  }
+  .decision-item.pass { background: #bbf7d0; border-color: #16a34a; }
+  .decision-item.reject { background: #fecaca; border-color: #dc2626; }
+  .decision-item.manual { background: #e9d5ff; border-color: #7c3aed; }
+  .decision-item .di-icon { font-size: 32px; margin-bottom: 6px; }
+  .decision-item .di-title { font-size: 20px; font-weight: bold; }
+  .decision-item .di-desc { font-size: 15px; color: #555; margin-top: 4px; }
+
+  /* Status flow */
+  .status-flow {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    justify-content: center; margin: 20px 0;
+    overflow-x: visible; padding: 6px 0 8px;
+  }
+  .sf-node {
+    background: #fff; border: 3px solid #2d2d2d;
+    border-radius: 14px; padding: 10px 14px; text-align: center;
+    min-width: 72px; flex: 0 1 auto;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .sf-node.active { background: #bbf7d0; border-color: #16a34a; }
+  .sf-node.fail { background: #fecaca; border-color: #dc2626; }
+  .sf-node.warn { background: #fef3c7; border-color: #d97706; }
+  .sf-node .sf-code { font-size: 28px; font-weight: bold; }
+  .sf-node .sf-label { font-size: 14px; color: #555; }
+  .sf-arrow { font-size: 30px; color: #2d2d2d; margin: 0 4px; font-weight: bold; }
+
+  /* Check table */
+  .check-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    margin-top: 14px; border: 3px solid #2d2d2d;
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .check-table th {
+    background: #1e293b; color: #f1f5f9;
+    padding: 10px 14px; font-size: 17px; text-align: left;
+  }
+  .check-table td {
+    padding: 10px 14px; font-size: 16px;
+    border-bottom: 2px dashed #ddd; background: #fff;
+  }
+  .check-table tr:last-child td { border-bottom: none; }
+  .check-table td:first-child { font-weight: bold; color: #1e40af; }
+
+  /* Account creation */
+  .account-steps {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;
+  }
+  .account-step {
+    background: #fff; border: 3px solid #2d2d2d;
+    border-radius: 14px; padding: 14px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .account-step .as-num {
+    font-size: 14px; background: #6366f1; color: #fff;
+    border-radius: 50%; width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-right: 6px; font-family: var(--font-ui);
+    font-weight: 700; border: 2px solid #2d2d2d;
+  }
+  .account-step .as-title { font-size: 18px; font-weight: bold; display: inline; }
+  .account-step .as-desc { font-size: 15px; color: #555; margin-top: 6px; }
+
+  /* Notif grid */
+  .notif-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 14px;
+  }
+  .notif-item {
+    background: #fff; border: 3px solid #2d2d2d;
+    border-radius: 14px; padding: 16px; text-align: center;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .notif-item .ni-icon { font-size: 36px; margin-bottom: 6px; }
+  .notif-item .ni-text { font-size: 16px; color: #555; }
+
+  /* corner */
+  .corner-deco {
+    position: fixed; pointer-events: none; z-index: 0;
+  }
+  .corner-deco.tl { top: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.tr { top: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.bl { bottom: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.br { bottom: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+
+  .footer {
+    text-align: center; margin-top: 50px; padding: 20px;
+    color: #999; font-size: 16px;
+  }
+
+  /* Code block */
+  .code-block {
+    background: #1e293b; color: #e2e8f0;
+    border-radius: 12px; padding: 16px 20px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 13px; line-height: 1.7;
+    margin: 12px 0; overflow-x: auto;
+    white-space: pre; word-break: normal;
+    border: 2.5px solid #2d2d2d;
+  }
+
+  .hw-underline {
+    background-image: linear-gradient(120deg, #fbbf24 0%, #fbbf24 100%);
+    background-repeat: no-repeat; background-size: 100% 0.3em;
+    background-position: 0 88%;
+  }
+
+  /* design principles box */
+  .principle-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;
+  }
+  .principle-item {
+    background: #fff; border: 3px solid #2d2d2d;
+    border-radius: 14px; padding: 16px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .principle-item .pi-num {
+    display: inline-block; width: 32px; height: 32px;
+    background: #ff6b6b; color: #fff; border-radius: 50%;
+    text-align: center; line-height: 32px; font-weight: bold;
+    border: 2.5px solid #2d2d2d; font-family: var(--font-ui);
+  }
+  .principle-item .pi-title {
+    font-size: 19px; font-weight: bold; display: inline-block;
+    margin-left: 8px; vertical-align: middle;
+  }
+  .principle-item .pi-desc { font-size: 15px; color: #555; margin-top: 6px; line-height: 1.6; }
+
+  /* boundary table */
+  .boundary-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    margin-top: 14px; border: 3px solid #2d2d2d;
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .boundary-table th {
+    background: #1e293b; color: #f1f5f9;
+    padding: 10px 14px; font-size: 17px; text-align: left;
+  }
+  .boundary-table td {
+    padding: 10px 14px; font-size: 15px;
+    border-bottom: 2px dashed #ddd; background: #fff; vertical-align: top;
+  }
+  .boundary-table tr:last-child td { border-bottom: none; }
+  .boundary-table td:first-child {
+    font-weight: bold; color: #1e40af; width: 140px;
+  }
+
+  /* KYC match */
+  .kyc-match {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 12px; flex-wrap: wrap; justify-content: center;
+    overflow-x: visible; padding-bottom: 4px;
+  }
+  .kyc-match-item {
+    background: #fff; border: 3px solid #2d2d2d;
+    border-radius: 12px; padding: 8px 14px; text-align: center;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+    min-width: 100px; flex: 0 1 auto;
+  }
+  .kyc-match-item .km-icon { font-size: 26px; }
+  .kyc-match-item .km-label { font-size: 15px; color: #555; }
+  .kyc-match-arrow { font-size: 28px; color: #e11d48; font-weight: bold; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .decision-grid, .notif-grid, .account-steps, .principle-grid { grid-template-columns: 1fr; }
+    .step-card { width: 98%; padding: 18px; }
+    .db-overview { flex-direction: column; flex-wrap: nowrap; align-items: stretch; overflow-x: visible; }
+    .db-group { min-width: auto; width: 95%; flex-shrink: 1; }
+    .main-title h1 { font-size: 36px; }
+    .main-title .subtitle { white-space: normal; }
+    .step-title { white-space: normal; }
+  }
+
+  /* A4 print */
+  @page { size: A4 portrait; margin: 10mm 11mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body {
+      width: 100% !important; max-width: 100% !important;
+      margin: 0 !important; padding: 0 !important;
+      background: #fff !important; background-image: none !important;
+      font-size: 10.5pt;
+    }
+    .flow-container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+    .corner-deco, .tape { display: none !important; }
+    .main-title { margin-bottom: 5mm; page-break-after: avoid; }
+    .main-title h1 { font-size: 22pt !important; letter-spacing: 2px !important; }
+    .main-title .subtitle { font-size: 9.5pt !important; }
+    .section-title {
+      font-size: 15pt !important; margin: 6mm 0 4mm !important;
+      page-break-after: avoid;
+    }
+    .db-overview { flex-wrap: wrap !important; justify-content: center !important; overflow: visible !important; }
+    .db-group {
+      flex: 1 1 48% !important; max-width: 100% !important;
+      min-width: 0 !important; box-shadow: none !important;
+      border-width: 2px !important; page-break-inside: avoid;
+    }
+    .db-table { font-size: 9.5pt !important; }
+    .step-card {
+      width: 100% !important; max-width: 100% !important;
+      box-shadow: none !important; border-width: 2px !important;
+      page-break-inside: avoid; padding: 10px 12px !important;
+    }
+    .step-title { font-size: 13pt !important; padding-left: 28px !important; }
+    .step-body { font-size: 10pt !important; }
+    .arrow-down { padding: 3mm 0 !important; }
+    .decision-grid, .notif-grid { gap: 8px !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    .principle-grid, .account-steps { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .footer { margin-top: 8mm; font-size: 9pt; }
+  }
+</style>
+</head>
+<body>
+
+<div class="corner-deco tl">🪪</div>
+<div class="corner-deco tr">🔐</div>
+<div class="corner-deco bl">🌐</div>
+<div class="corner-deco br">🛡️</div>
+
+<div class="flow-container">
+
+  <!-- ==================== TITLE ==================== -->
+  <div class="main-title">
+    <h1>🪪 用户体系架构流程图</h1>
+    <div class="subtitle">User Service · 9 Tables · 4 Auth Scenarios · Multi-Entity Isolation</div>
+  </div>
+
+  <!-- ==================== 设计理念 ==================== -->
+  <div class="section-title">💡 架构设计理念 (5 大原则)</div>
+  <div style="background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px; padding: 28px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12); max-width: 900px; margin: 0 auto;">
+    <div class="tape"></div>
+    <div style="font-size: 19px; line-height: 1.7; margin-bottom: 16px; color: #444;">
+      用户体系作为交易系统的 <span class="hw-underline"><strong>身份承载、认证授权与权限映射</strong></span> 核心基座，不承担 KYC 审核等重业务。
+    </div>
+    <div class="principle-grid">
+      <div class="principle-item">
+        <div class="pi-num">1</div>
+        <div class="pi-title">多监管实体隔离</div>
+        <div class="pi-desc">用户归属某 <code>entity_id</code>,决定其杠杆上限、负余额保护等规则;同一自然人可在不同实体(牌照品牌)下各注册独立账号。</div>
+      </div>
+      <div class="principle-item">
+        <div class="pi-num">2</div>
+        <div class="pi-title">适当性快照</div>
+        <div class="pi-desc">KYC 在 Onboarding 完成,交易系统单向缓存适当性结果,避免高频交易时的跨服务 RPC。</div>
+      </div>
+      <div class="principle-item">
+        <div class="pi-num">3</div>
+        <div class="pi-title">IB 溯源解耦</div>
+        <div class="pi-desc">主表固化 IB ID 作为分润基准,代理树与分润计算交由独立代理系统。</div>
+      </div>
+      <div class="principle-item">
+        <div class="pi-num">4</div>
+        <div class="pi-title">多态凭证与 OAuth 分离</div>
+        <div class="pi-desc">密码 / 2FA / API Key 抽象为统一凭证表;OAuth 独立建表,遵循"授权"语义。</div>
+      </div>
+      <div class="principle-item" style="grid-column: 1 / -1;">
+        <div class="pi-num">5</div>
+        <div class="pi-title">软硬风控分离</div>
+        <div class="pi-desc">硬风控交由独立风控引擎,用户表仅保留"单日止损"等软风控偏好。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 1: DB OVERVIEW ==================== -->
+  <div class="section-title">📦 数据库架构总览 (9 张表, 4 个分组)</div>
+
+  <div class="db-overview">
+    <!-- 身份与业务基座 -->
+    <div class="db-group biz">
+      <div class="tape"></div>
+      <div class="db-group-title">📘 身份与业务基座 (3张)</div>
+      <div class="db-table">
+        <span class="tname">t_user</span>
+        <span class="tdesc">用户主表<br>(身份/实体/IB/状态/安全)</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_user_profile_snapshot</span>
+        <span class="tdesc">适当性快照<br>(从 Onboarding 单向同步)</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_user_preference</span>
+        <span class="tdesc">交易偏好<br>(UI偏好/软风控止损)</span>
+      </div>
+    </div>
+
+    <!-- 认证与授权 -->
+    <div class="db-group auth">
+      <div class="tape"></div>
+      <div class="db-group-title">🔐 认证与授权 (3张)</div>
+      <div class="db-table">
+        <span class="tname">t_user_credential</span>
+        <span class="tdesc">多态凭证<br>(密码/TOTP/API Key/Passkey)</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_user_oauth</span>
+        <span class="tdesc">第三方授权<br>(Google/Apple/微信)</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_user_device</span>
+        <span class="tdesc">受信设备<br>(指纹/信任/过期)</span>
+      </div>
+    </div>
+
+    <!-- 运营与分群 -->
+    <div class="db-group rule">
+      <div class="tape"></div>
+      <div class="db-group-title">🏷️ 运营与分群 (1张)</div>
+      <div class="db-table">
+        <span class="tname">t_user_tag_relation</span>
+        <span class="tdesc">用户标签关系<br>(VIP/高频/高风险)</span>
+      </div>
+      <div style="margin-top: 14px; font-size: 15px; color: #555; line-height: 1.6;">
+        ✏️ 打标表而非字段,便于灵活扩展与批量反向查询<br>
+        ✏️ 标签可过期、可追溯打标来源
+      </div>
+    </div>
+
+    <!-- 审计日志 -->
+    <div class="db-group audit">
+      <div class="tape"></div>
+      <div class="db-group-title">📝 审计日志 (2张,按季度分区)</div>
+      <div class="db-table">
+        <span class="tname">t_user_login_log</span>
+        <span class="tdesc">登录与安全事件日志</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_user_operation_log</span>
+        <span class="tdesc">业务操作审计日志</span>
+      </div>
+      <div style="margin-top: 14px; font-size: 15px; color: #555; line-height: 1.6;">
+        🔒 不可修改,只 INSERT<br>
+        📋 覆盖:登录安全 + 改资料/绑卡/解绑等<br>
+        🗓️ 分区由定时任务滚动管理
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 2: FULL FLOW ==================== -->
+  <div class="section-title">🗺️ 用户全生命周期流程 (12 步)</div>
+
+  <div class="flow-steps">
+
+    <!-- ========== STEP 1: 注册入口 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">1</div>
+      <div class="step-title">📥 多渠道注册入口</div>
+      <div class="step-body">
+        <span class="role-tag">用户</span> 通过以下任一渠道发起注册,网关按品牌/域名/App 标识确定 <code>entity_id</code>(多实体隔离)
+        <div class="scenario-tabs">
+          <div class="scenario-tab a">📧 邮箱注册</div>
+          <div class="scenario-tab a">📱 手机注册</div>
+          <div class="scenario-tab b">🔵 Google OAuth</div>
+          <div class="scenario-tab b">🍎 Apple OAuth</div>
+          <div class="scenario-tab b">💬 微信/Line</div>
+          <div class="scenario-tab c">🛡️ API Key 创建</div>
+          <div class="scenario-tab d">👤 IB 邀请链接</div>
+        </div>
+        <div style="margin-top: 12px; background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 10px; padding: 10px 14px; font-size: 16px;">
+          📌 <strong>关键决策点</strong>:由 <code>register_channel</code> 字段(WEB/IOS/ANDROID/API/ADMIN/OAUTH)记录来源,触发不同的凭证初始化路径
+        </div>
+        <div class="table-tags">
+          <span class="table-tag">📄 t_user (CREATE)</span>
+          <span class="table-tag">📄 t_user_preference (CREATE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">按 register_channel 分流到不同凭证初始化路径 🔀</div>
+    </div>
+
+    <!-- ========== STEP 2: 凭证初始化 ========== -->
+    <div class="step-card green">
+      <div class="step-num">2</div>
+      <div class="step-title">🪪 凭证 & 适当性初始化</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 根据渠道执行不同的初始化逻辑
+
+        <div class="account-steps">
+          <div class="account-step" style="background: #eff6ff;">
+            <span class="as-num">2.1</span>
+            <div class="as-title">邮箱/手机注册</div>
+            <div class="as-desc">
+              1. 写入 <code>t_user</code>(status=0 待激活)<br>
+              2. 创建 <code>PASSWORD</code> 凭证(bcrypt)<br>
+              3. 异步发送激活链接/短信
+            </div>
+          </div>
+          <div class="account-step" style="background: #f0fdf4;">
+            <span class="as-num">2.2</span>
+            <div class="as-title">OAuth 首次登录</div>
+            <div class="as-desc">
+              1. 查 <code>t_user_oauth</code> 未命中 → 创建 user<br>
+              2. status=0(未激活),待补充手机/邮箱<br>
+              3. 写 OAuth 绑定记录
+            </div>
+          </div>
+          <div class="account-step" style="background: #fef3c7;">
+            <span class="as-num">2.3</span>
+            <div class="as-title">API Key 创建</div>
+            <div class="as-desc">
+              1. 用户必须已存在(主账号)<br>
+              2. 创建 <code>API_KEY</code> 凭证<br>
+              3. 返回 AccessKey/Secret(仅一次)
+            </div>
+          </div>
+          <div class="account-step" style="background: #f3e8ff;">
+            <span class="as-num">2.4</span>
+            <div class="as-title">KYC 同步(MQ)</div>
+            <div class="as-desc">
+              Onboarding 通过后 MQ 推 <code>UserApprovedEvent</code><br>
+              触发 Upsert <code>t_user_profile_snapshot</code>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #fef3c7; border: 2px dashed #ca8a04; border-radius: 10px; padding: 10px 14px; font-size: 15px;">
+          🔐 <strong>凭证密文</strong>:PASSWORD=bcrypt; TOTP=种子(AES加密); API_KEY=SecretKey(AES加密)<br>
+          🔑 <strong>cred_identifier</strong>:PASSWORD=user_uid; API_KEY=AccessKey; TOTP/PASSKEY=credential_id
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_user_credential (CREATE/UPSERT)</span>
+          <span class="table-tag">📄 t_user_oauth (CREATE)</span>
+          <span class="table-tag">📄 t_user_profile_snapshot (UPSERT,via MQ)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">激活后进入 4 种登录鉴权场景 🔑</div>
+    </div>
+
+    <!-- ========== STEP 3: 场景A 密码登录 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">3</div>
+      <div class="step-title">🔑 场景 A · 账号密码 / 手机验证码登录</div>
+      <div class="step-body">
+        <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 14px; margin-top: 8px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+          <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">📌 链路</div>
+          <ol style="padding-left: 22px; font-size: 16px; line-height: 1.8;">
+            <li>用户输入 Email + Password;网关按品牌/域名/App 标识确定 <code>entity_id</code></li>
+            <li>用 <code>(entity_id, email)</code> 查 <code>t_user</code> 解析 <code>user_id</code>(多实体隔离)</li>
+            <li>按 <code>user_id</code> + <code>cred_type='PASSWORD'</code> 查 <code>t_user_credential</code>,校验 bcrypt,检查 <code>fail_count/locked_until</code></li>
+            <li>查 <code>t_user_device</code> 校验设备指纹;<code>is_trusted=0</code> 或 <code>mfa_enabled=1</code> 时触发二次验证</li>
+            <li>签发的 Token 内嵌当前 <code>security_stamp</code>;异步更新 <code>last_login_at</code>、<code>last_active_at</code>,写 <code>t_user_login_log</code></li>
+          </ol>
+        </div>
+
+        <div class="decision-grid">
+          <div class="decision-item pass">
+            <div class="di-icon">✅</div>
+            <div class="di-title">密码正确</div>
+            <div class="di-desc">
+              校验通过<br>
+              重置 fail_count=0<br>
+              签发 Token
+            </div>
+          </div>
+          <div class="decision-item reject">
+            <div class="di-icon">❌</div>
+            <div class="di-title">密码错误</div>
+            <div class="di-desc">
+              fail_count + 1<br>
+              ≥5次 → locked_until + 30min<br>
+              写 login_log(fail_reason)
+            </div>
+          </div>
+          <div class="decision-item manual">
+            <div class="di-icon">🛡️</div>
+            <div class="di-title">需 2FA</div>
+            <div class="di-desc">
+              设备未受信<br>
+              或 mfa_enabled=1<br>
+              跳 TOTP/Passkey 校验
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 t_user (READ)</span>
+          <span class="table-tag">📖 t_user_credential (READ, PASSWORD)</span>
+          <span class="table-tag">📖 t_user_device (READ)</span>
+          <span class="table-tag">📄 t_user_login_log (CREATE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">或:场景 B OAuth / 场景 C API Key / 场景 D 令牌校验 ↘</div>
+    </div>
+
+    <!-- ========== STEP 4: 场景B OAuth ========== -->
+    <div class="step-card green">
+      <div class="step-num">4</div>
+      <div class="step-title">🔵 场景 B · Google / Apple / 微信 第三方登录</div>
+      <div class="step-body">
+        <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 14px; margin-top: 8px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+          <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">📌 链路</div>
+          <ol style="padding-left: 22px; font-size: 16px; line-height: 1.8;">
+            <li>客户端拉起第三方 SDK,得到 <code>provider</code>、<code>open_id</code>;网关确定 <code>entity_id</code></li>
+            <li>查 <code>t_user_oauth (entity_id, provider, open_id)</code></li>
+            <li><strong>命中</strong>:取 <code>user_id</code>,发 Token 登录(能查到即有效绑定)</li>
+            <li><strong>未命中</strong>:创建 <code>t_user</code>(status=0, register_channel=OAUTH) → 插入绑定记录 → 引导补充手机/邮箱(合规要求) → status=1</li>
+          </ol>
+        </div>
+
+        <div style="margin-top: 12px; display: flex; gap: 16px;">
+          <div style="flex:1; background: #bbf7d0; border: 3px solid #16a34a; border-radius: 12px; padding: 12px;">
+            <div style="font-size: 18px; text-align: center; margin-bottom: 6px;">🔓 解绑流程</div>
+            <div style="font-size: 15px; color: #166534;">
+              <code>DELETE FROM t_user_oauth WHERE id=?</code><br>
+              + 写 <code>t_user_operation_log</code>(module=OAUTH, action=UNBIND)留痕<br>
+              ⚠️ 解绑前需校验至少保留一种可登录凭证
+            </div>
+          </div>
+          <div style="flex:1; background: #fef3c7; border: 3px solid #d97706; border-radius: 12px; padding: 12px;">
+            <div style="font-size: 18px; text-align: center; margin-bottom: 6px;">🤔 设计要点</div>
+            <div style="font-size: 15px; color: #92400e;">
+              ✏️ OAuth 本质是"授权",仅存 OpenID<br>
+              ✏️ 纯登录场景不持久化第三方 Token<br>
+              ✏️ 按 <code>entity_id</code> 隔离唯一
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 t_user_oauth (READ/CREATE/DELETE)</span>
+          <span class="table-tag">📄 t_user (CREATE, 未命中时)</span>
+          <span class="table-tag">📄 t_user_operation_log (CREATE,解绑时)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">或:程序化交易登录 ⬇</div>
+    </div>
+
+    <!-- ========== STEP 5: 场景C API Key ========== -->
+    <div class="step-card yellow">
+      <div class="step-num">5</div>
+      <div class="step-title">🤖 场景 C · API Key 程序化交易登录</div>
+      <div class="step-body">
+        <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 14px; margin-top: 8px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+          <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">📌 链路</div>
+          <ol style="padding-left: 22px; font-size: 16px; line-height: 1.8;">
+            <li>量化客户用 API Key/Secret 连接撮合网关</li>
+            <li>查 <code>t_user_credential (cred_type='API_KEY')</code>,校验 Secret 与 <code>api_ip_whitelist</code></li>
+            <li>校验 <code>api_permissions</code> 含 <code>TRADE</code> → 放行</li>
+            <li>异步更新 <code>last_used_at</code>,写 <code>t_user_login_log (event_type=API_KEY_CREATED/LOGIN)</code></li>
+          </ol>
+        </div>
+
+        <div style="margin-top: 12px; background: #fffbeb; border: 2px dashed #ca8a04; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          📋 <strong>权限粒度 (api_permissions)</strong>:<code>READ</code>(只读) · <code>TRADE</code>(下单/撤单) · <code>WITHDRAW</code>(出金)<br>
+          🌐 <strong>IP 白名单 (api_ip_whitelist)</strong>:逗号分隔,缺失即不限<br>
+          ⏰ <strong>过期 (expired_at)</strong>:NULL=永不过期;风控策略可批量下架老 Key
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 t_user_credential (READ, API_KEY)</span>
+          <span class="table-tag">📄 t_user_credential (UPDATE last_used_at)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">每次请求进入令牌校验 ⬇</div>
+    </div>
+
+    <!-- ========== STEP 6: 场景D 令牌校验 ========== -->
+    <div class="step-card pink">
+      <div class="step-num">6</div>
+      <div class="step-title">🛡️ 场景 D · 令牌校验与全局下线</div>
+      <div class="step-body">
+        <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 14px; margin-top: 8px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+          <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">📌 链路</div>
+          <ol style="padding-left: 22px; font-size: 16px; line-height: 1.8;">
+            <li>每次请求验签后,比对 Token 内 <code>security_stamp</code> 与 <code>t_user.security_stamp</code>(Redis 缓存),不一致即失效</li>
+            <li>改密码 / 重置 2FA / 全局冻结 / "退出所有设备"时刷新 <code>security_stamp</code>,历史 Token 立即全部失效</li>
+            <li><code>status=2 (全局冻结)</code> / <code>status=4 (已注销)</code> 用户在验签前直接拦截</li>
+          </ol>
+        </div>
+
+        <div class="decision-grid">
+          <div class="decision-item pass">
+            <div class="di-icon">✅</div>
+            <div class="di-title">stamp 匹配</div>
+            <div class="di-desc">
+              Token 有效<br>
+              放行请求<br>
+              业务系统继续
+            </div>
+          </div>
+          <div class="decision-item reject">
+            <div class="di-icon">❌</div>
+            <div class="di-title">stamp 不一致</div>
+            <div class="di-desc">
+              强制重新登录<br>
+              code = TOKEN_STALE<br>
+              401 Unauthorized
+            </div>
+          </div>
+          <div class="decision-item manual">
+            <div class="di-icon">⛔</div>
+            <div class="di-title">用户被冻结/注销</div>
+            <div class="di-desc">
+              status ∈ {2, 4}<br>
+              验签前直接拒绝<br>
+              code = USER_DISABLED
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; background: #fce7f3; border: 2px dashed #ec4899; border-radius: 10px; padding: 10px 14px; font-size: 15px;">
+          🎯 <strong>设计精髓</strong>:<code>security_stamp</code> 是"反向心跳"——无需遍历 Session,改一个字段就让所有历史 Token 失效
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">🔴 Redis (security_stamp 缓存)</span>
+          <span class="table-tag">📖 t_user (READ status/security_stamp)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">登录后进入用户运营管理 ↘</div>
+    </div>
+
+    <!-- ========== STEP 7: 设备管理 ========== -->
+    <div class="step-card purple">
+      <div class="step-num">7</div>
+      <div class="step-title">📱 设备管理与信任机制</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 每次登录自动 upsert <code>t_user_device</code>;受信设备有有效期,防止僵尸设备长期留存
+
+        <table class="check-table">
+          <tr>
+            <th>设备字段</th>
+            <th>数据来源</th>
+            <th>业务规则</th>
+          </tr>
+          <tr>
+            <td>device_fingerprint</td>
+            <td>客户端 SDK 生成</td>
+            <td>UNIQUE (user_id, device_fingerprint)</td>
+          </tr>
+          <tr>
+            <td>is_trusted</td>
+            <td>用户主动标记 / 2FA 后自动</td>
+            <td>未受信设备登录需二次验证</td>
+          </tr>
+          <tr>
+            <td>expire_at</td>
+            <td>授信时计算(默认 90 天)</td>
+            <td>过期需重新验证</td>
+          </tr>
+          <tr>
+            <td>last_active_at</td>
+            <td>请求异步上报</td>
+            <td>长期不活跃可被自动清理</td>
+          </tr>
+        </table>
+
+        <div style="margin-top: 14px; font-size: 16px; color: #555;">
+          🛡️ <strong>"踢出所有设备"</strong>:<code>DELETE /users/{id}/devices</code> → 删 <code>t_user_device</code> → 刷 <code>security_stamp</code> → 历史 Token 全部失效
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_user_device (CREATE/UPSERT/DELETE)</span>
+          <span class="table-tag">📄 t_user (UPDATE security_stamp)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">交易期间:偏好与风控偏好生效 ⬇</div>
+    </div>
+
+    <!-- ========== STEP 8: 偏好与风控 ========== -->
+    <div class="step-card orange">
+      <div class="step-num">8</div>
+      <div class="step-title">⚙️ 交易偏好 & 软风控</div>
+      <div class="step-body">
+        <span class="role-tag">用户</span> 在 <code>t_user_preference</code> 中维护交易交互偏好与软风控参数
+        <div class="account-steps">
+          <div class="account-step">
+            <span class="as-num">8.1</span>
+            <div class="as-title">交易交互</div>
+            <div class="as-desc">
+              <code>default_leverage</code>:默认杠杆<br>
+              <code>default_volume</code>:默认手数<br>
+              <code>confirm_order</code>:二次确认<br>
+              <code>one_click_trading</code>:一键交易
+            </div>
+          </div>
+          <div class="account-step">
+            <span class="as-num">8.2</span>
+            <div class="as-title">软风控偏好</div>
+            <div class="as-desc">
+              <code>daily_loss_limit</code>:单日最大亏损<br>
+              触发禁开新仓 + 通知<br>
+              同步至风控 Redis
+            </div>
+          </div>
+          <div class="account-step">
+            <span class="as-num">8.3</span>
+            <div class="as-title">显示偏好</div>
+            <div class="as-desc">
+              <code>locale</code>:语言(en/zh/ar)<br>
+              <code>timezone</code>:时区<br>
+              <code>chart_theme</code>:图表主题
+            </div>
+          </div>
+          <div class="account-step" style="background: #f0fdf4;">
+            <span class="as-num">8.4</span>
+            <div class="as-title">硬风控(不在此)</div>
+            <div class="as-desc">
+              制裁名单/刷单/异常<br>
+              → 风控引擎独立处理<br>
+              交易前拦截
+            </div>
+          </div>
+        </div>
+        <div class="table-tags">
+          <span class="table-tag">📄 t_user_preference (READ/UPDATE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">运营分群与打标 ⬇</div>
+    </div>
+
+    <!-- ========== STEP 9: 运营分群 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">9</div>
+      <div class="step-title">🏷️ 运营分群与打标</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> / 运营 通过 <code>t_user_tag_relation</code> 给用户打标签,支撑精细化运营
+
+        <div class="kyc-match">
+          <div class="kyc-match-item" style="background: #fef3c7;">
+            <div class="km-icon">👑</div>
+            <div class="km-label">VIP1/VIP2/VIP3</div>
+          </div>
+          <div class="kyc-match-item" style="background: #e0e7ff;">
+            <div class="km-icon">📈</div>
+            <div class="km-label">HIGH_FREQ<br>高频交易</div>
+          </div>
+          <div class="kyc-match-item" style="background: #fecaca;">
+            <div class="km-icon">⚠️</div>
+            <div class="km-label">HIGH_RISK<br>高风险</div>
+          </div>
+          <div class="kyc-match-item" style="background: #dcfce7;">
+            <div class="km-icon">🤝</div>
+            <div class="km-label">IB_CLIENT<br>代理客户</div>
+          </div>
+          <div class="kyc-match-item" style="background: #f3e8ff;">
+            <div class="km-icon">🧪</div>
+            <div class="km-label">INTERNAL_TEST<br>内部测试</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 10px; padding: 10px 14px; font-size: 15px; line-height: 1.7;">
+          📋 <strong>设计要点</strong>:<br>
+          ✏️ 打标表而非字段,便于灵活扩展与批量反向查询<br>
+          ✏️ <code>expire_at</code> 支持临时标签(如活动标签)<br>
+          ✏️ <code>assigned_by</code> 记录 SYSTEM / 操作员ID,支持审计<br>
+          ✏️ UNIQUE (user_id, tag_code) 防止重复打标
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_user_tag_relation (CREATE/DELETE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">用户生命周期结束 ⬇</div>
+    </div>
+
+    <!-- ========== STEP 10: 冻结 ========== -->
+    <div class="step-card yellow">
+      <div class="step-num">10</div>
+      <div class="step-title">🧊 冻结 / 解冻 (status = 2 / 1)</div>
+      <div class="step-body">
+        <span class="role-tag sys">风控 / 客服</span> 触发:AML 命中 / 监管要求 / 风控升级 / 客诉冻结
+        <div class="decision-grid">
+          <div class="decision-item reject">
+            <div class="di-icon">🧊</div>
+            <div class="di-title">冻结</div>
+            <div class="di-desc">
+              status → 2(全局冻结)<br>
+              刷 security_stamp<br>
+              写 operation_log
+            </div>
+          </div>
+          <div class="decision-item pass">
+            <div class="di-icon">☀️</div>
+            <div class="di-title">解冻</div>
+            <div class="di-desc">
+              status → 1(正常)<br>
+              刷 security_stamp<br>
+              触发设备重新验证
+            </div>
+          </div>
+          <div class="decision-item manual">
+            <div class="di-icon">📩</div>
+            <div class="di-title">通知</div>
+            <div class="di-desc">
+              MQ 推 Notification 服务<br>
+              邮件/短信告知<br>
+              {user_id, event_type}
+            </div>
+          </div>
+        </div>
+        <div class="table-tags">
+          <span class="table-tag">📄 t_user (UPDATE status/security_stamp)</span>
+          <span class="table-tag">📄 t_user_operation_log (CREATE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">或进入注销流程 ⬇</div>
+    </div>
+
+    <!-- ========== STEP 11: 注销冷静期 ========== -->
+    <div class="step-card orange">
+      <div class="step-num">11</div>
+      <div class="step-title">⏳ 注销冷静期 (status = 3)</div>
+      <div class="step-body">
+        <span class="role-tag">用户</span> 主动注销,进入冷静期(可撤回,默认 7-15 天)
+        <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+          <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">📌 注销链路</div>
+          <ol style="padding-left: 22px; font-size: 16px; line-height: 1.8;">
+            <li>用户提交注销 → status=3 (注销冷静期)</li>
+            <li>刷 security_stamp,所有在线 Token 立即失效</li>
+            <li>通知系统发送"撤回链接"到注册邮箱/手机</li>
+            <li>冷静期内可一键恢复 status=1</li>
+            <li>冷静期结束(定时任务)→ status=4 (已注销)</li>
+            <li>将 <code>email/phone</code> 改写为匿名占位值(释放复用,符合 GDPR "被遗忘权")</li>
+          </ol>
+        </div>
+        <div class="table-tags">
+          <span class="table-tag">📄 t_user (UPDATE status, 匿名化 email/phone)</span>
+          <span class="table-tag">📄 t_user_operation_log (CREATE)</span>
+          <span class="table-tag">📨 MQ Notification (发送撤回链接)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">冷静期结束,定稿用户档案 ⬇</div>
+    </div>
+
+    <!-- ========== STEP 12: 审计与归档 ========== -->
+    <div class="step-card green">
+      <div class="step-num">12</div>
+      <div class="step-title">📝 审计归档 & 长期留痕</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 全量登录/操作留痕,按季度分区滚动
+
+        <div class="notif-grid">
+          <div class="notif-item" style="background: #fef3c7;">
+            <div class="ni-icon">🔐</div>
+            <div style="font-size: 18px; font-weight: bold;">登录日志</div>
+            <div class="ni-text">t_user_login_log<br>事件: 登录/登出/改密/<br>API Key 创建/设备授信</div>
+          </div>
+          <div class="notif-item" style="background: #fce7f3;">
+            <div class="ni-icon">📋</div>
+            <div style="font-size: 18px; font-weight: bold;">操作日志</div>
+            <div class="ni-text">t_user_operation_log<br>模块: 资料/偏好/支付方式/<br>API Key/设备/OAuth</div>
+          </div>
+          <div class="notif-item" style="background: #dcfce7;">
+            <div class="ni-icon">🗄️</div>
+            <div style="font-size: 18px; font-weight: bold;">分区管理</div>
+            <div class="ni-text">RANGE (TO_DAYS)<br>按季度滚动<br>定时任务 DROP 旧分区</div>
+          </div>
+        </div>
+        <div class="table-tags">
+          <span class="table-tag">📄 t_user_login_log (CREATE, 分区表)</span>
+          <span class="table-tag">📄 t_user_operation_log (CREATE, 分区表)</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end flow-steps -->
+
+  <!-- ==================== SECTION 3: STATUS FLOW ==================== -->
+  <div class="section-title">🔄 用户状态流转总览</div>
+
+  <div style="background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px; padding: 28px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12); max-width: 900px; margin: 0 auto;">
+    <div class="tape" style="right: 40px;"></div>
+
+    <div style="font-size: 22px; margin-bottom: 16px; color: #1e40af;">👤 t_user.status 全局生命周期</div>
+    <div class="status-flow">
+      <div class="sf-node" style="background: #e0e7ff;">
+        <div class="sf-code">0</div>
+        <div class="sf-label">未激活</div>
+      </div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node active">
+        <div class="sf-code">1</div>
+        <div class="sf-label">正常 ✅</div>
+      </div>
+      <div class="sf-arrow" style="color: #2563eb;">⇄</div>
+      <div class="sf-node warn">
+        <div class="sf-code">2</div>
+        <div class="sf-label">全局冻结 🧊</div>
+      </div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #ffedd5; border-color: #ea580c;">
+        <div class="sf-code">3</div>
+        <div class="sf-label">注销冷静期 ⏳</div>
+      </div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node fail">
+        <div class="sf-code">4</div>
+        <div class="sf-label">已注销 ❌</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px; font-size: 15px; color: #555; line-height: 1.8; padding: 14px; background: #f0f9ff; border: 2px dashed #3b82f6; border-radius: 10px;">
+      <strong>📋 状态权威性说明</strong>:<br>
+      ✏️ <code>status</code> 是<strong>权威生命周期</strong>(业务可见),决定所有网关的拦截/放行<br>
+      ✏️ <code>is_deleted</code> 仅作<strong>技术软删标记</strong>(与 status=4 联动),不直接用于业务判断<br>
+      ✏️ 注销后 <code>email/phone</code> 改写为匿名占位值,释放 <code>(entity_id, email/phone)</code> 唯一键,允许他人重新注册
+    </div>
+
+    <div style="font-size: 22px; margin: 28px 0 16px 0; color: #7c3aed;">🔐 t_user.security_stamp 安全戳</div>
+    <div class="status-flow">
+      <div class="sf-node" style="background: #dcfce7;">
+        <div class="sf-code">v1</div>
+        <div class="sf-label">签发 Token A</div>
+      </div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node warn">
+        <div class="di-icon" style="font-size: 26px;">🔄</div>
+        <div class="sf-label">改密码/重置 2FA<br>/"踢出所有设备"</div>
+      </div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #fecaca; border-color: #dc2626;">
+        <div class="sf-code">v2</div>
+        <div class="sf-label">Token A 立即失效 ⛔</div>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 14px; font-size: 15px; color: #16a34a;">
+      🎯 <strong>反向心跳</strong>:无需遍历 Session,刷一个字段就让所有历史 Token 失效
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 4: 系统边界 ==================== -->
+  <div class="section-title">🌐 系统边界交互</div>
+
+  <div style="background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px; padding: 28px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12); max-width: 900px; margin: 0 auto;">
+    <div class="tape"></div>
+    <div style="font-size: 18px; margin-bottom: 14px;">
+      用户体系是交易系统的<strong>身份基座</strong>,与下列系统存在明确边界:
+    </div>
+
+    <table class="boundary-table">
+      <tr>
+        <th>下游 / 上游系统</th>
+        <th>交互方式</th>
+        <th>数据走向</th>
+      </tr>
+      <tr>
+        <td>Onboarding<br>准入系统</td>
+        <td>KYC 通过后经 MQ 发 <code>UserApprovedEvent</code>,交易系统创建/更新 <code>t_user</code> 并 Upsert <code>t_user_profile_snapshot</code></td>
+        <td style="color: #16a34a;">⬇ 单向同步<br>(不反向查询)</td>
+      </tr>
+      <tr>
+        <td>Account<br>账号体系</td>
+        <td>开户时账号体系按 <code>t_user.entity_id</code> 过滤可用 <code>t_account_group</code>,确保牌照隔离</td>
+        <td style="color: #2563eb;">↔ 同步读取</td>
+      </tr>
+      <tr>
+        <td>IB<br>代理系统</td>
+        <td>仅注册时落库 <code>introducing_broker_id</code>;代理系统按 IB 拉取用户列表 + 账单流水自行结算分润,用户体系不参与</td>
+        <td style="color: #16a34a;">⬇ 写时落库<br>读时同步</td>
+      </tr>
+      <tr>
+        <td>Risk Control<br>风控引擎</td>
+        <td>硬风控(制裁名单/刷单)直接拦截交易请求;软风控(<code>daily_loss_limit</code>)同步至风控 Redis,网关本地校验</td>
+        <td style="color: #16a34a;">⬇ 软风控同步</td>
+      </tr>
+      <tr>
+        <td>Notification<br>通知服务</td>
+        <td>用户体系不维护通知偏好;仅投递 <code>{user_id, event_type}</code> 到 MQ,通知系统自查偏好决定渠道</td>
+        <td style="color: #16a34a;">⬇ 事件投递</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ==================== SECTION 5: 设计要点 ==================== -->
+  <div class="section-title">🎯 关键设计要点 & 常见陷阱</div>
+
+  <div style="background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px; padding: 28px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12); max-width: 900px; margin: 0 auto;">
+    <div class="tape" style="right: 50px;"></div>
+
+    <div class="principle-grid">
+      <div class="principle-item" style="background: #f0f9ff;">
+        <div class="pi-num">1</div>
+        <div class="pi-title">凭证定位符设计</div>
+        <div class="pi-desc"><code>cred_identifier</code> 用与用户绑定的<strong>全局唯一值</strong>:PASSWORD=<code>user_uid</code>、API_KEY=<code>AccessKey</code>、TOTP/PASSKEY=<code>credential_id</code>。先经 <code>t_user</code> 解析 <code>user_id</code> 再按 <code>user_id</code> 加载,避免"凭证明文 → user_id"反向解析。</div>
+      </div>
+      <div class="principle-item" style="background: #f0fdf4;">
+        <div class="pi-num">2</div>
+        <div class="pi-title">注销匿名化</div>
+        <div class="pi-desc">注销时 <code>email</code>/<code>phone</code> 改写为匿名占位值(例如 <code>deleted_user_20260626_a1b2@anonymized.local</code>),释放 <code>(entity_id, email)</code> 唯一槽位,允许他人重新注册,同时满足 GDPR "被遗忘权"。</div>
+      </div>
+      <div class="principle-item" style="background: #fefce8;">
+        <div class="pi-num">3</div>
+        <div class="pi-title">适当性乱序防护</div>
+        <div class="pi-desc"><code>t_user_profile_snapshot.source_version</code> 字段防 MQ 乱序/重复回写:仅当入参 version 更大时才覆盖,避免旧事件覆盖新事件。</div>
+      </div>
+      <div class="principle-item" style="background: #fdf2f8;">
+        <div class="pi-num">4</div>
+        <div class="pi-title">OAuth 解绑物理删除</div>
+        <div class="pi-desc">OAuth 解绑走 <code>DELETE</code>(释放 <code>(entity_id, provider, open_id)</code> 唯一槽位),解绑动作写 <code>t_user_operation_log</code> 留痕;解绑前需校验用户至少保留一种可登录凭证。</div>
+      </div>
+      <div class="principle-item" style="background: #f5f3ff;">
+        <div class="pi-num">5</div>
+        <div class="pi-title">设备受信有效期</div>
+        <div class="pi-desc">设备授信设置 <code>expire_at</code>(默认 90 天),过期需重新验证,防止僵尸设备长期留存;长期不活跃(<code>last_active_at</code>)可被自动清理。</div>
+      </div>
+      <div class="principle-item" style="background: #fff7ed;">
+        <div class="pi-num">6</div>
+        <div class="pi-title">日志分区滚动</div>
+        <div class="pi-desc">登录日志与操作日志按季度 RANGE 分区;定时任务每季度滚动新增并 DROP 超出保留期的旧分区,避免表无限膨胀。日志<strong>不可修改</strong>(只 INSERT,合规审计要求)。</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end flow-container -->
+
+<div class="footer">
+  📐 用户体系架构流程图 · User Service Architecture · Generated 2026.06
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>账户体系 架构与数据流转 - 核心设计文档</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+    --ink: #1a1a2e;
+    --paper: #fefcf3;
+    --blue: #dbeafe; --blue-mid: #93c5fd; --blue-deep: #2563eb; --blue-dark: #1e3a5f;
+    --green: #dcfce7; --green-mid: #86efac; --green-deep: #16a34a; --green-dark: #166534;
+    --yellow: #fef9c3; --yellow-mid: #fde047; --yellow-deep: #ca8a04; --yellow-dark: #854d0e;
+    --purple: #f3e8ff; --purple-mid: #c4b5fd; --purple-deep: #7c3aed; --purple-dark: #5b21b6;
+    --pink: #fce7f3; --pink-mid: #f9a8d4; --pink-deep: #ec4899; --pink-dark: #9d174d;
+    --orange: #ffedd5; --orange-mid: #fdba74; --orange-deep: #ea580c; --orange-dark: #9a3412;
+    --red: #fecaca; --red-deep: #dc2626; --red-dark: #991b1b;
+    --slate: #f1f5f9; --slate-deep: #475569;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    background-image: radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 22px 22px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: var(--ink);
+    padding: 24px;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  .hero { text-align: center; padding: 40px 20px 30px; position: relative; }
+  .hero h1 {
+    font-family: var(--font-hand);
+    font-size: 54px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    color: var(--ink);
+    position: relative;
+    display: inline-block;
+  }
+  .hero h1::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: -12px; right: -12px;
+    height: 6px;
+    background: linear-gradient(90deg, #f9a8d4, #fde68a, #93c5fd, #c4b5fd);
+    border-radius: 4px;
+    transform: rotate(-0.4deg);
+    opacity: 0.8;
+  }
+  .hero .tagline {
+    font-family: var(--font-ui);
+    font-size: 17px;
+    font-weight: 600;
+    color: #666;
+    margin-top: 16px;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.5;
+  }
+  .hero .badge-row {
+    display: flex; justify-content: center; gap: 10px; margin-top: 16px;
+    flex-wrap: wrap; overflow-x: visible; padding: 4px 0 8px;
+  }
+  .hero .badge {
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-ui);
+    border: 1.5px solid rgba(0,0,0,0.12);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    white-space: nowrap;
+  }
+
+  .nav-bar {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+    margin: 10px auto 30px; max-width: 1300px;
+    overflow-x: visible;
+    padding: 4px 0 10px;
+  }
+  .nav-bar a {
+    text-decoration: none;
+    padding: 6px 18px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .nav-bar a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+    border-color: #93c5fd;
+  }
+
+  .scene {
+    background: #fff;
+    border: 2.5px solid #d1d5db;
+    border-radius: 22px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+    position: relative;
+  }
+  .scene-header {
+    padding: 20px 28px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    border-bottom: 2px dashed #e5e7eb;
+    flex-wrap: wrap;
+  }
+  .scene-num {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700;
+    border: 2.5px solid #fff;
+    box-shadow: 0 3px 10px rgba(238,90,36,0.35);
+    font-family: var(--font-ui);
+    flex-shrink: 0;
+  }
+  .scene-meta { flex: 1; min-width: 0; }
+  .scene-title {
+    font-family: var(--font-hand); font-size: 32px; font-weight: 400;
+    white-space: normal; line-height: 1.3;
+  }
+  .scene-subtitle { font-size: 15px; color: #555; font-family: var(--font-ui); font-weight: 600; }
+  .scene-body { padding: 20px 28px 28px; }
+
+  .tape {
+    position: absolute; width: 80px; height: 26px;
+    background: rgba(255,222,89,0.55);
+    border: 1.5px solid rgba(200,170,50,0.35);
+    border-radius: 2px; z-index: 2;
+  }
+  .tape-tr { top: -8px; right: 28px; transform: rotate(-32deg); }
+  .tape-tl { top: -8px; left: 28px; transform: rotate(32deg); }
+
+  .story {
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1.5px dashed;
+    margin-bottom: 20px;
+    font-size: 17px;
+    line-height: 1.8;
+    position: relative;
+  }
+  .story .char {
+    font-size: 36px;
+    float: left;
+    margin-right: 10px;
+    margin-top: -4px;
+  }
+
+  .dataflow {
+    margin: 0 0 22px 0;
+    padding: 18px;
+    background: linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%);
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    overflow-x: visible;
+  }
+  .dataflow-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 14px;
+    color: #475569;
+  }
+  .df-chain {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 4px;
+    min-width: 0;
+  }
+  .df-node {
+    flex: 0 0 auto;
+    width: 128px;
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    border: 1.5px solid;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .df-node .df-icon { font-size: 24px; }
+  .df-node .df-label { font-size: 13px; font-weight: bold; line-height: 1.3; }
+  .df-node .df-detail {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.4;
+    font-family: var(--font-ui);
+  }
+  .df-node.user { background: #dbeafe; border-color: #93c5fd; }
+  .df-node.gateway { background: #fef3c7; border-color: #fde047; }
+  .df-node.service { background: #dcfce7; border-color: #86efac; }
+  .df-node.crypto { background: #fce7f3; border-color: #f9a8d4; }
+  .df-node.db { background: #e0e7ff; border-color: #a5b4fc; }
+  .df-node.mq { background: #f3e8ff; border-color: #c4b5fd; }
+  .df-node.ext { background: #ffedd5; border-color: #fdba74; }
+  .df-node.check { background: #ccfbf1; border-color: #5eead4; }
+  .df-node.admin { background: #fce7f3; border-color: #f9a8d4; }
+  .df-node.cache { background: #fef3c7; border-color: #fbbf24; }
+  .df-node.engine { background: #fee2e2; border-color: #fca5a5; }
+  .df-node.layer { background: #f1f5f9; border-color: #94a3b8; }
+
+  .df-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .df-arrow::before {
+    content: '';
+    width: 24px; height: 2px;
+    background: #94a3b8;
+  }
+  .df-arrow::after {
+    content: '';
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid #94a3b8;
+  }
+  .df-arrow .df-alabel {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #94a3b8;
+    white-space: nowrap;
+    font-family: var(--font-ui);
+  }
+
+  .arch-box {
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin: 14px 0;
+    background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
+  }
+  .arch-box-title {
+    font-size: 17px;
+    font-weight: bold;
+    color: var(--blue-dark);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .arch-box .arch-sub {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 10px;
+  }
+
+  .layer-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 10px 0;
+  }
+  .layer-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    min-height: 70px;
+  }
+  .layer-row .layer-label {
+    flex: 0 0 110px;
+    background: #f1f5f9;
+    border: 1.5px solid #94a3b8;
+    border-radius: 10px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 13px;
+    font-weight: bold;
+    color: #475569;
+  }
+  .layer-row .layer-content {
+    flex: 1;
+    background: #fff;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .layer-chip {
+    background: #dbeafe;
+    border: 1px solid #93c5fd;
+    border-radius: 8px;
+    padding: 3px 10px;
+    font-size: 12px;
+    color: #1e3a5f;
+  }
+  .layer-chip.green { background: #dcfce7; border-color: #86efac; color: #166534; }
+  .layer-chip.yellow { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+  .layer-chip.purple { background: #f3e8ff; border-color: #c4b5fd; color: #5b21b6; }
+  .layer-chip.pink { background: #fce7f3; border-color: #f9a8d4; color: #9d174d; }
+  .layer-chip.orange { background: #ffedd5; border-color: #fdba74; color: #9a3412; }
+  .layer-chip.red { background: #fecaca; border-color: #fca5a5; color: #991b1b; }
+
+  .scene-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    height: auto; min-height: 44px;
+    position: relative;
+    padding: 6px 0 10px;
+  }
+  .scene-arrow .sa-line {
+    width: 3px; flex: 0 0 28px; min-height: 28px;
+    background: repeating-linear-gradient(to bottom, #94a3b8 0px, #94a3b8 5px, transparent 5px, transparent 10px);
+  }
+  .scene-arrow .sa-head {
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid #94a3b8;
+    flex-shrink: 0;
+  }
+  .scene-arrow .sa-label {
+    position: static;
+    margin-top: 8px;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 4px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: #475569;
+    white-space: normal;
+    max-width: 100%;
+    overflow-x: visible;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .tip {
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    margin-top: 12px;
+    border: 1.5px solid;
+    border-left-width: 4px;
+  }
+  .tip.warn { background: #fef3c7; border-color: #d97706; color: #92400e; }
+  .tip.info { background: #dbeafe; border-color: #2563eb; color: #1e3a5f; }
+  .tip.ok { background: #dcfce7; border-color: #16a34a; color: #166534; }
+  .tip.danger { background: #fecaca; border-color: #dc2626; color: #991b1b; }
+
+  pre.code-block {
+    background: #f8fafc;
+    color: #334155;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: visible;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    border: 1.5px solid #e2e8f0;
+    position: relative;
+    margin-top: 8px;
+  }
+  pre.code-block .ck { color: #2563eb; }
+  pre.code-block .cv { color: #16a34a; }
+  pre.code-block .cn { color: #d97706; }
+  pre.code-block .cc { color: #94a3b8; font-style: italic; }
+
+  .ptable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 15px;
+    margin-top: 10px;
+  }
+  .ptable th {
+    background: linear-gradient(135deg, #f1f5f9, #e8edf3);
+    color: #475569;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 13px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    border-bottom: 1.5px solid #cbd5e1;
+  }
+  .ptable td {
+    padding: 7px 12px;
+    border-bottom: 1.5px dashed #e2e8f0;
+    vertical-align: top;
+  }
+  .ptable tr:last-child td { border-bottom: none; }
+  .ptable tr:nth-child(even) td { background: #fafafa; }
+  .ptable .fname {
+    font-weight: 600; color: var(--blue-deep);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+  }
+
+  .footer {
+    text-align: center; margin-top: 40px; padding: 20px;
+    color: #aaa; font-size: 15px;
+  }
+
+  .scene-tag {
+    display: inline-block;
+    font-size: 12px; font-weight: bold;
+    padding: 2px 10px;
+    border-radius: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .scene-tag.client { background: var(--blue); color: var(--blue-deep); border: 1px solid var(--blue-mid); }
+  .scene-tag.admin { background: var(--pink); color: var(--pink-deep); border: 1px solid var(--pink-mid); }
+  .scene-tag.system { background: var(--purple); color: var(--purple-dark); border: 1px solid var(--purple-mid); }
+  .scene-tag.engine { background: var(--red); color: var(--red-dark); border: 1px solid var(--red); }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:900px){
+    .duo { grid-template-columns: 1fr; }
+    .hero .tagline { white-space: normal; }
+    .scene-title { white-space: normal; }
+  }
+
+  @page { size: A4 portrait; margin: 10mm 11mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body {
+      width: 100% !important; max-width: 100% !important;
+      margin: 0 !important; padding: 0 !important;
+      background: #fff !important; background-image: none !important;
+      font-size: 9.5pt;
+    }
+    .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+    .tape { display: none !important; }
+    .hero { padding: 4mm 0 !important; page-break-after: avoid; }
+    .hero h1 { font-size: 20pt !important; }
+    .hero .tagline { font-size: 9pt !important; }
+    .nav-bar { justify-content: center !important; gap: 6px !important; page-break-inside: avoid; }
+    .nav-bar a { padding: 4px 12px !important; font-size: 9pt !important; }
+    .scene { page-break-inside: avoid; break-inside: avoid; box-shadow: none !important; margin-bottom: 6mm !important; border-width: 1.5px !important; }
+    .scene-header { padding: 10px 14px !important; }
+    .scene-body { padding: 12px 14px 16px !important; }
+    .scene-title { font-size: 13pt !important; }
+    .scene-subtitle { font-size: 9pt !important; }
+    .dataflow { padding: 10px !important; page-break-inside: avoid; }
+    .df-node { width: 108px !important; padding: 6px 4px !important; }
+    .df-node .df-label { font-size: 11px !important; }
+    .df-node .df-detail { font-size: 9px !important; }
+    .story { font-size: 10pt !important; }
+    .duo { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    pre.code-block { font-size: 7.5pt !important; }
+    .ptable { font-size: 9pt !important; }
+    .ptable th, .ptable td { padding: 5px 8px !important; }
+    .footer { margin-top: 6mm; font-size: 9pt; }
+    a { color: inherit !important; text-decoration: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <h1>🏦 账户体系 架构与数据流转</h1>
+  <div class="tagline">Account Service &mdash; Architecture &amp; Data Flow Design</div>
+  <div class="badge-row">
+    <span class="badge" style="background:var(--blue);">5 大数据流</span>
+    <span class="badge" style="background:var(--green);">7 边界系统</span>
+    <span class="badge" style="background:var(--yellow);">3 大核心原则</span>
+    <span class="badge" style="background:var(--purple);">多实体隔离</span>
+    <span class="badge" style="background:var(--pink);">MQ 事件驱动</span>
+    <span class="badge" style="background:var(--orange);">单一资金入口</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav-bar">
+  <a href="#s1">① 设计原则</a>
+  <a href="#s2">② 整体架构</a>
+  <a href="#s3">③ 表结构与依赖</a>
+  <a href="#s4">④ 下单数据流</a>
+  <a href="#s5">⑤ 开户/激活</a>
+  <a href="#s6">⑥ 资管/休眠</a>
+  <a href="#s7">⑦ 边界交互</a>
+  <a href="#s8">⑧ 一致性保证</a>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 1: 设计原则                          -->
+<!-- ============================================================ -->
+<div class="scene" id="s1">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">①</div>
+    <div class="scene-meta">
+      <div class="scene-title">📐 三大核心设计原则</div>
+      <div class="scene-subtitle">Design Principles &mdash; "Why we do it this way."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--blue); border-color:var(--blue-deep);">
+      <div class="char">🎯</div>
+      <strong>原则 1: 账户组 = 参数中枢(MT5 Group 思路)</strong><br>
+      一个账户组 = 监管实体 + 保证金模型 + 杠杆策略 + 风控阈值 + 可交易品种 + 手续费规则的<strong>完整组合</strong>。开户即归组继承,99% 参数无需在账户级重复维护。
+      这种"参数模板化"是 MT5 / cTrader 通行做法,既支持多业务线快速上线,又便于合规审计(改组=改一类账户)。
+    </div>
+
+    <div class="story" style="background:var(--green); border-color:var(--green-deep);">
+      <div class="char">🔗</div>
+      <strong>原则 2: 资金变动唯一入口 — t_account_ledger</strong><br>
+      所有余额变动<strong>仅</strong>经 <code>t_account_ledger</code>(资金系统已定义):入金、出金、内部转账、平仓盈亏、手续费、隔夜利息、<strong>不活跃费</strong>、调账、分红、信用额发放/回收。<br>
+      交易账户表的 <code>balance / equity / margin</code> 字段<strong>仅是撮合引擎定期同步的快照</strong>,不是权威值。<br>
+      <strong>这意味着:账户体系不直接 UPDATE 资金字段,只写 ledger。</strong>
+    </div>
+
+    <div class="story" style="background:var(--purple); border-color:var(--purple-deep);">
+      <div class="char">🛡️</div>
+      <strong>原则 3: 身份-账户分离 + MANAGER 资金隔离</strong><br>
+      <code>t_user</code> 与 <code>t_trading_account</code> 通过 <code>t_user_account_relation</code> 多对多连接,角色 OWNER / MANAGER / VIEWER。<br>
+      <strong>MANAGER 永远不能出金</strong>(<code>can_withdraw=0</code> 硬约束),即资管经理/跟单管理者/家人代操——只能交易,不能划走客户资金。这是<strong>客户资金隔离的硬底线</strong>。
+    </div>
+
+    <div class="tip info">💡 <strong>附加原则</strong>:④ 多实体隔离(<code>entity_id</code> 贯穿) ⑤ 关键属性变更全部走 <code>audit_log</code> ⑥ 异步通知用 MQ + 幂等 + 乱序防护 ⑦ Demo 与 Live 走相同代码路径,仅 <code>environment</code> 字段区分</div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">原则落地为分层架构 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 2: 整体架构                          -->
+<!-- ============================================================ -->
+<div class="scene" id="s2">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">②</div>
+    <div class="scene-meta">
+      <div class="scene-title">🧱 整体分层架构</div>
+      <div class="scene-subtitle">Layered Architecture &mdash; "From identity to engine, layered cleanly."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 五层架构全景</div>
+      <div class="df-chain" style="flex-direction:column; align-items: stretch;">
+        <div class="layer-row">
+          <div class="layer-label">入口层<br>Entry</div>
+          <div class="layer-content">
+            <span class="layer-chip">📱 C 端 App / Web</span>
+            <span class="layer-chip">🛠️ Admin 后台</span>
+            <span class="layer-chip">🤖 撮合网关 (API Key)</span>
+            <span class="layer-chip">⏰ 定时任务</span>
+            <span class="layer-chip">📨 MQ 消费者 (资金系统)</span>
+          </div>
+        </div>
+        <div style="text-align:center; font-size:18px; color:#94a3b8;">▼ HTTPS / RPC / MQ ▼</div>
+        <div class="layer-row">
+          <div class="layer-label">网关层<br>Gateway</div>
+          <div class="layer-content">
+            <span class="layer-chip yellow">🚪 Spring Cloud Gateway</span>
+            <span class="layer-chip yellow">🔐 鉴权 (Token 校验 / X-Admin-Token)</span>
+            <span class="layer-chip yellow">🛡️ 防刷 / 限流 / 风控前置</span>
+            <span class="layer-chip yellow">🌐 实体解析 (X-Entity-Id)</span>
+          </div>
+        </div>
+        <div style="text-align:center; font-size:18px; color:#94a3b8;">▼ Dubbo / gRPC ▼</div>
+        <div class="layer-row">
+          <div class="layer-label">业务服务层<br>Service</div>
+          <div class="layer-content">
+            <span class="layer-chip green">📋 AccountGroupService 账户组</span>
+            <span class="layer-chip green">🆕 AccountOpeningService 开户</span>
+            <span class="layer-chip green">💼 TradingAccountService 账户管理</span>
+            <span class="layer-chip green">🤝 RelationService 授权</span>
+            <span class="layer-chip green">📐 LeverageTemplateService 动态杠杆</span>
+            <span class="layer-chip green">💰 MoneyManagerService 资管</span>
+            <span class="layer-chip green">😴 InactivityService 不活跃</span>
+            <span class="layer-chip green">📝 AuditService 审计</span>
+          </div>
+        </div>
+        <div style="text-align:center; font-size:18px; color:#94a3b8;">▼ JDBC / 缓存 ▼</div>
+        <div class="layer-row">
+          <div class="layer-label">数据层<br>Data</div>
+          <div class="layer-content">
+            <span class="layer-chip purple">🗄️ MySQL 10 张表 (分库:account_main / account_audit)</span>
+            <span class="layer-chip orange">🔴 Redis (账户组/杠杆模板/账户详情缓存 + token 黑名单)</span>
+          </div>
+        </div>
+        <div style="text-align:center; font-size:18px; color:#94a3b8;">▼ Kafka / RocketMQ ▼</div>
+        <div class="layer-row">
+          <div class="layer-label">事件层<br>Event</div>
+          <div class="layer-content">
+            <span class="layer-chip pink">📨 topic: account.events (本服务发布,16 种事件)</span>
+            <span class="layer-chip pink">📨 topic: fund.events (本服务消费,仅 FirstDepositEvent)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">📂 部署拓扑(简化)</div>
+      <pre class="code-block">
+┌─────────────────────────────────────────────────────────────────┐
+│  K8s Cluster (account-service namespace)                          │
+│                                                                   │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐    │
+│  │  Pod-1   │  │  Pod-2   │  │  Pod-3   │  │ CronJob      │    │
+│  │  (网关)  │  │  (服务)  │  │  (服务)  │  │ (不活跃扫描) │    │
+│  └─────┬────┘  └─────┬────┘  └─────┬────┘  └──────┬───────┘    │
+│        │             │             │              │             │
+│        └─────────────┴──────┬──────┴──────────────┘             │
+│                              ▼                                    │
+│  ┌───────────────────────────────────────────────────────┐      │
+│  │  MySQL Cluster (账户库 + 审计库,按 entity_id 分库)    │      │
+│  │  Redis Cluster (热数据 + 分布式锁)                    │      │
+│  │  Kafka Cluster (account.events / fund.events 主题)    │      │
+│  └───────────────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────────────┘
+       ▲               ▲              ▲              ▲
+       │               │              │              │
+   C 端 App      Admin 后台      撮合网关       资金系统(MQ)
+      </pre>
+    </div>
+
+    <div class="tip info">💡 <strong>服务拆分策略</strong>:账户组/开户/交易账户/授权/杠杆/资管/不活跃 各自独立 Service,但共享同一份数据库(避免分布式事务);MQ 消费拆为独立 Consumer Group,与 HTTP 入口解耦</div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">表结构与依赖图 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 3: 表结构与依赖                      -->
+<!-- ============================================================ -->
+<div class="scene" id="s3">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">③</div>
+    <div class="scene-meta">
+      <div class="scene-title">🗄️ 表结构与模块依赖</div>
+      <div class="scene-subtitle">Data Model &amp; Dependencies &mdash; "10 tables, 1 shared ledger."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="arch-box">
+      <div class="arch-box-title">📋 10 张核心表 + 1 张共享(资金系统)</div>
+      <pre class="code-block">
+<span class="cc"># 账户体系自有 10 张表:</span>
+t_account_group                 <span class="cc">-- 账户组(参数中枢,被引用方)</span>
+t_account_group_symbol_config  <span class="cc">-- 组品种配置  1:N ← t_account_group</span>
+t_account_group_commission     <span class="cc">-- 组手续费规则 1:N ← t_account_group</span>
+t_leverage_template            <span class="cc">-- 动态杠杆模板头(被引用方)</span>
+t_leverage_tier                <span class="cc">-- 动态杠杆分级  1:N ← t_leverage_template</span>
+
+t_trading_account              <span class="cc">-- 交易账户主体(被引用方)</span>
+t_user_account_relation        <span class="cc">-- 用户-账户关系  N:1 → t_trading_account, N:1 → t_user(用户体系)</span>
+t_money_manager                <span class="cc">-- 资管主体  1:1 → t_trading_account(master)</span>
+t_mam_allocation               <span class="cc">-- 资管-投资人分配  N:1 → t_money_manager, N:1 → t_trading_account(investor)</span>
+
+t_trading_account_audit_log    <span class="cc">-- 账户变更审计  N:1 → t_trading_account (季度分区)</span>
+
+<span class="cc"># 共享 1 张(资金系统定义,本体系引用,不改其结构):</span>
+t_account_ledger               <span class="cc">-- 资金流水唯一入口(本体系拥有 + 资金系统 + 撮合引擎共同写入)</span>
+      </pre>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">🔗 关键外键与冗余字段(性能优化)</div>
+      <table class="ptable">
+        <tr><th>冗余字段</th><th>所在表</th><th>来源</th><th>目的</th></tr>
+        <tr><td class="fname">t_trading_account.entity_id</td><td>交易账户</td><td>t_account_group.entity_id</td><td>按实体查账户避免 JOIN</td></tr>
+        <tr><td class="fname">t_trading_account.owner_user_id</td><td>交易账户</td><td>t_user.id (开户人)</td><td>99% 查询账户归属</td></tr>
+        <tr><td class="fname">t_user_account_relation.manager_id</td><td>用户-账户关系</td><td>t_money_manager.id</td><td>识别资管授权</td></tr>
+        <tr><td class="fname">t_mam_allocation.investor_user_id</td><td>资管分配</td><td>t_user.id</td><td>投资人维度查询</td></tr>
+        <tr><td class="fname">t_trading_account_audit_log.entity_id</td><td>审计日志</td><td>t_trading_account.entity_id</td><td>分实体合规导出免 JOIN</td></tr>
+      </table>
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 ER 依赖关系(简化)</div>
+      <div class="df-chain">
+        <div class="df-node db" style="width: 110px;">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_user</div>
+          <div class="df-detail">用户体系<br>(外部依赖)</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">N:M</span></div>
+        <div class="df-node db" style="width: 130px;">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_user_account<br>_relation</div>
+          <div class="df-detail">OWNER/MANAGER<br>/VIEWER</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">N:1</span></div>
+        <div class="df-node db" style="width: 120px;">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_trading<br>_account</div>
+          <div class="df-detail">主体</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">N:1</span></div>
+        <div class="df-node db" style="width: 110px;">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_account<br>_group</div>
+          <div class="df-detail">参数中枢</div>
+        </div>
+      </div>
+      <div style="text-align:center; font-size:18px; color:#94a3b8; margin: 8px 0;">▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼</div>
+      <div class="df-chain" style="justify-content: space-around;">
+        <div class="df-node db" style="width: 130px;">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_account_group<br>_symbol_config</div>
+          <div class="df-detail">1:N</div>
+        </div>
+        <div class="df-node db" style="width: 130px;">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_account_group<br>_commission</div>
+          <div class="df-detail">1:N</div>
+        </div>
+        <div class="df-node db" style="width: 130px;">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_leverage<br>_template</div>
+          <div class="df-detail">1:N</div>
+        </div>
+        <div class="df-node db" style="width: 130px;">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_leverage<br>_tier</div>
+          <div class="df-detail">明细</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">💰 t_account_ledger(共享)—— 资金唯一入口</div>
+      <pre class="code-block">
+ledger_type 枚举(本体系用到的部分):
+  <span class="cn">1</span>  DEPOSIT       入金          <span class="cc">-- 资金系统写</span>
+  <span class="cn">2</span>  WITHDRAWAL    出金          <span class="cc">-- 资金系统写</span>
+  <span class="cn">3</span>  TRADE_PROFIT  平仓盈亏      <span class="cc">-- 撮合引擎写</span>
+  <span class="cn">4</span>  COMMISSION    手续费         <span class="cc">-- 撮合引擎写</span>
+  <span class="cn">5</span>  SWAP          隔夜利息       <span class="cc">-- 撮合引擎写</span>
+  <span class="cn">6</span>  CREDIT_IN     信用额发放     <span class="cc">-- 资金系统 / Admin</span>
+  <span class="cn">7</span>  CREDIT_OUT    信用回收       <span class="cc">-- 资金系统 / Admin</span>
+  <span class="cn">8</span>  ADJUSTMENT    调账          <span class="cc">-- Admin 后台</span>
+  <span class="cn">9</span>  DIVIDEND      分红          <span class="cc">-- 资金系统</span>
+  <span class="cn">10</span> FEE           其他费用(不活跃费) <span class="cc">-- <span class="cv">⭕ 本体系定时任务写</span></span>
+  <span class="cn">11</span> TRANSFER_OUT  内部转出       <span class="cc">-- 资金系统</span>
+  <span class="cn">12</span> TRANSFER_IN   内部转入       <span class="cc">-- 资金系统</span>
+
+<span class="cv">⭕ 账户体系仅 ledger_type=10 写入 ledger(Demo 初始资金以 CREDIT_IN 注入)</span>
+      </pre>
+    </div>
+
+    <div class="tip danger">⛔ <strong>关键不变量</strong>:账户表的资金字段是<strong>快照</strong>,永远是撮合引擎定期同步的近似值;最终一致性以 <code>t_account_ledger</code> 的链式 <code>balance_after</code> 为准;账户体系<strong>绝不直接 UPDATE 资金字段</strong></div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">核心场景数据流:下单参数查询 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 4: 下单数据流                        -->
+<!-- ============================================================ -->
+<div class="scene" id="s4">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">④</div>
+    <div class="scene-meta">
+      <div class="scene-title">⚡ 下单参数查询链路(高频场景)</div>
+      <div class="scene-subtitle">Order Pre-Check Data Flow &mdash; "Less than 5 ms, the hot path."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--red); border-color:var(--red-deep); color: #991b1b;">
+      <div class="char">⚡</div>
+      <strong>核心场景:用户下单,撮合网关需要毫秒级拿到账户的全部交易参数。</strong>
+      这条链路是账户体系<strong>最高频</strong>的查询(下单 1 次 = 1 次)。本体系<strong>不参与撮合</strong>,仅提供参数快照;撮合引擎在内存中按"账户 + 品种"维度聚合。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 下单前参数聚合(撮合引擎 → 账户服务)</div>
+      <div class="df-chain">
+        <div class="df-node engine">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">撮合网关</div>
+          <div class="df-detail">收到下单请求<br>user_id+symbol<br><b>~3ms SLA</b></div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">RPC</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">AccountService</div>
+          <div class="df-detail">聚合 5 张表<br>→ AccountParams</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">查</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_trading_account</div>
+          <div class="df-detail">status/<br>leverage/currency<br>client_category</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">查</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_account_group</div>
+          <div class="df-detail">stop_out/allow_<br>hedging/margin_<br>calc_model</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">查</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">symbol_config</div>
+          <div class="df-detail">enabled/min_lot<br>max_leverage_<br>override</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">可能</span></div>
+        <div class="df-node db">
+          <div class="df-icon">📐</div>
+          <div class="df-label">leverage_tier</div>
+          <div class="df-detail">按敞口/净值<br>查 tier_leverage</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">缓存</span></div>
+        <div class="df-node cache">
+          <div class="df-icon">🔴</div>
+          <div class="df-label">Redis</div>
+          <div class="df-detail">account_id<br>→ 完整参数 JSON</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">🔢 实际杠杆计算公式</div>
+      <pre class="code-block">
+<span class="cc"># 实际杠杆 = MIN(账户, 组, 品种, 动态模板)</span>
+
+final_leverage = <span class="ck">MIN</span>(
+    account.leverage,                  <span class="cc"># 账户选定杠杆</span>
+    group.max_leverage,                <span class="cc"># 组允许最大</span>
+    client_category_max,               <span class="cc"># ESMA 零售30:1, 专业500:1, ECP不限</span>
+    COALESCE(symbol_cfg.max_leverage_override, 99999),  <span class="cc"># 品种覆盖</span>
+    COALESCE(tier_leverage, 99999)     <span class="cc"># 动态杠杆模板(若启用)</span>
+)
+
+<span class="cc"># 保证金计算(按 margin_calc_model 分支)</span>
+<span class="ck">if</span> margin_calc_model == 1:  <span class="cc"># 杠杆名义额(默认)</span>
+    margin = notional / final_leverage
+<span class="ck">elif</span> margin_calc_model == 2:  <span class="cc"># Reg-T(美股)</span>
+    margin = regt_calc(price, volume)
+<span class="ck">elif</span> margin_calc_model == 3:  <span class="cc"># 组合保证金</span>
+    margin = portfolio_margin(positions, prices)
+<span class="ck">elif</span> margin_calc_model == 4:  <span class="cc"># SPAN(期货)</span>
+    margin = span_calc(scenario_array)
+      </pre>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">📊 AccountParams 返回结构(撮合引擎侧 DTO)</div>
+      <pre class="code-block">
+{
+  <span class="cv">"account_id"</span>: 20001,
+  <span class="cv">"status"</span>: 1,                    <span class="cc"># 必须 1 活跃</span>
+  <span class="cv">"trade_enabled"</span>: 1,             <span class="cc"># 必须 1 才允许下单</span>
+  <span class="cv">"client_category"</span>: 1,           <span class="cc"># 1-零售, 用于杠杆合规</span>
+  <span class="cv">"currency"</span>: <span class="ck">"USD"</span>,
+  <span class="cv">"leverage"</span>: 100,                <span class="cc"># 实际杠杆(已 MIN)</span>
+  <span class="cv">"allow_hedging"</span>: 1,
+  <span class="cv">"allow_expert"</span>: 1,
+  <span class="cv">"margin_call_level"</span>: 100.0,
+  <span class="cv">"stop_out_level"</span>: 50.0,
+  <span class="cv">"stop_out_mode"</span>: 1,
+  <span class="cv">"max_positions"</span>: 200,
+  <span class="cv">"negative_balance_protection"</span>: 1,
+
+  <span class="cv">"symbol_cfg"</span>: {
+    <span class="cv">"enabled"</span>: 1,                   <span class="cc"># 必须 1</span>
+    <span class="cv">"min_lot"</span>: 0.01,
+    <span class="cv">"max_lot"</span>: 100.0,
+    <span class="cv">"lot_step"</span>: 0.01,
+    <span class="cv">"trade_mode"</span>: 1
+  },
+
+  <span class="cv">"commission"</span>: {                 <span class="cc"># 从 group 匹配</span>
+    <span class="cv">"charge_type"</span>: 1,
+    <span class="cv">"charge_value"</span>: 0.0,
+    <span class="cv">"charge_moment"</span>: 1
+  }
+}
+      </pre>
+    </div>
+
+    <div class="tip warn">⚠️ <strong>缓存策略</strong>:账户组/组品种/组手续费/杠杆模板等<strong>极少变更</strong>的数据,Redis 缓存 TTL 5 分钟,Admin 改组时主动清缓存并推 MQ;账户级参数(status / leverage)以 DB 为准,通过 <code>AccountStatusChangedEvent</code> 实时通知撮合引擎本地缓存失效</div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">开户与首次入金激活 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 5: 开户与激活                        -->
+<!-- ============================================================ -->
+<div class="scene" id="s5">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">⑤</div>
+    <div class="scene-meta">
+      <div class="scene-title">🆕 开户与首次入金激活</div>
+      <div class="scene-subtitle">Account Opening &amp; Activation &mdash; "From KYC'd user to tradable account."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 Live 开户 + 首次入金激活全链路</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">👤</div>
+          <div class="df-label">已 KYC 用户</div>
+          <div class="df-detail">kyc_level ≥ 1<br>选组 + 选杠杆<br>+ 交易密码</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">POST</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">AccountOpening<br>Service</div>
+          <div class="df-detail">① 校验 user.status=1<br>② 校验 KYC 等级<br>③ group.entity_id = user.entity_id<br>④ 杠杆合规(零售≤30:1)<br>⑤ 实体牌照隔离</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">TX</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">3 表事务</div>
+          <div class="df-detail">① t_trading_account<br>　 status=0 (待激活)<br>② t_user_account_relation<br>　 OWNER + can_withdraw=1<br>③ t_trading_account_audit_log<br>　 STATUS_CHANGED(old=null, new=0)</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">MQ</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">Account<br>OpenedEvent</div>
+          <div class="df-detail">下游:<br>通知 / IB / 风控 / CRM</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">用户入金</span></div>
+        <div class="df-node ext">
+          <div class="df-icon">💰</div>
+          <div class="df-label">资金系统</div>
+          <div class="df-detail">入金成功<br>经 ledger 写入</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">MQ</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">FirstDeposit<br>Event</div>
+          <div class="df-detail">本服务消费<br>触发激活</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">UPDATE</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">激活</div>
+          <div class="df-detail">status: 0→1<br>audit_log<br>OpenedEvent→Activated</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">📊 Demo 账户 vs Live 账户</div>
+      <table class="ptable">
+        <tr><th>维度</th><th>Live (真实)</th><th>Demo (模拟)</th></tr>
+        <tr><td class="fname">environment 字段</td><td>1</td><td>2</td></tr>
+        <tr><td class="fname">KYC 等级要求</td><td>≥ L1</td><td>不需要</td></tr>
+        <tr><td class="fname">创建后初始状态</td><td>0-待激活</td><td>1-活跃(直接)</td></tr>
+        <tr><td class="fname">激活方式</td><td>消费 FirstDepositEvent(MQ)</td><td>立即激活,经 ledger 注入初始虚拟资金(CREDIT_IN)</td></tr>
+        <tr><td class="fname">账户号前缀</td><td>8XXXXXXX</td><td>D9XXXXXXX</td></tr>
+        <tr><td class="fname">有效期</td><td>无</td><td>按 group.demo_expire_days</td></tr>
+        <tr><td class="fname">出金支持</td><td>支持</td><td>不支持</td></tr>
+        <tr><td class="fname">负余额保护</td><td>强制开启(ESMA 零售)</td><td>可关闭</td></tr>
+      </table>
+    </div>
+
+    <div class="tip ok">✅ <strong>幂等保证</strong>:<code>FirstDepositEvent</code> 消费端用 <code>event_id</code> 去重(Redis SETNX 30 天);3 次失败入死信,人工补偿;重复消费不会重复激活(因 <code>status=0</code> 才是激活前置条件)</div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">资管分配 + 不活跃/休眠 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 6: 资管 / 休眠                        -->
+<!-- ============================================================ -->
+<div class="scene" id="s6">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">⑥</div>
+    <div class="scene-meta">
+      <div class="scene-title">💼 资管分配 & 休眠管理数据流</div>
+      <div class="scene-subtitle">MAM Allocation &amp; Dormancy &mdash; "The two async flows."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="duo">
+
+      <!-- 资管 -->
+      <div>
+        <div class="arch-box">
+          <div class="arch-box-title">💼 资管(MAM/PAMM)分配链路</div>
+          <div class="dataflow" style="margin-bottom: 0;">
+            <div class="df-chain" style="flex-direction: column; align-items: stretch;">
+              <div class="layer-row">
+                <div class="layer-label" style="flex: 0 0 80px;">操盘</div>
+                <div class="layer-content">
+                  <span class="layer-chip engine">📈 经理在 master 账户下单</span>
+                </div>
+              </div>
+              <div style="text-align:center; color:#94a3b8;">▼ 撮合成交后 ▼</div>
+              <div class="layer-row">
+                <div class="layer-label" style="flex: 0 0 80px;">分摊</div>
+                <div class="layer-content">
+                  <span class="layer-chip service">⚙️ 资管结算子系统读 t_mam_allocation</span>
+                  <span class="layer-chip service">⚙️ 按 allocation_method 分摊</span>
+                </div>
+              </div>
+              <div style="text-align:center; color:#94a3b8;">▼ 写 ledger(2-12 类型) ▼</div>
+              <div class="layer-row">
+                <div class="layer-label" style="flex: 0 0 80px;">入账</div>
+                <div class="layer-content">
+                  <span class="layer-chip">每个 investor 账户</span>
+                  <span class="layer-chip">同步成交流水</span>
+                </div>
+              </div>
+              <div style="text-align:center; color:#94a3b8;">▼ 周期结算 ▼</div>
+              <div class="layer-row">
+                <div class="layer-label" style="flex: 0 0 80px;">计费</div>
+                <div class="layer-content">
+                  <span class="layer-chip service">管理费(mgmt_fee)按 AUM 周期</span>
+                  <span class="layer-chip service">业绩费(perf_fee)按 HWM</span>
+                  <span class="layer-chip">经 ledger 类型=10 FEE 扣</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tip info">💡 <strong>账户体系的边界</strong>:仅承载 <code>t_money_manager</code> / <code>t_mam_allocation</code> / MANAGER 关系 + 收费<strong>配置</strong>;<strong>份额/业绩费/高水位线计算</strong>由"资管结算"独立子系统完成</div>
+      </div>
+
+      <!-- 休眠 -->
+      <div>
+        <div class="arch-box">
+          <div class="arch-box-title">😴 不活跃费 & 休眠(Cron Job)</div>
+          <div class="dataflow" style="margin-bottom: 0;">
+            <div class="df-chain" style="flex-direction: column; align-items: stretch;">
+              <div class="layer-row">
+                <div class="layer-label" style="flex: 0 0 80px;">触发</div>
+                <div class="layer-content">
+                  <span class="layer-chip check">⏰ 每日 02:00 CronJob</span>
+                </div>
+              </div>
+              <div style="text-align:center; color:#94a3b8;">▼ SELECT ▼</div>
+              <div class="layer-row">
+                <div class="layer-label" style="flex: 0 0 80px;">扫描</div>
+                <div class="layer-content">
+                  <span class="layer-chip">t_trading_account WHERE status=1</span>
+                </div>
+              </div>
+              <div style="text-align:center; color:#94a3b8;">▼ 判定 ▼</div>
+              <div class="layer-row">
+                <div class="layer-label" style="flex: 0 0 80px;">规则</div>
+                <div class="layer-content">
+                  <span class="layer-chip">NOW - last_activity_at ≥ group.inactivity_days</span>
+                  <span class="layer-chip">NOW - last_activity_at ≥ group.dormant_days</span>
+                </div>
+              </div>
+              <div style="text-align:center; color:#94a3b8;">▼ 执行 ▼</div>
+              <div class="layer-row">
+                <div class="layer-label" style="flex: 0 0 80px;">扣费</div>
+                <div class="layer-content">
+                  <span class="layer-chip service">⚙️ 不活跃 → ledger FEE</span>
+                  <span class="layer-chip service">⚙️ 休眠 → status=5, dormant_at=NOW</span>
+                  <span class="layer-chip service">⚙️ 写 audit_log(DORMANT)</span>
+                </div>
+              </div>
+              <div style="text-align:center; color:#94a3b8;">▼ 激活 ▼</div>
+              <div class="layer-row">
+                <div class="layer-label" style="flex: 0 0 80px;">恢复</div>
+                <div class="layer-content">
+                  <span class="layer-chip">用户登录/入金 → status=1, dormant_at=NULL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tip warn">⚠️ <strong>幂等保证</strong>:CronJob 用分布式锁(Redis SETNX, key=inactivity_scan_20260716, TTL 1h)避免多实例重复扣费;每账户当日只扣一次(Redis SET per_day_charged)</div>
+      </div>
+
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">🔄 资金快照与 ledger 一致性(账户表 vs ledger)</div>
+      <pre class="code-block">
+<span class="cc"># t_trading_account.balance 是 <span class="cv">SNAPSHOT</span>,不是权威值</span>
+
+<span class="ck">权威值推导</span>(实时精确):
+  balance = <span class="ck">SELECT</span> balance_after <span class="ck">FROM</span> t_account_ledger
+            <span class="ck">WHERE</span> account_id = ? <span class="ck">ORDER BY</span> id <span class="ck">DESC LIMIT</span> 1
+
+<span class="ck">快照同步</span>(撮合引擎定时任务):
+  <span class="ck">every</span> 1s:
+    <span class="ck">for</span> each <span class="cv">活跃账户</span>:
+      actual_balance = <span class="ck">compute from</span> t_account_ledger
+      <span class="ck">if</span> actual_balance != account.balance:
+        <span class="ck">UPDATE</span> t_trading_account SET balance = actual_balance, synced_at = NOW()
+
+<span class="cv">⭕ 账户表 balance / equity / margin_used / margin_free / floating_pnl / frozen_balance
+   全部为快照,撮合引擎负责定期同步,本体系不维护</span>
+      </pre>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">与外部系统的边界 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 7: 边界交互                          -->
+<!-- ============================================================ -->
+<div class="scene" id="s7">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">⑦</div>
+    <div class="scene-meta">
+      <div class="scene-title">🌐 与 7 大外部系统的边界交互</div>
+      <div class="scene-subtitle">System Boundaries &mdash; "What we own, what we share."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 账户体系在交易系统中的位置</div>
+      <div class="df-chain" style="flex-direction: column; align-items: stretch; gap: 12px;">
+        <div class="layer-row" style="min-height: 50px;">
+          <div class="layer-label" style="flex: 0 0 100px;">上游<br>(依赖)</div>
+          <div class="layer-content">
+            <span class="layer-chip blue">👤 用户体系 (t_user / entity_id / 客户分类)</span>
+            <span class="layer-chip blue">🏦 Onboarding (KYC → 用户体系已处理)</span>
+            <span class="layer-chip blue">💰 资金系统 (FirstDepositEvent 触发激活)</span>
+          </div>
+        </div>
+        <div style="text-align:center; font-size:18px; color:#94a3b8;">▼ 提供参数 / 消费事件 ▼</div>
+        <div class="layer-row" style="min-height: 80px;">
+          <div class="layer-label" style="flex: 0 0 100px; background: #dcfce7; border-color: #16a34a; color: #166534;">本体系<br>Account</div>
+          <div class="layer-content" style="background: #f0fdf4; border-color: #86efac;">
+            <span class="layer-chip green" style="font-size: 14px; padding: 6px 14px;">🏦 账户体系:账户组 / 交易账户 / 授权 / 资管 / 不活跃</span>
+          </div>
+        </div>
+        <div style="text-align:center; font-size:18px; color:#94a3b8;">▼ 提供 AccountParams / 发 MQ 事件 ▼</div>
+        <div class="layer-row" style="min-height: 50px;">
+          <div class="layer-label" style="flex: 0 0 100px;">下游<br>(消费)</div>
+          <div class="layer-content">
+            <span class="layer-chip red">⚙️ 撮合引擎 (AccountParams 查询 + MQ 热加载)</span>
+            <span class="layer-chip red">💵 资金系统 (出金/转账/查询)</span>
+            <span class="layer-chip red">🛡️ 风控引擎 (status/leverage/dormant 同步)</span>
+            <span class="layer-chip red">📨 通知系统 (开户/激活/休眠事件)</span>
+            <span class="layer-chip red">👥 IB 代理 (introducing_broker_id → 归属查询)</span>
+            <span class="layer-chip red">💼 资管结算 (读 mam_allocation, 写 ledger)</span>
+            <span class="layer-chip red">📊 行情系统 (Demo 账户推送只读报价)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">📋 边界交互一览表(7 系统 × 3 维度)</div>
+      <table class="ptable">
+        <tr><th>系统</th><th>本体系提供</th><th>本体系消费</th><th>关键不变量</th></tr>
+        <tr>
+          <td class="fname">👤 用户体系</td>
+          <td>查询 owner_user_id / 实体过滤</td>
+          <td>无(本体系单向依赖 t_user)</td>
+          <td>不开户未激活用户(kyc_level &lt; 1)</td>
+        </tr>
+        <tr>
+          <td class="fname">💰 资金系统</td>
+          <td>账户主体(可被出/入金)</td>
+          <td><code>FirstDepositEvent</code> → 激活</td>
+          <td>所有余额变动仅经 ledger,本体系不直接 UPDATE 资金</td>
+        </tr>
+        <tr>
+          <td class="fname">⚙️ 撮合引擎</td>
+          <td>AccountParams / 实时事件</td>
+          <td>无(本体系只发不收)</td>
+          <td>下单参数最终以 ledger 余额为准做风控</td>
+        </tr>
+        <tr>
+          <td class="fname">🛡️ 风控引擎</td>
+          <td>status / leverage / blocked_reason</td>
+          <td>无</td>
+          <td>风控是只读消费者,不能改 status(只能建议 blocked_reason)</td>
+        </tr>
+        <tr>
+          <td class="fname">📨 通知系统</td>
+          <td>16 种事件</td>
+          <td>无</td>
+          <td>事件包含 user_id, 通知系统查偏好</td>
+        </tr>
+        <tr>
+          <td class="fname">👥 IB 代理</td>
+          <td>owner_user_id → introducing_broker_id</td>
+          <td>无</td>
+          <td>代理系统按 user_id 拉账户列表, 不修改账户</td>
+        </tr>
+        <tr>
+          <td class="fname">💼 资管结算</td>
+          <td>t_money_manager / t_mam_allocation</td>
+          <td>无(资管结算只读,写 ledger)</td>
+          <td>本体系不参与份额/业绩费计算</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="tip info">💡 <strong>MQ 通信矩阵</strong>:本服务发布 <code>account.events</code> 16 种,消费 <code>fund.events.FirstDepositEvent</code> 1 种;事件需带 <code>event_id</code>(去重)+ <code>source_version</code>(乱序防护)+ <code>entity_id</code>(多租户路由)</div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">一致性、容错、可观测性 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 8: 一致性保证                        -->
+<!-- ============================================================ -->
+<div class="scene" id="s8">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">⑧</div>
+    <div class="scene-meta">
+      <div class="scene-title">🛡️ 一致性、容错、可观测性</div>
+      <div class="scene-subtitle">Consistency, Fault Tolerance, Observability &mdash; "What if X fails?"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="arch-box">
+      <div class="arch-box-title">🔒 数据一致性策略</div>
+      <pre class="code-block">
+<span class="cv">⭕ 强一致(本地事务)</span>:
+  · 开户: 同时写 t_trading_account + t_user_account_relation + t_audit_log
+            → 单库事务, 全部成功或全部回滚
+  · 授权: 写 relation + 自动 check 至少保留一种凭证 + audit_log
+            → 单库事务
+  · 状态变更: 改 status + audit_log
+            → 单库事务
+
+<span class="cv">⭕ 最终一致(异步 MQ)</span>:
+  · 下游通知(撮合/风控/通知): 发 MQ, 失败重试 3 次, 入死信
+  · 账户激活: FirstDepositEvent 消费端幂等激活
+  · 缓存失效: 改组后推 MQ + 主动 DEL Redis
+
+<span class="cv">⭕ 弱一致(快照)</span>:
+  · 账户资金字段(balance/equity): 撮合引擎定期同步(1s), 非实时
+  · 资管汇总字段(AUM/investor_count): 资管结算子定期写(1min)
+      </pre>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">🚨 失败场景与应对</div>
+      <table class="ptable">
+        <tr><th>失败场景</th><th>影响</th><th>应对措施</th></tr>
+        <tr>
+          <td class="fname">开户事务部分成功</td>
+          <td>脏数据</td>
+          <td>单库本地事务 + 主键 UNIQUE 约束,失败整体回滚</td>
+        </tr>
+        <tr>
+          <td class="fname">FirstDepositEvent 丢失</td>
+          <td>账户长期 status=0, 用户无法交易</td>
+          <td>MQ 重试 3 次 + 死信;定时对账任务扫描 status=0 且 ledger 有入金记录的账户补激活</td>
+        </tr>
+        <tr>
+          <td class="fname">账户参数变更事件丢失</td>
+          <td>撮合引擎用旧 status / leverage</td>
+          <td>MQ 重试 + 兜底定时任务每 5 分钟对账</td>
+        </tr>
+        <tr>
+          <td class="fname">撮合引擎崩溃重启</td>
+          <td>内存中账户参数丢失</td>
+          <td>启动时按 entity 拉所有 status=1 账户参数预热(分页 500/批)</td>
+        </tr>
+        <tr>
+          <td class="fname">Redis 缓存击穿</td>
+          <td>DB 被打爆</td>
+          <td>缓存预热 + 单飞(SingleFlight)防穿透 + 永不过期+异步刷新</td>
+        </tr>
+        <tr>
+          <td class="fname">用户密码暴力破解</td>
+          <td>账户被盗</td>
+          <td>fail_count 5 次锁定 30min;2FA 必须;改密刷 audit</td>
+        </tr>
+        <tr>
+          <td class="fname">MANAGER 试图出金</td>
+          <td>资金风险</td>
+          <td><code>can_withdraw=0</code> 硬约束 + 资金系统二次校验 MANAGER 关系</td>
+        </tr>
+        <tr>
+          <td class="fname">不活跃费重复扣</td>
+          <td>用户投诉</td>
+          <td>分布式锁 + Redis SET per_day_charged + 幂等 ledger 流水号</td>
+        </tr>
+        <tr>
+          <td class="fname">实体错配(用户 A 实体的账户开在 B 组)</td>
+          <td>违反牌照隔离</td>
+          <td>开户接口强校验 <code>group.entity_id == user.entity_id</code></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">📈 可观测性(Observability)</div>
+      <pre class="code-block">
+<span class="cv">Metrics</span>(Prometheus):
+  · account_opening_total{status, env, entity_id}      <span class="cc"># 开户量</span>
+  · account_activated_total{entity_id}                  <span class="cc"># 激活量</span>
+  · account_dormant_total{entity_id}                    <span class="cc"># 休眠量</span>
+  · mam_investor_count{manager_id}                      <span class="cc"># 资管规模</span>
+  · first_deposit_event_consume_latency_seconds         <span class="cc"># MQ 消费延迟</span>
+  · audit_log_write_total{action}                       <span class="cc"># 审计写入</span>
+  · db_query_seconds{table, op}                         <span class="cc"># DB 慢查询</span>
+
+<span class="cv">Tracing</span>(SkyWalking / Jaeger):
+  · trace_id 贯穿 HTTP → DB → MQ, 跨服务追踪
+  · 关键路径: 开户链路 / 资管加入 / 不活跃扫描
+
+<span class="cv">Logging</span>(ELK):
+  · 结构化 JSON 日志(trace_id / user_id / account_id / entity_id)
+  · 关键操作 INFO 级: 开户/激活/状态变更/授权/密码
+  · 风控事件 WARN 级: 失败尝试 / 实体错配
+  · 系统异常 ERROR 级 + 告警(钉钉/PagerDuty)
+      </pre>
+    </div>
+
+    <div class="arch-box">
+      <div class="arch-box-title">🎯 SLA 与容量规划</div>
+      <table class="ptable">
+        <tr><th>接口</th><th>SLA</th><th>QPS(预估)</th><th>关键优化</th></tr>
+        <tr><td class="fname">开户 / 销户</td><td>99.9%, P99 &lt; 1s</td><td>~50 (低频)</td><td>本地事务 + 同步写</td></tr>
+        <tr><td class="fname">查询账户详情 / 列表</td><td>99.95%, P99 &lt; 200ms</td><td>~5,000</td><td>Redis 缓存 + DB 索引</td></tr>
+        <tr><td class="fname">AccountParams(撮合调用)</td><td>99.99%, P99 &lt; 5ms</td><td>~50,000 (高频)</td><td>Redis 主从 + 撮合引擎本地缓存</td></tr>
+        <tr><td class="fname">授权 / 撤销</td><td>99.9%, P99 &lt; 500ms</td><td>~200</td><td>本地事务 + MQ 通知</td></tr>
+        <tr><td class="fname">不活跃扫描(Cron)</td><td>每天 02:00 跑完, &lt; 1h</td><td>~1,000,000 账户</td><td>分批 + 分布式锁</td></tr>
+        <tr><td class="fname">MQ 消费(激活)</td><td>P99 &lt; 500ms</td><td>~100 / s</td><td>幂等 + 失败重试</td></tr>
+      </table>
+    </div>
+
+    <div class="tip ok">✅ <strong>关键承诺</strong>:① 资金权威 = ledger(永不丢);② 客户隔离 = <code>can_withdraw=0</code>(永不动);③ 牌照隔离 = <code>entity_id</code>(永不混);④ 审计完整 = <code>audit_log</code>(永不改);⑤ 失败可恢复 = 幂等 + 兜底对账</div>
+
+  </div>
+</div>
+
+<div class="footer">
+  🏦 账户体系 架构与数据流转 · Account Service Architecture &amp; Data Flow · Generated 2026.07
+</div>
+
+</div><!-- end container -->
+
+</body>
+</html>

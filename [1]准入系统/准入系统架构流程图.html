@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>准入系统 (Onboarding) 架构流程图</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #fefcf3;
+    background-image:
+      radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 24px 24px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: #2d2d2d;
+    min-height: 100vh;
+    padding: 30px;
+  }
+
+  /* ---- Title ---- */
+  .main-title {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .main-title h1 {
+    font-family: var(--font-hand);
+    font-size: 52px;
+    color: #333;
+    letter-spacing: 6px;
+    text-shadow: 3px 3px 0 #ffd36e;
+    position: relative;
+    display: inline-block;
+    font-weight: 400;
+  }
+  .main-title h1::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: -10px;
+    right: -10px;
+    height: 6px;
+    background: #ff6b6b;
+    border-radius: 3px;
+    transform: rotate(-0.5deg);
+  }
+  .main-title .subtitle {
+    font-size: 18px;
+    color: #555;
+    margin-top: 14px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.5;
+  }
+
+  /* ---- Section Title ---- */
+  .section-title {
+    font-family: var(--font-hand);
+    font-size: 34px;
+    font-weight: 400;
+    color: #2d2d2d;
+    margin: 40px 0 20px 0;
+    padding: 8px 20px;
+    border-left: 8px solid #ff6b6b;
+    background: linear-gradient(90deg, #fff3cd 0%, transparent 100%);
+    border-radius: 0 12px 12px 0;
+    display: inline-block;
+    transform: none;
+  }
+
+  /* ---- Container ---- */
+  .flow-container {
+    max-width: 1300px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ---- DB Overview ---- */
+  .db-overview {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    margin-bottom: 30px;
+    padding: 4px 0 8px;
+  }
+  .db-group {
+    background: #fff;
+    border: 3.5px solid #2d2d2d;
+    border-radius: 18px;
+    padding: 20px 22px;
+    flex: 1 1 280px;
+    max-width: 400px;
+    min-width: min(100%, 260px);
+    position: relative;
+    box-shadow: 5px 5px 0 #2d2d2d;
+    transform: none;
+  }
+  .db-group:nth-child(2),
+  .db-group:nth-child(3) { transform: none; }
+  .db-group-title {
+    font-family: var(--font-hand);
+    font-size: 22px;
+    font-weight: 400;
+    color: #fff;
+    background: #2d2d2d;
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    transform: none;
+  }
+  .db-group.biz { background: #dbeafe; }
+  .db-group.rule { background: #dcfce7; }
+  .db-group.audit { background: #fef3c7; }
+  .db-table {
+    font-size: 15px;
+    padding: 6px 0;
+    border-bottom: 2px dashed #bbb;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+  .db-table:last-child { border-bottom: none; }
+  .db-table .tname { font-weight: bold; color: #1e40af; min-width: 0; word-break: break-word; }
+  .db-table .tdesc { color: #555; }
+  .db-group.rule .db-table .tname { color: #16a34a; }
+  .db-group.audit .db-table .tname { color: #b45309; }
+
+  /* ---- Flow Steps ---- */
+  .flow-steps {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .step-card {
+    background: #fff;
+    border: 3.5px solid #2d2d2d;
+    border-radius: 20px;
+    padding: 24px 30px;
+    width: 90%;
+    max-width: 900px;
+    position: relative;
+    box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
+    margin-bottom: 0;
+  }
+  .step-card:nth-child(odd),
+  .step-card:nth-child(even) { transform: none; }
+
+  .step-card.blue { background: #dbeafe; }
+  .step-card.green { background: #dcfce7; }
+  .step-card.yellow { background: #fef9c3; }
+  .step-card.purple { background: #f3e8ff; }
+  .step-card.pink { background: #fce7f3; }
+  .step-card.orange { background: #ffedd5; }
+
+  .step-num {
+    position: absolute;
+    top: -18px;
+    left: 24px;
+    background: #ff6b6b;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #2d2d2d;
+    box-shadow: 2px 2px 0 #2d2d2d;
+    font-family: var(--font-ui);
+  }
+
+  .step-title {
+    font-family: var(--font-hand);
+    font-size: 28px;
+    font-weight: 400;
+    color: #1a1a2e;
+    margin-bottom: 10px;
+    padding-left: 36px;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.35;
+  }
+
+  .step-body {
+    font-size: 17px;
+    line-height: 1.65;
+    color: #333;
+  }
+
+  .step-body .role-tag {
+    display: inline-block;
+    background: #fbbf24;
+    color: #78350f;
+    font-size: 14px;
+    padding: 2px 10px;
+    border-radius: 8px;
+    border: 2px solid #78350f;
+    margin-right: 6px;
+    font-weight: bold;
+  }
+  .step-body .role-tag.sys {
+    background: #93c5fd;
+    color: #1e3a5f;
+    border-color: #1e3a5f;
+  }
+  .step-body .role-tag.third {
+    background: #c4b5fd;
+    color: #3b0764;
+    border-color: #3b0764;
+  }
+
+  .table-tags {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .table-tag {
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 13px;
+    padding: 3px 12px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', 'Consolas', var(--font-ui);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  /* ---- Arrow between steps ---- */
+  .arrow-down {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: auto;
+    min-height: 48px;
+    position: relative;
+    padding: 6px 0 10px;
+  }
+  .arrow-down .arrow-line {
+    width: 5px;
+    flex: 0 0 32px;
+    min-height: 32px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #2d2d2d 0px,
+      #2d2d2d 8px,
+      transparent 8px,
+      transparent 14px
+    );
+    border-radius: 3px;
+  }
+  .arrow-down .arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 18px solid #2d2d2d;
+    flex-shrink: 0;
+  }
+  .arrow-label {
+    position: static;
+    margin-top: 8px;
+    background: #fff7ed;
+    border: 2px solid #ea580c;
+    border-radius: 10px;
+    padding: 4px 14px;
+    font-size: 15px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    color: #9a3412;
+    white-space: normal;
+    max-width: 100%;
+    overflow-x: visible;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  }
+
+  /* ---- Decision Box ---- */
+  .decision-box {
+    width: 90%;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .decision-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 14px;
+  }
+  .decision-item {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    position: relative;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.12);
+  }
+  .decision-item.pass { background: #bbf7d0; border-color: #16a34a; }
+  .decision-item.reject { background: #fecaca; border-color: #dc2626; }
+  .decision-item.manual { background: #e9d5ff; border-color: #7c3aed; }
+  .decision-item .di-icon { font-size: 32px; margin-bottom: 6px; }
+  .decision-item .di-title { font-size: 20px; font-weight: bold; }
+  .decision-item .di-desc { font-size: 15px; color: #555; margin-top: 4px; }
+
+  /* ---- Rule Examples ---- */
+  .rule-examples {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 16px;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+    transform: none;
+  }
+  .rule-examples h4 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: #7c3aed;
+  }
+  .rule-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 120px;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 2px dashed #ddd;
+    font-size: 16px;
+    align-items: center;
+  }
+  .rule-row:last-child { border-bottom: none; }
+  .rule-p {
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 8px;
+    text-align: center;
+    padding: 2px 6px;
+    font-weight: bold;
+    border: 2px solid #92400e;
+    font-size: 14px;
+  }
+  .rule-action {
+    text-align: center;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 2px solid;
+  }
+  .rule-action.ap { background: #bbf7d0; color: #166534; border-color: #166534; }
+  .rule-action.rj { background: #fecaca; color: #991b1b; border-color: #991b1b; }
+  .rule-action.mn { background: #e9d5ff; color: #5b21b6; border-color: #5b21b6; }
+
+  /* ---- Status Flow ---- */
+  .status-flow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+    overflow-x: visible;
+    padding: 6px 0 8px;
+  }
+  .sf-node {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 14px;
+    padding: 10px 14px;
+    text-align: center;
+    min-width: 72px;
+    flex: 0 1 auto;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .sf-node.active { background: #bbf7d0; border-color: #16a34a; }
+  .sf-node.fail { background: #fecaca; border-color: #dc2626; }
+  .sf-node .sf-code { font-size: 28px; font-weight: bold; }
+  .sf-node .sf-label { font-size: 14px; color: #555; }
+  .sf-arrow {
+    font-size: 30px;
+    color: #2d2d2d;
+    margin: 0 4px;
+    font-weight: bold;
+  }
+
+  /* ---- Doodles ---- */
+  .doodle {
+    position: absolute;
+    font-size: 40px;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  /* ---- Account Creation Box ---- */
+  .account-steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .account-step {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .account-step .as-num {
+    font-size: 14px;
+    background: #6366f1;
+    color: #fff;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 6px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    border: 2px solid #2d2d2d;
+  }
+  .account-step .as-title { font-size: 18px; font-weight: bold; display: inline; }
+  .account-step .as-desc { font-size: 15px; color: #555; margin-top: 6px; }
+
+  /* ---- Check Table ---- */
+  .check-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 14px;
+    border: 3px solid #2d2d2d;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .check-table th {
+    background: #1e293b;
+    color: #f1f5f9;
+    padding: 10px 14px;
+    font-size: 17px;
+    text-align: left;
+  }
+  .check-table td {
+    padding: 10px 14px;
+    font-size: 16px;
+    border-bottom: 2px dashed #ddd;
+    background: #fff;
+  }
+  .check-table tr:last-child td { border-bottom: none; }
+  .check-table td:first-child { font-weight: bold; color: #1e40af; }
+
+  /* ---- Notification Card ---- */
+  .notif-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .notif-item {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .notif-item .ni-icon { font-size: 36px; margin-bottom: 6px; }
+  .notif-item .ni-text { font-size: 16px; color: #555; }
+
+  /* ---- Decorative stickers ---- */
+  .sticker {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.12;
+  }
+
+  /* ---- Third Party ---- */
+  .third-party-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 14px;
+  }
+  .tp-card {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .tp-card h4 {
+    font-size: 21px;
+    margin-bottom: 8px;
+  }
+  .tp-card .tp-flow {
+    font-size: 16px;
+    color: #555;
+    line-height: 1.7;
+  }
+  .tp-card .tp-flow .label-send {
+    color: #2563eb; font-weight: bold;
+  }
+  .tp-card .tp-flow .label-recv {
+    color: #16a34a; font-weight: bold;
+  }
+  .tp-card .tp-providers {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tp-provider {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 2px solid #3730a3;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  /* ---- Footer ---- */
+  .footer {
+    text-align: center;
+    margin-top: 50px;
+    padding: 20px;
+    color: #999;
+    font-size: 16px;
+  }
+
+  /* ---- Tape decoration ---- */
+  .tape {
+    position: absolute;
+    width: 80px;
+    height: 28px;
+    background: rgba(255, 222, 89, 0.6);
+    border: 1.5px solid rgba(200, 170, 50, 0.4);
+    transform: rotate(-35deg);
+    top: -10px;
+    right: 30px;
+    border-radius: 2px;
+    z-index: 2;
+  }
+
+  /* ---- Doodle Characters on side ---- */
+  .side-doodle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    font-size: 80px;
+    opacity: 0.08;
+  }
+
+  /* KYC rule match visual */
+  .kyc-match {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: visible;
+    padding-bottom: 4px;
+  }
+  .kyc-match-item {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 12px;
+    padding: 8px 14px;
+    text-align: center;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+    min-width: 100px;
+    flex: 0 1 auto;
+  }
+  .kyc-match-item .km-icon { font-size: 26px; }
+  .kyc-match-item .km-label { font-size: 15px; color: #555; }
+  .kyc-match-arrow {
+    font-size: 28px;
+    color: #e11d48;
+    font-weight: bold;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .decision-grid,
+    .third-party-grid,
+    .account-steps,
+    .notif-grid {
+      grid-template-columns: 1fr;
+    }
+    .step-card { width: 98%; padding: 18px; }
+    .db-overview { flex-direction: column; flex-wrap: nowrap; align-items: stretch; overflow-x: visible; }
+    .db-group { min-width: auto; width: 95%; flex-shrink: 1; }
+    .main-title h1 { font-size: 36px; }
+    .main-title .subtitle { white-space: normal; }
+    .step-title { white-space: normal; }
+  }
+
+  /* ---- Handwritten underline effect ---- */
+  .hw-underline {
+    background-image: linear-gradient(120deg, #fbbf24 0%, #fbbf24 100%);
+    background-repeat: no-repeat;
+    background-size: 100% 0.3em;
+    background-position: 0 88%;
+  }
+
+  /* corner decorations */
+  .corner-deco {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .corner-deco.tl { top: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.tr { top: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.bl { bottom: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.br { bottom: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+
+  /* ---- A4 打印稿 ---- */
+  @page {
+    size: A4 portrait;
+    margin: 10mm 11mm;
+  }
+
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      background-image: none !important;
+      font-size: 10.5pt;
+    }
+    .flow-container {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .corner-deco,
+    .sticker,
+    .side-doodle,
+    .tape,
+    .doodle {
+      display: none !important;
+    }
+    .main-title { margin-bottom: 5mm; page-break-after: avoid; }
+    .main-title h1 { font-size: 22pt !important; letter-spacing: 2px !important; }
+    .main-title .subtitle { font-size: 9.5pt !important; }
+    .section-title {
+      font-size: 15pt !important;
+      margin: 6mm 0 4mm !important;
+      page-break-after: avoid;
+    }
+    .db-overview {
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      overflow: visible !important;
+    }
+    .db-group {
+      flex: 1 1 48% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-shadow: none !important;
+      border-width: 2px !important;
+      page-break-inside: avoid;
+    }
+    .db-table { font-size: 9.5pt !important; }
+    .step-card {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-shadow: none !important;
+      border-width: 2px !important;
+      page-break-inside: avoid;
+      padding: 10px 12px !important;
+    }
+    .step-title { font-size: 13pt !important; padding-left: 28px !important; }
+    .step-body { font-size: 10pt !important; }
+    .arrow-down { padding: 3mm 0 !important; }
+    .decision-grid,
+    .notif-grid { gap: 8px !important; }
+    .decision-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    .notif-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    .third-party-grid,
+    .account-steps { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .decision-box { width: 100% !important; max-width: 100% !important; }
+    .check-table { font-size: 9.5pt !important; }
+    .check-table th, .check-table td { padding: 6px 8px !important; }
+    .footer { margin-top: 8mm; font-size: 9pt; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Corner Decorations -->
+<div class="corner-deco tl">📋</div>
+<div class="corner-deco tr">🔐</div>
+<div class="corner-deco bl">🏦</div>
+<div class="corner-deco br">✅</div>
+
+<div class="flow-container">
+
+  <!-- ==================== TITLE ==================== -->
+  <div class="main-title">
+    <h1>🏗️ 准入系统架构流程图</h1>
+    <div class="subtitle">Onboarding Service · db_onboarding · 8 Tables · Full Lifecycle</div>
+  </div>
+
+  <!-- ==================== SECTION 1: DB OVERVIEW ==================== -->
+  <div class="section-title">📦 数据库架构总览 (db_onboarding)</div>
+
+  <div class="db-overview">
+    <!-- Business Tables -->
+    <div class="db-group biz">
+      <div class="tape"></div>
+      <div class="db-group-title">📘 业务主表 (5张)</div>
+      <div class="db-table">
+        <span class="tname">t_onboarding_application</span>
+        <span class="tdesc">开户申请主表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_onboarding_kyc</span>
+        <span class="tdesc">KYC认证记录</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_onboarding_kyc_document</span>
+        <span class="tdesc">KYC上传文件</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_onboarding_agreement_template</span>
+        <span class="tdesc">协议模板定义</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_onboarding_agreement</span>
+        <span class="tdesc">协议签署记录</span>
+      </div>
+    </div>
+
+    <!-- Rule Tables -->
+    <div class="db-group rule">
+      <div class="tape"></div>
+      <div class="db-group-title">⚙️ 规则配置 (2张)</div>
+      <div class="db-table">
+        <span class="tname">t_onboarding_kyc_rule</span>
+        <span class="tdesc">KYC准入规则</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_onboarding_review_rule</span>
+        <span class="tdesc">审核路由规则</span>
+      </div>
+      <div style="margin-top: 14px; font-size: 15px; color: #555; line-height: 1.6;">
+        ✏️ 准入规则决定 KYC 等级 & 所需材料<br>
+        ✏️ 审核规则决定 自动通过 / 拒绝 / 转人工
+      </div>
+    </div>
+
+    <!-- Audit Table -->
+    <div class="db-group audit">
+      <div class="tape"></div>
+      <div class="db-group-title">📝 审计日志 (1张)</div>
+      <div class="db-table">
+        <span class="tname">t_onboarding_config_change_log</span>
+        <span class="tdesc">配置变更审计日志</span>
+      </div>
+      <div style="margin-top: 14px; font-size: 15px; color: #555; line-height: 1.6;">
+        🔒 只 INSERT，不 UPDATE，不 DELETE<br>
+        📋 覆盖：规则表 + 协议模板变更追踪<br>
+        🔍 支持审计回溯和合规检查
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 2: FULL FLOW ==================== -->
+  <div class="section-title">🗺️ 完整开户流程 (10步)</div>
+
+  <div class="flow-steps">
+
+    <!-- ========== STEP 1 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">1</div>
+      <div class="step-title">👤 用户注册 (Initial Registration)</div>
+      <div class="step-body">
+        <span class="role-tag">用户</span> 访问券商官网/App，点击"注册"，填写 <strong>邮箱/手机号 + 密码</strong>，完成验证码验证<br><br>
+        <span class="role-tag sys">系统</span> 创建初级账户，<strong>不开通任何交易功能</strong>，创建申请记录
+        <div style="margin-top: 10px; background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 10px; padding: 10px 14px; font-size: 16px;">
+          📌 <strong>status = 0</strong> (填写中) &nbsp;&nbsp; <strong>account_status = 0</strong> (未开户)
+        </div>
+        <div class="table-tags">
+          <span class="table-tag">📄 t_onboarding_application (CREATE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">用户填写个人资料 ✍️</div>
+    </div>
+
+    <!-- ========== STEP 2 ========== -->
+    <div class="step-card green">
+      <div class="step-num">2</div>
+      <div class="step-title">📝 信息完善 & KYC等级判定</div>
+      <div class="step-body">
+        <span class="role-tag">用户</span> 填写详细资料：姓名、国家、生日、地址、年收入、净资产、交易经验、风险承受能力、<strong>税务信息(TIN/税务居住国)</strong>、<strong>PEP自报</strong>、<strong>雇主信息</strong>、<strong>交易知识评估</strong>...<br><br>
+        <span class="role-tag sys">系统</span> 查询 <strong>t_onboarding_kyc_rule</strong> 进行规则匹配，确定 KYC 要求
+
+        <div class="kyc-match">
+          <div class="kyc-match-item" style="background: #fef3c7;">
+            <div class="km-icon">🌍</div>
+            <div class="km-label">居住国</div>
+          </div>
+          <span class="kyc-match-arrow">+</span>
+          <div class="kyc-match-item" style="background: #e0e7ff;">
+            <div class="km-icon">👤</div>
+            <div class="km-label">用户类型</div>
+          </div>
+          <span class="kyc-match-arrow">+</span>
+          <div class="kyc-match-item" style="background: #dcfce7;">
+            <div class="km-icon">💰</div>
+            <div class="km-label">收入范围</div>
+          </div>
+          <span class="kyc-match-arrow">➜</span>
+          <div class="kyc-match-item" style="background: #fce7f3; border-color: #e11d48;">
+            <div class="km-icon">🎯</div>
+            <div class="km-label"><strong>KYC等级<br>+ 所需材料<br>+ 额外协议</strong></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; font-size: 15px; color: #666; background: #f0fdf4; border: 2px dashed #22c55e; border-radius: 10px; padding: 10px;">
+          🔍 匹配优先级：<strong>精确匹配</strong> (国家+类型+收入) → <strong>部分匹配</strong> (国家+类型) → <strong>兜底规则</strong> (match_country=*)
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_onboarding_application (UPDATE)</span>
+          <span class="table-tag">📖 t_onboarding_kyc_rule (READ)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">规则输出 KYC 等级 & 材料要求 📋</div>
+    </div>
+
+    <!-- ========== STEP 3 & 5: Parallel ========== -->
+    <div class="step-card yellow" style="position: relative;">
+      <div class="step-num">3~5</div>
+      <div class="step-title">📎 并行：文件上传 + 协议签署 (可同时进行)</div>
+      <div class="step-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- Left: KYC Upload -->
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 16px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 22px; margin-bottom: 8px;">📤 KYC文件上传</div>
+            <span class="role-tag">用户</span> 上传指定类型的证件文件<br><br>
+            <span class="role-tag sys">系统</span> 执行：<br>
+            &nbsp;&nbsp;1. 格式/大小校验<br>
+            &nbsp;&nbsp;2. 存储到 S3/OSS<br>
+            &nbsp;&nbsp;3. 计算文件哈希 (防篡改)<br>
+            &nbsp;&nbsp;4. 证件号加密 + 哈希存储
+            <div class="table-tags" style="margin-top: 8px;">
+              <span class="table-tag">📄 t_onboarding_kyc (CREATE)</span>
+              <span class="table-tag">📄 t_onboarding_kyc_document (CREATE)</span>
+            </div>
+          </div>
+          <!-- Right: Agreement -->
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 16px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 22px; margin-bottom: 8px;">✍️ 协议签署</div>
+            <span class="role-tag">用户</span> 阅读并签署法律文件<br><br>
+            <span class="role-tag sys">系统</span> 执行：<br>
+            &nbsp;&nbsp;1. 查询需签署的协议模板<br>
+            &nbsp;&nbsp;2. 展示最新版本内容<br>
+            &nbsp;&nbsp;3. 记录签署 (code, version, IP, 时间)
+            <div style="margin-top: 8px; font-size: 14px; color: #777;">
+              协议示例：客户协议 / 风险揭示书 / 隐私政策 / 杠杆风险 / 加密货币风险
+            </div>
+            <div class="table-tags" style="margin-top: 8px;">
+              <span class="table-tag">📖 t_onboarding_agreement_template (READ)</span>
+              <span class="table-tag">📄 t_onboarding_agreement (CREATE)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">材料提交完成 → 调用第三方检查 🔍</div>
+    </div>
+
+    <!-- ========== STEP 4: AML/IDV ========== -->
+    <div class="step-card purple">
+      <div class="step-num">4</div>
+      <div class="step-title">🔬 AML & IDV 第三方检查</div>
+      <div class="step-body">
+        <div class="third-party-grid">
+          <div class="tp-card" style="background: #eff6ff;">
+            <h4>🪪 身份验证 (IDV)</h4>
+            <div class="tp-flow">
+              <span class="label-send">发送 →</span> 证件照片 + 自拍照 + 姓名/生日<br>
+              <span class="label-recv">返回 ←</span> OCR识别、匹配度 (idv_match_score)、活体检测 (idv_liveness_result)
+            </div>
+            <div class="tp-providers">
+              <span class="tp-provider">Sumsub</span>
+              <span class="tp-provider">Onfido</span>
+              <span class="tp-provider">Jumio</span>
+            </div>
+          </div>
+          <div class="tp-card" style="background: #fef3c7;">
+            <h4>🛡️ 反洗钱筛查 (AML)</h4>
+            <div class="tp-flow">
+              <span class="label-send">发送 →</span> 姓名 + 国籍 + 出生日期<br>
+              <span class="label-recv">返回 ←</span> 风险评分 (aml_risk_score)、命中类型 (CLEAN/PEP/SANCTION/ADVERSE_MEDIA)
+            </div>
+            <div class="tp-providers">
+              <span class="tp-provider">ComplyAdvantage</span>
+              <span class="tp-provider">World-Check</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #f5f3ff; border: 2px dashed #7c3aed; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          📋 <strong>AML筛查数据源：</strong>UN制裁名单 · OFAC SDN · EU制裁 · FATF高风险国家 · PEP数据库(300万+) · 负面新闻<br>
+          💾 完整原始JSON保存到 <strong>aml_raw_response</strong> 字段（合规审计用）
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_onboarding_kyc (UPDATE - AML/IDV字段)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">status → 1 (待KYC审核) 🕐</div>
+    </div>
+
+    <!-- ========== STEP 6: Review Rule Engine ========== -->
+    <div class="step-card orange">
+      <div class="step-num">6</div>
+      <div class="step-title">⚡ 审核路由规则引擎决策</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 收集全部信息 → 查询 <strong>t_onboarding_review_rule</strong> → 按优先级逐条匹配 (短路逻辑，命中即停)
+
+        <div class="rule-examples">
+          <h4>📜 审核规则示例 (按优先级排序)</h4>
+          <div class="rule-row">
+            <span class="rule-p">P=10</span>
+            <span>aml_hit_type = <strong>SANCTION</strong> 制裁名单命中</span>
+            <span class="rule-action rj">自动拒绝</span>
+          </div>
+          <div class="rule-row">
+            <span class="rule-p">P=15</span>
+            <span>is_pep &gt; 0 <strong>AND</strong> aml_hit_type = PEP  PEP自报+AML交叉命中</span>
+            <span class="rule-action mn">转人工</span>
+          </div>
+          <div class="rule-row">
+            <span class="rule-p">P=20</span>
+            <span>aml_hit_type = <strong>PEP</strong> 政治公众人物(未自报)</span>
+            <span class="rule-action mn">转人工</span>
+          </div>
+          <div class="rule-row">
+            <span class="rule-p">P=30</span>
+            <span>aml_risk_score <strong>≥ 80</strong> 高风险评分</span>
+            <span class="rule-action mn">转人工</span>
+          </div>
+          <div class="rule-row">
+            <span class="rule-p">P=40</span>
+            <span>country ∈ {<strong>IR, KP, SY, CU</strong>} OFAC制裁国家</span>
+            <span class="rule-action rj">自动拒绝</span>
+          </div>
+          <div class="rule-row">
+            <span class="rule-p">P=60</span>
+            <span>ocr_match_score <strong>&lt; 0.7</strong> 证件OCR匹配度低</span>
+            <span class="rule-action mn">转人工</span>
+          </div>
+          <div class="rule-row">
+            <span class="rule-p">P=70</span>
+            <span>id_number_hash <strong>已存在</strong> 证件号重复</span>
+            <span class="rule-action mn">转人工</span>
+          </div>
+          <div class="rule-row">
+            <span class="rule-p">P=999</span>
+            <span>兜底规则 (ALWAYS_TRUE)</span>
+            <span class="rule-action ap">自动通过</span>
+          </div>
+        </div>
+
+        <!-- Three outcomes -->
+        <div class="decision-grid">
+          <div class="decision-item pass">
+            <div class="di-icon">✅</div>
+            <div class="di-title">action = 1</div>
+            <div class="di-desc">
+              自动通过<br>
+              kyc.status → 1<br>
+              → 进入 Step 8
+            </div>
+          </div>
+          <div class="decision-item reject">
+            <div class="di-icon">❌</div>
+            <div class="di-title">action = 2</div>
+            <div class="di-desc">
+              自动拒绝<br>
+              kyc.status → 3<br>
+              application.status → 3<br>
+              流程结束，通知用户
+            </div>
+          </div>
+          <div class="decision-item manual">
+            <div class="di-icon">👨‍💼</div>
+            <div class="di-title">action = 3</div>
+            <div class="di-desc">
+              转人工审核<br>
+              kyc.status = 0 (保持)<br>
+              assign_to_role → 审核队列<br>
+              → 进入 Step 7
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 t_onboarding_review_rule (READ)</span>
+          <span class="table-tag">📄 t_onboarding_kyc (UPDATE)</span>
+          <span class="table-tag">📄 t_onboarding_application (UPDATE if rejected)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">如命中 action=3 转人工 👨‍💼</div>
+    </div>
+
+    <!-- ========== STEP 7: Manual Review ========== -->
+    <div class="step-card pink">
+      <div class="step-num">7</div>
+      <div class="step-title">👨‍💼 后台人工审核 (仅 action=3 时触发)</div>
+      <div class="step-body">
+        <span class="role-tag">审核员</span> 查看完整信息：用户资料 + 上传文件 + AML/IDV结果 + 触发的规则<br><br>
+
+        <div class="decision-grid">
+          <div class="decision-item pass">
+            <div class="di-icon">✅</div>
+            <div class="di-title">审核通过</div>
+            <div class="di-desc">
+              kyc.status → 2 (人工通过)<br>
+              记录 reviewer_id / reviewed_at<br>
+              → 进入 Step 8
+            </div>
+          </div>
+          <div class="decision-item reject">
+            <div class="di-icon">❌</div>
+            <div class="di-title">审核拒绝</div>
+            <div class="di-desc">
+              kyc.status → 3<br>
+              记录 reject_reason<br>
+              application.status → 3<br>
+              通知用户
+            </div>
+          </div>
+          <div class="decision-item manual" style="background: #fef3c7; border-color: #d97706;">
+            <div class="di-icon">📎</div>
+            <div class="di-title">补充材料</div>
+            <div class="di-desc">
+              kyc.status → 4<br>
+              通知用户补充<br>
+              → 回到 Step 3/5
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; font-size: 15px; color: #666; background: #fce7f3; border: 2px dashed #ec4899; border-radius: 10px; padding: 10px;">
+          🔄 <strong>审核分配逻辑</strong>：规则命中 → assign_to_role → 调用Admin服务查询在线人员 → 按负载均衡/地区/语言分配 → 写入 reviewer_id
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_onboarding_kyc (UPDATE)</span>
+          <span class="table-tag">📄 t_onboarding_kyc_document (可能UPDATE)</span>
+          <span class="table-tag">📄 t_onboarding_application (拒绝时UPDATE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">KYC通过(自动/人工) → 最终检查 ✓</div>
+    </div>
+
+    <!-- ========== STEP 8: Final Check ========== -->
+    <div class="step-card green">
+      <div class="step-num">8</div>
+      <div class="step-title">🔍 开户条件最终检查</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 校验以下全部条件是否满足：
+
+        <table class="check-table">
+          <tr>
+            <th>检查项</th>
+            <th>数据来源</th>
+            <th>通过条件</th>
+          </tr>
+          <tr>
+            <td>KYC审核状态</td>
+            <td>t_onboarding_kyc.status</td>
+            <td>IN (1, 2) 自动/人工通过</td>
+          </tr>
+          <tr>
+            <td>必要文件验证</td>
+            <td>t_onboarding_kyc_document.review_status</td>
+            <td>所有必要文件 = 1 (合格)</td>
+          </tr>
+          <tr>
+            <td>必签协议签署</td>
+            <td>t_onboarding_agreement.is_accepted</td>
+            <td>所有必签协议 = 1 (已签署)</td>
+          </tr>
+        </table>
+
+        <div style="margin-top: 14px; display: flex; gap: 16px;">
+          <div style="flex:1; background: #bbf7d0; border: 3px solid #16a34a; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 24px;">✅ 全部通过</div>
+            <div style="font-size: 15px; color: #166534;">status → 2 (KYC已通过)<br>→ 进入 Step 9</div>
+          </div>
+          <div style="flex:1; background: #fef3c7; border: 3px solid #d97706; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 24px;">⚠️ 存在未满足项</div>
+            <div style="font-size: 15px; color: #92400e;">通知用户补充缺失项<br>→ 回到对应步骤</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">准入通过 → 正式开户 🚀</div>
+    </div>
+
+    <!-- ========== STEP 9: Account Creation ========== -->
+    <div class="step-card blue">
+      <div class="step-num">9</div>
+      <div class="step-title">🚀 调用交易引擎开户</div>
+      <div class="step-body">
+        <div class="account-steps">
+          <div class="account-step" style="background: #eff6ff;">
+            <span class="as-num">9.1</span>
+            <div class="as-title">幂等性前置检查</div>
+            <div class="as-desc">
+              status=2 & account_status=0 → 允许开户<br>
+              account_status=1 → 开户中，查询上次结果<br>
+              account_status=2 → 已完成，直接返回
+            </div>
+          </div>
+          <div class="account-step" style="background: #fef3c7;">
+            <span class="as-num">9.2</span>
+            <div class="as-title">标记开户中</div>
+            <div class="as-desc">
+              account_status → 1 (开户中)<br>
+              WHERE account_status = 0 (乐观锁)<br>
+              affected_rows=0 → 并发冲突退出
+            </div>
+          </div>
+          <div class="account-step" style="background: #f3e8ff;">
+            <span class="as-num">9.3</span>
+            <div class="as-title">调用交易引擎API</div>
+            <div class="as-desc">
+              POST /api/trading/create-user<br>
+              发送: application_no, entity_id, email, legal_name...
+            </div>
+          </div>
+          <div class="account-step" style="background: #dcfce7;">
+            <span class="as-num">9.4</span>
+            <div class="as-title">根据返回更新状态</div>
+            <div class="as-desc">
+              <strong>⚠️ 关键原则：trading_user_uid + account_status 必须在同一事务内更新</strong>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; display: flex; gap: 16px;">
+          <div style="flex:1; background: #bbf7d0; border: 3px solid #16a34a; border-radius: 12px; padding: 14px;">
+            <div style="font-size: 22px; text-align: center; margin-bottom: 6px;">✅ 调用成功</div>
+            <div style="font-size: 15px; color: #166534;">
+              account_status → 2 (开户成功)<br>
+              trading_user_uid = 回填UID<br>
+              account_created_at = NOW()<br>
+              <strong>同一事务完成!</strong>
+            </div>
+          </div>
+          <div style="flex:1; background: #fecaca; border: 3px solid #dc2626; border-radius: 12px; padding: 14px;">
+            <div style="font-size: 22px; text-align: center; margin-bottom: 6px;">❌ 调用失败/超时</div>
+            <div style="font-size: 15px; color: #991b1b;">
+              account_status → 3 (开户失败)<br>
+              account_error_msg = 错误信息<br>
+              account_retry_count + 1<br>
+              <strong>定时任务重试(最多3次)，超过转人工</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_onboarding_application (UPDATE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">account_status=2 开户成功! 🎉</div>
+    </div>
+
+    <!-- ========== STEP 10: Notification ========== -->
+    <div class="step-card green">
+      <div class="step-num">10</div>
+      <div class="step-title">🎉 开户完成通知</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 开户成功后触发通知 + 下游事件
+
+        <div class="notif-grid">
+          <div class="notif-item" style="background: #dbeafe;">
+            <div class="ni-icon">📧</div>
+            <div style="font-size: 18px; font-weight: bold;">通知用户</div>
+            <div class="ni-text">邮件 / 短信 / App推送<br>告知可以开始交易</div>
+          </div>
+          <div class="notif-item" style="background: #fef3c7;">
+            <div class="ni-icon">📊</div>
+            <div style="font-size: 18px; font-weight: bold;">CRM同步</div>
+            <div class="ni-text">通知CRM系统<br>记录新客户信息</div>
+          </div>
+          <div class="notif-item" style="background: #fce7f3;">
+            <div class="ni-icon">🎁</div>
+            <div style="font-size: 18px; font-weight: bold;">新手引导</div>
+            <div class="ni-text">触发欢迎奖励<br>新手引导流程</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end flow-steps -->
+
+  <!-- ==================== SECTION 3: STATUS FLOW ==================== -->
+  <div class="section-title">🔄 状态流转总览</div>
+
+  <div style="background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px; padding: 28px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12); max-width: 900px; margin: 0 auto;">
+    <div class="tape" style="right: 40px;"></div>
+
+    <div style="font-size: 22px; margin-bottom: 16px; color: #1e40af;">📋 准入阶段 (application.status)</div>
+    <div class="status-flow">
+      <div class="sf-node" style="background: #e0e7ff;">
+        <div class="sf-code">0</div>
+        <div class="sf-label">填写中</div>
+      </div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #fef3c7;">
+        <div class="sf-code">1</div>
+        <div class="sf-label">待KYC审核</div>
+      </div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node active">
+        <div class="sf-code">2</div>
+        <div class="sf-label">KYC已通过</div>
+      </div>
+      <div style="margin: 0 10px; color: #aaa; font-size: 20px;">/</div>
+      <div class="sf-node fail">
+        <div class="sf-code">3</div>
+        <div class="sf-label">KYC被拒</div>
+      </div>
+    </div>
+
+    <div style="font-size: 22px; margin: 24px 0 16px 0; color: #16a34a;">🏦 开户阶段 (application.account_status)</div>
+    <div style="font-size: 15px; color: #666; margin-bottom: 10px; text-align: center;">⚠️ 仅 status=2 时才能进入开户阶段</div>
+    <div class="status-flow">
+      <div class="sf-node" style="background: #e0e7ff;">
+        <div class="sf-code">0</div>
+        <div class="sf-label">未开户</div>
+      </div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #fef3c7;">
+        <div class="sf-code">1</div>
+        <div class="sf-label">开户中</div>
+      </div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node active">
+        <div class="sf-code">2</div>
+        <div class="sf-label">开户成功 ✅</div>
+      </div>
+      <div style="margin: 0 10px; color: #aaa; font-size: 20px;">/</div>
+      <div class="sf-node fail">
+        <div class="sf-code">3</div>
+        <div class="sf-label">开户失败</div>
+      </div>
+      <div class="sf-arrow" style="color: #dc2626;">↩</div>
+      <div class="sf-node" style="background: #fef3c7; border-style: dashed;">
+        <div class="sf-code" style="font-size: 20px;">1</div>
+        <div class="sf-label">重试开户中</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px; background: #f0fdf4; border: 3px solid #22c55e; border-radius: 14px; padding: 16px; text-align: center;">
+      <div style="font-size: 24px; font-weight: bold; color: #166534;">🎯 最终完成判定</div>
+      <div style="font-size: 20px; margin-top: 8px; color: #15803d; font-family: 'Caveat', monospace;">
+        status = 2 &nbsp;&amp;&amp;&nbsp; account_status = 2 &nbsp;&amp;&amp;&nbsp; trading_user_uid IS NOT NULL
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 4: KYC LEVEL DETAILS ==================== -->
+  <div class="section-title">🎯 KYC等级 & 规则匹配示例</div>
+
+  <div style="background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px; padding: 28px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12); max-width: 900px; margin: 0 auto;">
+    <div class="tape" style="right: 50px;"></div>
+    <div style="font-size: 22px; margin-bottom: 6px;">📐 KYC准入规则 (t_onboarding_kyc_rule) 示例</div>
+    <div style="font-size: 14px; color: #666; margin-bottom: 14px; padding: 8px 12px; background: #eff6ff; border-radius: 8px; border: 1.5px dashed #93c5fd;">
+      📌 <strong>证件类型 (accepted_id_types)</strong>: 用户<strong>任选其一</strong>提交 &nbsp;|&nbsp; <strong>文件类型 (required_doc_types)</strong>: <strong>全部必须</strong>上传 &nbsp;|&nbsp; <strong>协议 (required_agreements)</strong>: <strong>全部必须</strong>签署
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: grid; grid-template-columns: 60px 1fr 80px 1fr; gap: 8px; padding: 10px; background: #fecaca; border: 2px solid #dc2626; border-radius: 10px; align-items: center;">
+        <span style="font-weight: bold; text-align: center;">规则1</span>
+        <span>🇺🇸 US + 个人 + 任意收入</span>
+        <span style="text-align: center; font-weight: bold; color: #dc2626;">→ L3</span>
+        <span style="font-size: 14px; color: #555;">护照 + 地址证明 + 银行流水 + 自拍</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 80px 1fr; gap: 8px; padding: 10px; background: #fef3c7; border: 2px solid #d97706; border-radius: 10px; align-items: center;">
+        <span style="font-weight: bold; text-align: center;">规则2</span>
+        <span>🇦🇺 AU + 个人 + 年收>50万</span>
+        <span style="text-align: center; font-weight: bold; color: #d97706;">→ L2</span>
+        <span style="font-size: 14px; color: #555;">护照 + 地址证明</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 80px 1fr; gap: 8px; padding: 10px; background: #dcfce7; border: 2px solid #16a34a; border-radius: 10px; align-items: center;">
+        <span style="font-weight: bold; text-align: center;">规则3</span>
+        <span>🇦🇺 AU + 个人 + 年收&lt;50万</span>
+        <span style="text-align: center; font-weight: bold; color: #16a34a;">→ L1</span>
+        <span style="font-size: 14px; color: #555;">身份证正反面</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 80px 1fr; gap: 8px; padding: 10px; background: #fecaca; border: 2px solid #dc2626; border-radius: 10px; align-items: center;">
+        <span style="font-weight: bold; text-align: center;">规则4</span>
+        <span>🌍 * + 企业 + 任意</span>
+        <span style="text-align: center; font-weight: bold; color: #dc2626;">→ L3</span>
+        <span style="font-size: 14px; color: #555;">营业执照 + 法人证件 + 公司章程</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 80px 1fr; gap: 8px; padding: 10px; background: #e0e7ff; border: 2px solid #3b82f6; border-radius: 10px; align-items: center;">
+        <span style="font-weight: bold; text-align: center;">兜底</span>
+        <span>🌍 * + 个人 + 任意</span>
+        <span style="text-align: center; font-weight: bold; color: #3b82f6;">→ L1</span>
+        <span style="font-size: 14px; color: #555;">身份证正反面</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 5: CONDITION EXPRESSION ==================== -->
+  <div class="section-title">🧩 审核规则条件表达式</div>
+
+  <div style="background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px; padding: 28px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12); max-width: 900px; margin: 0 auto;">
+    <div class="tape"></div>
+    <div style="font-size: 18px; margin-bottom: 14px; color: #555;">
+      审核规则使用 <strong>JSON condition_expression</strong> 存储灵活条件，应用层规则引擎统一解析
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 10px; padding: 12px;">
+        <div style="font-size: 16px; font-weight: bold; color: #1e40af; margin-bottom: 6px;">单条件 - IN 操作</div>
+        <code style="font-size: 13px; color: #333; display: block; background: #fff; padding: 8px; border-radius: 6px; font-family: monospace;">
+          {"field": "aml_hit_type",<br>
+          &nbsp;"operator": "IN",<br>
+          &nbsp;"value": ["SANCTION"]}
+        </code>
+      </div>
+      <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 10px; padding: 12px;">
+        <div style="font-size: 16px; font-weight: bold; color: #166534; margin-bottom: 6px;">单条件 - 阈值比较</div>
+        <code style="font-size: 13px; color: #333; display: block; background: #fff; padding: 8px; border-radius: 6px; font-family: monospace;">
+          {"field": "aml_risk_score",<br>
+          &nbsp;"operator": ">=",<br>
+          &nbsp;"value": 80}
+        </code>
+      </div>
+      <div style="background: #fef3c7; border: 2px solid #d97706; border-radius: 10px; padding: 12px;">
+        <div style="font-size: 16px; font-weight: bold; color: #92400e; margin-bottom: 6px;">组合条件 - AND</div>
+        <code style="font-size: 13px; color: #333; display: block; background: #fff; padding: 8px; border-radius: 6px; font-family: monospace;">
+          {"operator": "AND",<br>
+          &nbsp;"conditions": [<br>
+          &nbsp;&nbsp;{"field": "aml_risk_score",<br>
+          &nbsp;&nbsp;&nbsp;"operator": ">=", "value": 60},<br>
+          &nbsp;&nbsp;{"field": "annual_income_range",<br>
+          &nbsp;&nbsp;&nbsp;"operator": "<=", "value": 2}<br>
+          &nbsp;]}
+        </code>
+      </div>
+      <div style="background: #f5f3ff; border: 2px solid #7c3aed; border-radius: 10px; padding: 12px;">
+        <div style="font-size: 16px; font-weight: bold; color: #5b21b6; margin-bottom: 6px;">兜底 - 始终匹配</div>
+        <code style="font-size: 13px; color: #333; display: block; background: #fff; padding: 8px; border-radius: 6px; font-family: monospace;">
+          {"operator": "ALWAYS_TRUE"}
+        </code>
+        <div style="font-size: 13px; color: #777; margin-top: 6px;">所有规则未命中时的默认动作</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <div class="footer">
+    <div style="font-size: 32px; margin-bottom: 8px;">📋🔐🏦✅</div>
+    <div>准入系统 (Onboarding Service) 架构流程图</div>
+    <div style="margin-top: 4px;">db_onboarding · 8 Tables · 10 Steps · Multi-Entity</div>
+    <div style="margin-top: 8px; font-size: 14px; color: #bbb;">Generated on 2026-03-29</div>
+  </div>
+
+</div><!-- end flow-container -->
+
+</body>
+</html>

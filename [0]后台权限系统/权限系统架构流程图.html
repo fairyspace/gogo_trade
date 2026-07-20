@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>权限系统 (PMS) 架构流程图</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+    --ink: #1a2332;
+    --ink-body: #2d3a4a;
+    --paper: #fefcf8;
+    --accent-teal: #0d7377;
+    --accent-blue: #2563eb;
+    --accent-rose: #be185d;
+    --accent-amber: #92400e;
+    --accent-purple: #6b21a8;
+  }
+
+  body {
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle, #d4cfc8 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-attachment: fixed;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: var(--ink-body);
+    min-height: 100vh;
+    padding: 30px;
+  }
+
+  .main-title {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .main-title h1 {
+    font-family: var(--font-hand);
+    font-size: 52px;
+    font-weight: 400;
+    color: var(--ink);
+    letter-spacing: 0.08em;
+    text-shadow: 2px 3px 0 rgba(37, 99, 235, 0.2);
+    position: relative;
+    display: inline-block;
+  }
+  .main-title h1::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: -10px;
+    right: -10px;
+    height: 6px;
+    background: linear-gradient(90deg, #2563eb, #0d7377, #be185d);
+    border-radius: 3px;
+    transform: rotate(-0.5deg);
+    opacity: 0.85;
+  }
+  .main-title .subtitle {
+    font-size: 17px;
+    color: #4a5568;
+    margin-top: 14px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.5;
+  }
+
+  .section-title {
+    font-family: var(--font-hand);
+    font-size: 34px;
+    font-weight: 400;
+    color: var(--ink);
+    margin: 40px 0 20px 0;
+    padding: 10px 22px;
+    border-left: 8px solid var(--accent-teal);
+    background: linear-gradient(105deg, rgba(13, 115, 119, 0.1) 0%, rgba(37, 99, 235, 0.05) 50%, transparent 100%);
+    border-radius: 0 12px 12px 0;
+    display: inline-block;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .flow-container {
+    max-width: 1300px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ---- DB Overview ---- */
+  .db-overview {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+    padding: 4px 0 8px;
+  }
+  .db-group {
+    background: #fff;
+    border: 2.5px solid #2d2d2d;
+    border-radius: 18px;
+    padding: 20px;
+    flex: 1 1 240px;
+    max-width: 380px;
+    min-width: min(100%, 220px);
+    position: relative;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.08);
+  }
+  .db-group-title {
+    font-family: var(--font-hand);
+    font-size: 21px;
+    font-weight: 400;
+    color: #fff;
+    background: #2d2d2d;
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+  }
+  .db-group.core { background: #e8f4fd; }
+  .db-group.data { background: #e8fde8; }
+  .db-group.dynamic { background: #f2e8fd; }
+  .db-group.audit { background: #fef6e0; }
+  .db-table {
+    font-size: 14px;
+    padding: 5px 0;
+    border-bottom: 2px dashed #bbb;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+  .db-table:last-child { border-bottom: none; }
+  .db-table .tname {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--accent-teal);
+    background: linear-gradient(90deg, rgba(13, 115, 119, 0.12), rgba(37, 99, 235, 0.05));
+    padding: 3px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(13, 115, 119, 0.22);
+    word-break: break-all;
+  }
+  .db-table .tdesc { color: #4a3f55; font-size: 15px; }
+  .db-group.data .db-table .tname { color: #14532d; border-color: rgba(20, 83, 45, 0.3); background: linear-gradient(90deg, rgba(20, 83, 45, 0.12), transparent); }
+  .db-group.dynamic .db-table .tname { color: #5b21b6; border-color: rgba(91, 33, 182, 0.28); background: linear-gradient(90deg, rgba(91, 33, 182, 0.1), transparent); }
+  .db-group.audit .db-table .tname { color: #7c2d12; border-color: rgba(124, 45, 18, 0.28); background: linear-gradient(90deg, rgba(124, 45, 18, 0.1), transparent); }
+
+  .tape {
+    position: absolute;
+    width: 80px;
+    height: 28px;
+    background: rgba(255, 222, 89, 0.45);
+    border: 1.5px solid rgba(200, 170, 50, 0.3);
+    transform: rotate(-35deg);
+    top: -10px;
+    right: 30px;
+    border-radius: 2px;
+    z-index: 2;
+  }
+
+  /* ---- Flow Steps ---- */
+  .flow-steps {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .step-card {
+    background: #fff;
+    border: 2.5px solid #2d2d2d;
+    border-radius: 18px;
+    padding: 24px 30px;
+    width: 90%;
+    max-width: 960px;
+    position: relative;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.08);
+    margin-bottom: 0;
+  }
+
+  .step-card.blue { background: #e8f4fd; }
+  .step-card.green { background: #e8fde8; }
+  .step-card.yellow { background: #fef6e0; }
+  .step-card.purple { background: #f2e8fd; }
+  .step-card.pink { background: #fde8ef; }
+  .step-card.orange { background: #fde8d0; }
+  .step-card.indigo { background: #e0e7ff; }
+
+  .step-num {
+    position: absolute;
+    top: -18px;
+    left: 24px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 20px;
+    font-weight: bold;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #2d2d2d;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+    font-family: var(--font-ui);
+    font-weight: 700;
+  }
+  .step-num.teal { background: #0d7377; }
+  .step-num.rose { background: #be185d; }
+  .step-num.amber { background: #d97706; }
+  .step-num.purple { background: #7c3aed; }
+  .step-num.green { background: #16a34a; }
+  .step-num.red { background: #dc2626; }
+
+  .step-title {
+    font-family: var(--font-hand);
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 10px;
+    padding-left: 36px;
+    border-left: 4px solid var(--accent-teal);
+    margin-left: 8px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    background: linear-gradient(90deg, rgba(13, 115, 119, 0.08), transparent 72%);
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.35;
+  }
+
+  .step-body {
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--ink-body);
+  }
+
+  .step-body strong {
+    color: var(--accent-rose);
+    font-weight: 700;
+  }
+
+  .step-body .role-tag {
+    display: inline-block;
+    background: #bfdbfe;
+    color: #1e3a5f;
+    font-size: 14px;
+    padding: 2px 10px;
+    border-radius: 8px;
+    border: 2px solid #1e3a5f;
+    margin-right: 6px;
+    font-weight: bold;
+  }
+  .step-body .role-tag.pdp {
+    background: #c4b5fd;
+    color: #3b0764;
+    border-color: #3b0764;
+  }
+  .step-body .role-tag.gateway {
+    background: #fbbf24;
+    color: #78350f;
+    border-color: #78350f;
+  }
+
+  .table-tags {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .table-tag {
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 13px;
+    padding: 3px 12px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  /* ---- Arrow between steps ---- */
+  .arrow-down {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: auto;
+    min-height: 48px;
+    position: relative;
+    padding: 6px 0 10px;
+  }
+  .arrow-down .arrow-line {
+    width: 5px;
+    flex: 0 0 32px;
+    min-height: 32px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #2d2d2d 0px,
+      #2d2d2d 8px,
+      transparent 8px,
+      transparent 14px
+    );
+    border-radius: 3px;
+  }
+  .arrow-down .arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 18px solid #2d2d2d;
+    flex-shrink: 0;
+  }
+  .arrow-label {
+    position: static;
+    margin-top: 8px;
+    background: #fefcf8;
+    border: 2px solid var(--accent-teal);
+    border-radius: 10px;
+    padding: 4px 14px;
+    font-size: 15px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    color: #0d7377;
+    white-space: normal;
+    max-width: 100%;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.06);
+  }
+
+  /* ---- SLA / Check Table ---- */
+  .check-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 14px;
+    border: 2.5px solid #2d2d2d;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.06);
+  }
+  .check-table th {
+    background: #1e293b;
+    color: #f1f5f9;
+    padding: 10px 14px;
+    font-size: 16px;
+    text-align: left;
+  }
+  .check-table td {
+    padding: 10px 14px;
+    font-size: 15px;
+    border-bottom: 2px dashed #ddd;
+    background: #fff;
+  }
+  .check-table tr:last-child td { border-bottom: none; }
+  .check-table tr:nth-child(even) td { background: #f8fafb; }
+  .check-table td:first-child {
+    font-weight: 700;
+    color: var(--accent-teal);
+    background: linear-gradient(90deg, rgba(13, 115, 119, 0.08), transparent);
+  }
+  .check-table tr:nth-child(even) td:first-child {
+    background: linear-gradient(90deg, rgba(13, 115, 119, 0.06), #f8fafb);
+  }
+
+  /* ---- Status Flow ---- */
+  .status-flow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+    padding: 6px 0 8px;
+  }
+  .sf-node {
+    background: #fff;
+    border: 2.5px solid #2d2d2d;
+    border-radius: 14px;
+    padding: 10px 14px;
+    text-align: center;
+    min-width: 80px;
+    flex: 0 1 auto;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.06);
+  }
+  .sf-node.active { background: #bbf7d0; border-color: #16a34a; }
+  .sf-node.fail { background: #fecaca; border-color: #dc2626; }
+  .sf-node.warn { background: #fef3c7; border-color: #d97706; }
+  .sf-node .sf-code {
+    font-size: 15px;
+    font-weight: 700;
+    font-family: var(--font-ui);
+    color: var(--accent-rose);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(37, 99, 235, 0.1));
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+  .sf-node .sf-label { font-size: 13px; color: #4a5568; font-weight: 600; font-family: var(--font-ui); }
+  .sf-arrow {
+    font-size: 28px;
+    color: #2d2d2d;
+    margin: 0 4px;
+    font-weight: bold;
+  }
+  .sf-bidir {
+    font-size: 22px;
+    color: #2d2d2d;
+    margin: 0 2px;
+    font-weight: bold;
+  }
+
+  /* ---- Three Layer Model ---- */
+  .layer-card {
+    background: #fff;
+    border: 2.5px solid #2d2d2d;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    min-width: 200px;
+    flex: 1;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.08);
+    position: relative;
+  }
+  .layer-card .layer-icon { font-size: 36px; margin-bottom: 8px; }
+  .layer-card .layer-name {
+    font-family: var(--font-hand);
+    font-size: 26px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .layer-card .layer-en {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: #2d2d2d;
+    padding: 2px 12px;
+    border-radius: 8px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+  .layer-card .layer-desc {
+    font-size: 15px;
+    color: #4a5568;
+    line-height: 1.5;
+  }
+
+  /* ---- Decision Grid ---- */
+  .decision-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .decision-item {
+    background: #fff;
+    border: 2.5px solid #2d2d2d;
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    position: relative;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.06);
+  }
+  .decision-item .di-icon { font-size: 32px; margin-bottom: 6px; }
+  .decision-item .di-title { font-size: 18px; font-weight: 700; color: var(--ink); background: rgba(255, 255, 255, 0.55); padding: 2px 8px; border-radius: 6px; display: inline-block; }
+  .decision-item .di-desc { font-size: 14px; color: #4a3f55; margin-top: 4px; }
+
+  /* ---- Side by Side Card ---- */
+  .side-by-side {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .side-card {
+    flex: 1;
+    min-width: 300px;
+    background: #fff;
+    border: 2.5px solid #2d2d2d;
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.08);
+    position: relative;
+  }
+
+  /* ---- Timeline ---- */
+  .timeline {
+    position: relative;
+    padding-left: 40px;
+    margin-top: 16px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: repeating-linear-gradient(to bottom, #2563eb 0px, #2563eb 6px, transparent 6px, transparent 10px);
+    border-radius: 2px;
+  }
+  .tl-item {
+    position: relative;
+    margin-bottom: 18px;
+    padding: 14px 18px;
+    background: #fff;
+    border: 2.5px solid #2d2d2d;
+    border-radius: 14px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.06);
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -32px;
+    top: 18px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #2563eb;
+    border: 3px solid #2d2d2d;
+  }
+  .tl-time {
+    font-family: var(--font-hand);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--accent-blue);
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), transparent);
+    padding: 2px 10px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+  .tl-desc { font-size: 16px; color: #4a3f55; }
+
+  /* ---- Info Box ---- */
+  .info-box {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 16px;
+    border: 2px dashed;
+  }
+  .info-box.blue { background: #eff6ff; border-color: #3b82f6; }
+  .info-box.green { background: #f0fdf4; border-color: #22c55e; }
+  .info-box.purple { background: #f5f3ff; border-color: #7c3aed; }
+  .info-box.pink { background: #fdf2f8; border-color: #ec4899; }
+  .info-box.orange { background: #fff7ed; border-color: #ea580c; }
+  .info-box.red { background: #fef2f2; border-color: #dc2626; }
+  .info-box.teal { background: #f0fdfa; border-color: #0d9488; }
+
+  /* ---- Corner Decorations ---- */
+  .corner-deco {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .corner-deco.tl { top: 10px; left: 10px; font-size: 60px; opacity: 0.06; }
+  .corner-deco.tr { top: 10px; right: 10px; font-size: 60px; opacity: 0.06; }
+  .corner-deco.bl { bottom: 10px; left: 10px; font-size: 60px; opacity: 0.06; }
+  .corner-deco.br { bottom: 10px; right: 10px; font-size: 60px; opacity: 0.06; }
+
+  .footer {
+    text-align: center;
+    margin-top: 50px;
+    padding: 20px;
+    color: #999;
+    font-size: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .decision-grid { grid-template-columns: 1fr; }
+    .side-by-side { flex-direction: column; }
+    .step-card { width: 98%; padding: 18px; }
+    .db-group { flex: 1 1 100%; max-width: 100%; }
+    .main-title h1 { font-size: 36px; }
+    .status-flow { gap: 4px; }
+    .sf-node { min-width: 64px; padding: 8px 10px; }
+  }
+
+  /* ---- A4 Print ---- */
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      background-image: none !important;
+      font-size: 10.5pt;
+    }
+    .flow-container {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .corner-deco,
+    .tape {
+      display: none !important;
+    }
+    .main-title { margin-bottom: 5mm; page-break-after: avoid; }
+    .main-title h1 { font-size: 22pt !important; }
+    .main-title .subtitle { font-size: 9.5pt !important; }
+    .section-title { font-size: 15pt !important; margin: 6mm 0 4mm !important; page-break-after: avoid; }
+    .db-overview { flex-wrap: wrap !important; justify-content: center !important; }
+    .db-group {
+      flex: 1 1 48% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-shadow: none !important;
+      border-width: 2px !important;
+      page-break-inside: avoid;
+    }
+    .step-card {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-shadow: none !important;
+      border-width: 2px !important;
+      page-break-inside: avoid;
+      padding: 10px 12px !important;
+    }
+    .step-title { font-size: 13pt !important; }
+    .step-body { font-size: 10pt !important; }
+    .side-card, .layer-card, .sf-node, .decision-item, .tl-item {
+      box-shadow: none !important;
+    }
+    .check-table { font-size: 9.5pt !important; box-shadow: none !important; }
+    .timeline::before { left: 12px !important; }
+    .footer { margin-top: 8mm; font-size: 9pt; }
+  }
+</style>
+</head>
+<body>
+
+<div class="corner-deco tl">🛡️</div>
+<div class="corner-deco tr">🔑</div>
+<div class="corner-deco bl">🏦</div>
+<div class="corner-deco br">📋</div>
+
+<div class="flow-container">
+
+  <!-- ==================== TITLE ==================== -->
+  <div class="main-title">
+    <h1>🛡️ 权限系统架构流程图</h1>
+    <div class="subtitle">Permission Management System · 14 Tables · Opaque Token + RBAC/ABAC/PBAC · 渐进式架构</div>
+  </div>
+
+  <!-- ==================== SECTION 1: DB OVERVIEW ==================== -->
+  <div class="section-title">📦 数据库架构总览 (14 张表 · 4 组)</div>
+
+  <div class="db-overview">
+    <div class="db-group core">
+      <div class="tape"></div>
+      <div class="db-group-title">🔗 核心鉴权链 (7张)</div>
+      <div class="db-table">
+        <span class="tname">pms_user</span>
+        <span class="tdesc">用户主表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_role</span>
+        <span class="tdesc">角色定义表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_role_inheritance</span>
+        <span class="tdesc">角色继承闭包表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_resource</span>
+        <span class="tdesc">资源权限点表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_role_resource</span>
+        <span class="tdesc">角色-资源关联表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_user_role</span>
+        <span class="tdesc">用户-角色授权表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_application</span>
+        <span class="tdesc">接入应用注册表</span>
+      </div>
+    </div>
+
+    <div class="db-group data">
+      <div class="tape"></div>
+      <div class="db-group-title">🔒 数据控制 (3张)</div>
+      <div class="db-table">
+        <span class="tname">pms_data_scope</span>
+        <span class="tdesc">行级数据范围表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_masking_rule</span>
+        <span class="tdesc">列级脱敏规则表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_sod_rule</span>
+        <span class="tdesc">SoD 职责分离规则</span>
+      </div>
+    </div>
+
+    <div class="db-group dynamic">
+      <div class="tape"></div>
+      <div class="db-group-title">⚡ 动态策略 (2张)</div>
+      <div class="db-table">
+        <span class="tname">pms_abac_policy</span>
+        <span class="tdesc">ABAC 动态策略表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_compliance_config</span>
+        <span class="tdesc">合规弹性配置表</span>
+      </div>
+    </div>
+
+    <div class="db-group audit">
+      <div class="tape"></div>
+      <div class="db-group-title">📝 审计合规 (2张)</div>
+      <div class="db-table">
+        <span class="tname">pms_audit_log</span>
+        <span class="tdesc">审计日志主表（月分区）</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">pms_audit_log_detail</span>
+        <span class="tdesc">审计日志详情表</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 2: THREE-LAYER MODEL ==================== -->
+  <div class="section-title">🏗️ 三层权限模型</div>
+
+  <div style="display: flex; justify-content: center; gap: 0; align-items: stretch; flex-wrap: wrap; margin-bottom: 30px;">
+    <div class="layer-card" style="background: #e8f4fd; border-color: #2563eb;">
+      <div class="layer-icon">🧱</div>
+      <div class="layer-en">RBAC</div>
+      <div class="layer-name">基础层</div>
+      <div class="layer-desc">
+        角色-权限点绑定<br>
+        菜单 · 按钮 · API · 功能<br>
+        <strong>O(1) 快照查询</strong>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; padding: 0 8px;">
+      <div class="sf-arrow" style="font-size: 36px;">→</div>
+    </div>
+    <div class="layer-card" style="background: #f2e8fd; border-color: #7c3aed;">
+      <div class="layer-icon">🎛️</div>
+      <div class="layer-en">ABAC</div>
+      <div class="layer-name">控制层</div>
+      <div class="layer-desc">
+        主体/资源/环境属性条件<br>
+        数据范围 · 时间窗口 · IP 约束<br>
+        <strong>JSON 策略热更新</strong>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; padding: 0 8px;">
+      <div class="sf-arrow" style="font-size: 36px;">→</div>
+    </div>
+    <div class="layer-card" style="background: #fde8ef; border-color: #be185d;">
+      <div class="layer-icon">📜</div>
+      <div class="layer-en">PBAC</div>
+      <div class="layer-name">策略层</div>
+      <div class="layer-desc">
+        业务规则 + 合规策略<br>
+        大额出金双人审批 · 交易时段限制<br>
+        <strong>合规内建不可绕过</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box teal" style="max-width: 960px; margin: 0 auto 20px;">
+    📌 <strong>渐进式叠加</strong>：Phase 1 先交付 RBAC（角色-资源绑定），Phase 2 叠加 ABAC（属性条件），Phase 3 接入 PBAC（业务合规规则），避免过度设计与实施烂尾
+  </div>
+
+  <!-- ==================== SECTION 3: AUTH FLOW ==================== -->
+  <div class="section-title">🗺️ 鉴权完整生命周期 (12 步)</div>
+
+  <div class="flow-steps">
+
+    <!-- ========== STEP 1 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">1</div>
+      <div class="step-title">🔑 Token 验证 + 会话校验</div>
+      <div class="step-body">
+        <span class="role-tag gateway">零信任网关 PEP</span> 接收业务应用请求（Opaque Token + 资源 + 操作 + 上下文）
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.05);">
+            <div style="font-size: 18px; margin-bottom: 4px;">🔍 Redis GET token:{value}</div>
+            <div style="font-size: 15px; color: #555;">Token 不存在 → 返回 401<br>会话已过期 → 返回 401</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.05);">
+            <div style="font-size: 18px; margin-bottom: 4px;">👤 用户状态检查</div>
+            <div style="font-size: 15px; color: #555;">禁用/锁定/离职 → 返回 403<br>通过 → 提取 userId, roles</div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">🔑 Redis GET token:{tokenValue}</span>
+          <span class="table-tag">📖 Session → userId, roles</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">Token 有效 → 查本地缓存 💨</div>
+    </div>
+
+    <!-- ========== STEP 2 ========== -->
+    <div class="step-card green">
+      <div class="step-num teal">2</div>
+      <div class="step-title">💨 L1 本地缓存查询 (Caffeine, TTL 30s)</div>
+      <div class="step-body">
+        <span class="role-tag gateway">零信任网关 PEP</span> 查询本地 Caffeine 缓存
+        <br><br>
+        &nbsp;&nbsp;命中且未过期 → <strong>直接决策，P99 &lt; 1ms</strong>
+        <br>
+        &nbsp;&nbsp;未命中/过期 → 调用 PDP 中心决策
+
+        <div class="info-box green" style="margin-top: 12px;">
+          💡 L1 缓存命中率目标 &gt; 85%，每节点容量 10 万条，MQ Fanout 主动失效 + TTL 兜底
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">未命中 → PDP 决策中心 🧠</div>
+    </div>
+
+    <!-- ========== STEP 3 ========== -->
+    <div class="step-card purple">
+      <div class="step-num purple">3</div>
+      <div class="step-title">🗄️ L2 Redis 缓存查询</div>
+      <div class="step-body">
+        <span class="role-tag pdp">PDP 决策中心</span> 查询 Redis 中的 PermissionSnapshot
+        <br><br>
+        &nbsp;&nbsp;命中 → 回填 L1 缓存，跳至 Step 5
+        <br>
+        &nbsp;&nbsp;未命中 → 进入 Step 4 数据库构建
+
+        <div class="table-tags">
+          <span class="table-tag">🔑 pms:snapshot:{entityId}:{userId}:{app}</span>
+          <span class="table-tag">⏱️ TTL 5min</span>
+          <span class="table-tag">🎯 命中率 &gt; 95%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">未命中 → 数据库构建快照 🏗️</div>
+    </div>
+
+    <!-- ========== STEP 4 ========== -->
+    <div class="step-card yellow">
+      <div class="step-num amber">4</div>
+      <div class="step-title">🏗️ 数据库权限快照构建</div>
+      <div class="step-body">
+        <span class="role-tag pdp">PDP 决策中心</span> 首次加载（+ 缓存穿透保护）
+        <br><br>
+        &nbsp;&nbsp;1. SELECT 用户角色 + 角色闭包展开 + 角色权限点
+        <br>
+        &nbsp;&nbsp;2. 加载数据范围 + 脱敏规则
+        <br>
+        &nbsp;&nbsp;3. 构建 <strong>PermissionSnapshot</strong>
+        <br>
+        &nbsp;&nbsp;4. 写入 L2 Redis（TTL 5min）
+
+        <div class="table-tags">
+          <span class="table-tag">📖 pms_user_role (READ)</span>
+          <span class="table-tag">📖 pms_role_inheritance (READ)</span>
+          <span class="table-tag">📖 pms_role_resource (READ)</span>
+          <span class="table-tag">📖 pms_data_scope (READ)</span>
+          <span class="table-tag">📖 pms_masking_rule (READ)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">快照就绪 → 风险评分 ⚠️</div>
+    </div>
+
+    <!-- ========== STEP 5 ========== -->
+    <div class="step-card orange">
+      <div class="step-num red">5</div>
+      <div class="step-title">⚠️ 风险评分 (异步并行, 500ms)</div>
+      <div class="step-body">
+        <span class="role-tag pdp">PDP 决策中心</span> 多维度评分：
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px;">
+          <div style="background: #fff; border: 2px solid #2d2d2d; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.04);">
+            <div style="font-size: 24px;">📱</div>
+            <div style="font-size: 14px; font-weight: 700;">设备信任度</div>
+            <div style="font-size: 13px; color: #666;">新设备 +30</div>
+          </div>
+          <div style="background: #fff; border: 2px solid #2d2d2d; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.04);">
+            <div style="font-size: 24px;">🌍</div>
+            <div style="font-size: 14px; font-weight: 700;">地理位置</div>
+            <div style="font-size: 13px; color: #666;">异地+20 异国+40</div>
+          </div>
+          <div style="background: #fff; border: 2px solid #2d2d2d; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.04);">
+            <div style="font-size: 24px;">🕐</div>
+            <div style="font-size: 14px; font-weight: 700;">时间</div>
+            <div style="font-size: 13px; color: #666;">非工作时间 +15</div>
+          </div>
+          <div style="background: #fff; border: 2px solid #2d2d2d; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.04);">
+            <div style="font-size: 24px;">🔐</div>
+            <div style="font-size: 14px; font-weight: 700;">资源敏感度</div>
+            <div style="font-size: 13px; color: #666;">等级 4 +20</div>
+          </div>
+          <div style="background: #fff; border: 2px solid #2d2d2d; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.04);">
+            <div style="font-size: 24px;">📊</div>
+            <div style="font-size: 14px; font-weight: 700;">历史行为</div>
+            <div style="font-size: 13px; color: #666;">近7天异常 +10~30</div>
+          </div>
+          <div style="background: #fecaca; border: 2px solid #dc2626; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.04);">
+            <div style="font-size: 24px;">🚨</div>
+            <div style="font-size: 14px; font-weight: 700;">决策阈值</div>
+            <div style="font-size: 13px; color: #666;">≥80 DENY · 60~79 MFA</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">评分完成 → DENY 优先检查 🚫</div>
+    </div>
+
+    <!-- ========== STEP 6 ========== -->
+    <div class="step-card pink">
+      <div class="step-num red">6</div>
+      <div class="step-title">🚫 DENY 优先策略检查 (最高优先级)</div>
+      <div class="step-body">
+        <span class="role-tag pdp">PDP 决策中心</span> 硬性拦截，<strong>任一命中 → 立即 DENY，不检查 ALLOW</strong>
+
+        <div class="decision-grid" style="margin-top: 14px;">
+          <div class="decision-item" style="background: #fecaca; border-color: #dc2626;">
+            <div class="di-icon">🔒</div>
+            <div class="di-title">全局 DENY</div>
+            <div class="di-desc">离职账号<br>冻结账号</div>
+          </div>
+          <div class="decision-item" style="background: #fef3c7; border-color: #d97706;">
+            <div class="di-icon">⚖️</div>
+            <div class="di-title">SoD 动态互斥</div>
+            <div class="di-desc">会话激活的<br>角色冲突</div>
+          </div>
+          <div class="decision-item" style="background: #f2e8fd; border-color: #7c3aed;">
+            <div class="di-icon">📋</div>
+            <div class="di-title">ABAC DENY 策略</div>
+            <div class="di-desc">优先级 1-50<br>按顺序执行</div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 pms_sod_rule (READ)</span>
+          <span class="table-tag">📖 pms_abac_policy [DENY] (READ)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">未被拒绝 → RBAC 基础检查 ✅</div>
+    </div>
+
+    <!-- ========== STEP 7 ========== -->
+    <div class="step-card green">
+      <div class="step-num green">7</div>
+      <div class="step-title">✅ RBAC 基础权限检查 (O(1) 查询)</div>
+      <div class="step-body">
+        <span class="role-tag pdp">PDP 决策中心</span> 从 PermissionSnapshot 读取：
+        <br><br>
+        &nbsp;&nbsp;resourceCode 在 <strong>allowedResources</strong> 集合中？
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;否 → <strong style="color: #dc2626;">DENY</strong>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;是 → 继续 ABAC 检查
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">RBAC 通过 → ABAC 动态检查 🎛️</div>
+    </div>
+
+    <!-- ========== STEP 8 ========== -->
+    <div class="step-card purple">
+      <div class="step-num purple">8</div>
+      <div class="step-title">🎛️ ABAC 动态策略检查 (按优先级)</div>
+      <div class="step-body">
+        <span class="role-tag pdp">PDP 决策中心</span> 依次检查三类条件：
+
+        <div class="decision-grid" style="margin-top: 14px;">
+          <div class="decision-item" style="background: #e8f4fd; border-color: #2563eb;">
+            <div class="di-icon">📊</div>
+            <div class="di-title">数据范围</div>
+            <div class="di-desc">资源 org_id 是否<br>在用户范围内</div>
+          </div>
+          <div class="decision-item" style="background: #e8fde8; border-color: #16a34a;">
+            <div class="di-icon">🌐</div>
+            <div class="di-title">环境约束</div>
+            <div class="di-desc">时间窗口 · IP · <br>设备合规性</div>
+          </div>
+          <div class="decision-item" style="background: #fef6e0; border-color: #d97706;">
+            <div class="di-icon">💰</div>
+            <div class="di-title">业务规则</div>
+            <div class="di-desc">金额阈值<br>账户状态</div>
+          </div>
+        </div>
+
+        <div class="info-box purple" style="margin-top: 12px;">
+          📌 全部 ALLOW → 允许 · 任一不满足 → DENY
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 pms_abac_policy [ALLOW] (READ)</span>
+          <span class="table-tag">📖 pms_compliance_config (READ)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">决策完成 → 返回结果 📤</div>
+    </div>
+
+    <!-- ========== STEP 9 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">9</div>
+      <div class="step-title">📤 返回决策 + 数据权限上下文</div>
+      <div class="step-body">
+        <span class="role-tag pdp">PDP 决策中心</span> 返回完整决策结果给网关/应用：
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 14px;">
+          <div style="background: #fff; border: 2.5px solid #16a34a; border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 24px;">📊</div>
+            <div style="font-size: 16px; font-weight: 700; color: #16a34a;">dataScope</div>
+            <div style="font-size: 14px; color: #555; margin-top: 4px;">行级过滤条件<br>如 team_id = 501</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #7c3aed; border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 24px;">🔒</div>
+            <div style="font-size: 16px; font-weight: 700; color: #7c3aed;">maskingRules</div>
+            <div style="font-size: 14px; color: #555; margin-top: 4px;">列级脱敏规则<br>如 HIDE_MIDDLE</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2563eb; border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 24px;">⏱️</div>
+            <div style="font-size: 16px; font-weight: 700; color: #2563eb;">expiresAt</div>
+            <div style="font-size: 14px; color: #555; margin-top: 4px;">决策缓存有效期<br>回填 L1/L2</div>
+          </div>
+        </div>
+
+        <div class="info-box blue" style="margin-top: 12px;">
+          📌 <strong>决策枚举</strong>：ALLOW | DENY | DEGRADED_ALLOW（降级放行）| STEP_UP_REQUIRED（需MFA）| RATE_LIMITED（限频拒绝）
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">异步后置处理 📋</div>
+    </div>
+
+    <!-- ========== STEP 10-12 ========== -->
+    <div class="step-card yellow">
+      <div class="step-num amber">10</div>
+      <div class="step-title">📋 后置处理 (异步, 不影响响应)</div>
+      <div class="step-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 8px;">
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.05);">
+            <div style="font-size: 28px; margin-bottom: 6px;">📝</div>
+            <div style="font-size: 17px; font-weight: bold;">Step 10: 审计日志</div>
+            <div style="font-size: 14px; color: #555; margin-top: 4px;">MQ 异步写入<br>HMAC-SHA256 签名<br>不可篡改</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.05);">
+            <div style="font-size: 28px; margin-bottom: 6px;">🚨</div>
+            <div style="font-size: 17px; font-weight: bold;">Step 11: 实时告警</div>
+            <div style="font-size: 14px; color: #555; margin-top: 4px;">score ≥ 60<br>触发 SIEM<br>高风险操作预警</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.05);">
+            <div style="font-size: 28px; margin-bottom: 6px;">🧠</div>
+            <div style="font-size: 17px; font-weight: bold;">Step 12: 行为入库</div>
+            <div style="font-size: 14px; color: #555; margin-top: 4px;">供 UEBA 分析<br>行为特征建模<br>异常检测</div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 pms_audit_log (CREATE)</span>
+          <span class="table-tag">📄 pms_audit_log_detail (CREATE)</span>
+          <span class="table-tag">📨 Kafka audit-log topic</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end flow-steps -->
+
+  <!-- ==================== SECTION 4: AUTHORIZATION FLOW ==================== -->
+  <div class="section-title">📋 授权申请流程 (PMS + 外部审批流)</div>
+
+  <div class="flow-steps">
+
+    <div class="step-card blue">
+      <div class="step-num">1</div>
+      <div class="step-title">🔍 PMS 申请预检 (SoD)</div>
+      <div class="step-body">
+        员工/主管在管理后台发起授权申请，PMS 执行：
+        <br><br>
+        &nbsp;&nbsp;1. 目标用户合法性校验
+        <br>
+        &nbsp;&nbsp;2. 目标角色存在性校验
+        <br>
+        &nbsp;&nbsp;3. <strong>静态 SoD 预检</strong>（提前发现冲突，避免浪费审批资源）
+
+        <div class="info-box orange" style="margin-top: 10px;">
+          ⚖️ <strong>SoD 命中处理</strong>：violation_action = 1 → 直接拒绝 | violation_action = 2 → 触发豁免审批流
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 pms_sod_rule (READ)</span>
+          <span class="table-tag">📖 pms_user_role (READ)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">预检通过 → 提交外部审批 📮</div>
+    </div>
+
+    <div class="step-card green">
+      <div class="step-num green">2</div>
+      <div class="step-title">📮 提交外部审批流服务</div>
+      <div class="step-body">
+        PMS 调用审批流 API，审批链路按风险等级自动路由：
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.05);">
+            <div style="font-size: 18px; margin-bottom: 4px;">🟢 普通角色</div>
+            <div style="font-size: 15px; color: #555;">L1 直属主管审批</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.05);">
+            <div style="font-size: 18px; margin-bottom: 4px;">🟡 敏感角色</div>
+            <div style="font-size: 15px; color: #555;">L1 主管 + L2 部门负责人</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.05);">
+            <div style="font-size: 18px; margin-bottom: 4px;">🔴 超级管理员</div>
+            <div style="font-size: 15px; color: #555;">+ CIO/CTO 双人审批</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.05);">
+            <div style="font-size: 18px; margin-bottom: 4px;">📋 跟踪</div>
+            <div style="font-size: 15px; color: #555;">PMS 记录 approval_no<br>状态由审批流管理</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">审批流回调（通过/拒绝）📩</div>
+    </div>
+
+    <div class="step-card purple">
+      <div class="step-num purple">3</div>
+      <div class="step-title">📩 PMS 接收审批结果 · 回调执行授权</div>
+      <div class="step-body">
+        <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px;">
+          <div style="flex: 1; min-width: 250px; background: #bbf7d0; border: 2.5px solid #16a34a; border-radius: 14px; padding: 14px;">
+            <div style="font-size: 20px; text-align: center;">✅ 审批通过</div>
+            <div style="font-size: 15px; color: #14532d; margin-top: 8px;">
+              1. 写入 pms_user_role（ACTIVE 状态）<br>
+              2. 触发缓存失效事件（MQ fanout）<br>
+              3. 写审计日志（before/after 快照）<br>
+              4. 通知申请人（站内信）<br>
+              5. 临时授权注册到期回收任务
+            </div>
+          </div>
+          <div style="flex: 1; min-width: 250px; background: #fecaca; border: 2.5px solid #dc2626; border-radius: 14px; padding: 14px;">
+            <div style="font-size: 20px; text-align: center;">❌ 审批拒绝</div>
+            <div style="font-size: 15px; color: #7f1d1d; margin-top: 8px;">
+              仅通知申请人<br>
+              记录拒绝原因
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 pms_user_role (CREATE)</span>
+          <span class="table-tag">📄 pms_audit_log (CREATE)</span>
+          <span class="table-tag">📨 MQ Cache Invalidation Fanout</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end flow-steps -->
+
+  <!-- ==================== SECTION 5: STATE MACHINES ==================== -->
+  <div class="section-title">🔄 状态机</div>
+
+  <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 18px; padding: 28px; box-shadow: 4px 4px 0 rgba(0,0,0,0.08); max-width: 960px; margin: 0 auto;">
+    <div class="tape" style="right: 40px;"></div>
+
+    <div style="font-size: 22px; margin-bottom: 16px; color: #2563eb;">🔗 授权关系状态 (User-Role Grant)</div>
+    <div class="status-flow">
+      <div class="sf-node active"><div class="sf-code">ACTIVE</div><div class="sf-label">正式生效</div></div>
+      <div class="sf-bidir">↔</div>
+      <div class="sf-node warn"><div class="sf-code">SUSPENDED</div><div class="sf-label">暂停</div></div>
+    </div>
+    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 8px; flex-wrap: wrap;">
+      <div style="text-align: center; font-size: 14px; color: #666;">ACTIVE ↓</div>
+    </div>
+    <div style="display: flex; gap: 16px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
+      <div class="sf-node" style="background: #e5e7eb; border-color: #6b7280;"><div class="sf-code">EXPIRED</div><div class="sf-label">过期（临时授权）</div></div>
+      <div class="sf-node fail"><div class="sf-code">REVOKED</div><div class="sf-label">回收（终态）</div></div>
+    </div>
+
+    <div class="info-box blue" style="margin-top: 16px;">
+      📌 APPLYING / PENDING_APPROVAL / REJECTED 等审批状态由<strong>外部审批流服务</strong>管理，PMS 仅在审批通过后创建 ACTIVE 记录
+    </div>
+
+    <div style="font-size: 22px; margin: 28px 0 16px 0; color: #7c3aed;">📜 ABAC 策略版本状态</div>
+    <div class="status-flow">
+      <div class="sf-node" style="background: #e0e7ff;"><div class="sf-code">DRAFT</div><div class="sf-label">草稿</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node warn"><div class="sf-code">PENDING</div><div class="sf-label">待审批</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #dcfce7;"><div class="sf-code">APPROVED</div><div class="sf-label">已审批</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node active"><div class="sf-code">ACTIVE</div><div class="sf-label">生效中</div></div>
+    </div>
+    <div style="display: flex; gap: 16px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
+      <div class="sf-node" style="background: #e5e7eb; border-color: #6b7280;"><div class="sf-code">DEPRECATED</div><div class="sf-label">废弃（保留90天）</div></div>
+      <div class="sf-node fail"><div class="sf-code">ROLLED_BACK</div><div class="sf-label">被回滚</div></div>
+      <div class="sf-node" style="background: #fecaca; border-color: #dc2626;"><div class="sf-code">REJECTED</div><div class="sf-label">审批拒绝 → DRAFT</div></div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 6: CACHE + DEGRADATION ==================== -->
+  <div class="section-title">⚡ 缓存策略 + 降级策略</div>
+
+  <div class="side-by-side">
+    <!-- Cache Strategy -->
+    <div class="side-card" style="background: #e8f4fd;">
+      <div class="tape"></div>
+      <div style="font-size: 22px; margin-bottom: 16px; font-family: var(--font-hand);">🗄️ 三级缓存策略</div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="background: #fff; border: 2.5px solid #2563eb; border-radius: 12px; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 18px; font-weight: 700; color: #2563eb;">L1 Caffeine</div>
+            <div style="background: #2563eb; color: #fff; padding: 2px 10px; border-radius: 8px; font-size: 13px; font-weight: 700;">TTL 30s</div>
+          </div>
+          <div style="font-size: 14px; color: #555; margin-top: 6px;">
+            应用/网关本地 · 每节点 10 万条 · 命中率 &gt; 85%<br>
+            MQ Fanout 主动失效 + TTL 兜底
+          </div>
+        </div>
+
+        <div style="text-align: center; font-size: 20px; color: #2d2d2d;">⬇️ <span style="font-size: 14px;">未命中</span></div>
+
+        <div style="background: #fff; border: 2.5px solid #0d7377; border-radius: 12px; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 18px; font-weight: 700; color: #0d7377;">L2 Redis 集群</div>
+            <div style="background: #0d7377; color: #fff; padding: 2px 10px; border-radius: 8px; font-size: 13px; font-weight: 700;">TTL 5min</div>
+          </div>
+          <div style="font-size: 14px; color: #555; margin-top: 6px;">
+            KEY: pms:snapshot:{entityId}:{userId}:{app}<br>
+            命中率 &gt; 95% · 空对象缓存 + 布隆过滤器
+          </div>
+        </div>
+
+        <div style="text-align: center; font-size: 20px; color: #2d2d2d;">⬇️ <span style="font-size: 14px;">未命中</span></div>
+
+        <div style="background: #fff; border: 2.5px solid #92400e; border-radius: 12px; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 18px; font-weight: 700; color: #92400e;">L3 MySQL</div>
+            <div style="background: #92400e; color: #fff; padding: 2px 10px; border-radius: 8px; font-size: 13px; font-weight: 700;">权威数据源</div>
+          </div>
+          <div style="font-size: 14px; color: #555; margin-top: 6px;">
+            读写分离 · 权限快照构建 &lt; 50ms<br>
+            按 entity_id 分库 · user_id 取模分表
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Degradation Strategy -->
+    <div class="side-card" style="background: #fde8ef;">
+      <div class="tape"></div>
+      <div style="font-size: 22px; margin-bottom: 16px; font-family: var(--font-hand);">⬇️ 三级降级策略</div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="background: #fff; border: 2.5px solid #16a34a; border-radius: 12px; padding: 14px;">
+          <div style="font-size: 18px; font-weight: 700; color: #16a34a;">🟢 正常模式 (PDP 在线)</div>
+          <div style="font-size: 14px; color: #555; margin-top: 6px;">
+            L2 Redis 读取权限快照，命中率 &gt; 95%<br>
+            实时 RBAC + ABAC + SoD 全套决策<br>
+            <strong>P99 &lt; 20ms</strong>
+          </div>
+        </div>
+
+        <div style="text-align: center; font-size: 14px; color: #dc2626;">⬇️ PDP 错误率 &gt; 5% 或 P99 &gt; 100ms 持续 30s</div>
+
+        <div style="background: #fff; border: 2.5px solid #d97706; border-radius: 12px; padding: 14px;">
+          <div style="font-size: 18px; font-weight: 700; color: #d97706;">🟡 L1 本地缓存模式</div>
+          <div style="font-size: 14px; color: #555; margin-top: 6px;">
+            使用 Caffeine 本地缓存（TTL 30s）<br>
+            仅校验 RBAC，跳过 ABAC/风险评分<br>
+            标记 <strong>DEGRADED_ALLOW</strong> · T+1 合规补偿审查
+          </div>
+        </div>
+
+        <div style="text-align: center; font-size: 14px; color: #dc2626;">⬇️ L1 也失效或连续 1 分钟未刷新</div>
+
+        <div style="background: #fff; border: 2.5px solid #dc2626; border-radius: 12px; padding: 14px;">
+          <div style="font-size: 18px; font-weight: 700; color: #dc2626;">🔴 保守白名单模式</div>
+          <div style="font-size: 14px; color: #555; margin-top: 6px;">
+            仅放行"必须可用操作"（登录、查看订单/持仓）<br>
+            <strong>所有写操作、大额、敏感数据 → 全部拒绝</strong><br>
+            触发 P0 告警 · SRE 5 分钟内响应
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box red" style="margin-top: 12px;">
+        🔒 <strong>核心原则</strong>：高风险操作（出金、大额交易、敏感数据导出、权限变更）降级期间<strong>必须全部拒绝</strong>，宁可业务中断不可权限失控
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 7: SLA TABLE ==================== -->
+  <div class="section-title">⏱️ 鉴权请求分级 SLA</div>
+
+  <div style="max-width: 960px; margin: 0 auto;">
+    <table class="check-table">
+      <tr>
+        <th>优先级</th>
+        <th>典型场景</th>
+        <th>延迟 SLA</th>
+        <th>降级策略</th>
+        <th>缓存策略</th>
+      </tr>
+      <tr>
+        <td style="color: #dc2626; font-weight: 700;">P0 关键</td>
+        <td>交易下单前鉴权 · 出金审批</td>
+        <td><strong>P99 &lt; 20ms</strong></td>
+        <td>降级必拒绝</td>
+        <td>L1 本地缓存必命中</td>
+      </tr>
+      <tr>
+        <td style="color: #ea580c; font-weight: 700;">P1 重要</td>
+        <td>业务 API 鉴权 · 客户数据访问</td>
+        <td><strong>P99 &lt; 30ms</strong></td>
+        <td>降级允许 RBAC</td>
+        <td>L1 + L2 双级缓存</td>
+      </tr>
+      <tr>
+        <td style="color: #2563eb; font-weight: 700;">P2 普通</td>
+        <td>菜单/按钮可见性 · 报表查询</td>
+        <td><strong>P99 &lt; 50ms</strong></td>
+        <td>降级允许</td>
+        <td>L2 Redis 缓存</td>
+      </tr>
+      <tr>
+        <td style="color: #6b7280; font-weight: 700;">P3 低优</td>
+        <td>管理后台操作 · 配置变更</td>
+        <td><strong>P99 &lt; 200ms</strong></td>
+        <td>降级直通</td>
+        <td>直读 DB</td>
+      </tr>
+    </table>
+
+    <div class="info-box teal" style="margin-top: 16px;">
+      📌 <strong>性能约束</strong>：单用户最多 20 个角色 · 继承深度上限 3 层 · 单角色最多 500 权限点 · 快照大小上限 64KB
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 8: OFFBOARDING ==================== -->
+  <div class="section-title">👋 离职联动与权限回收流程</div>
+
+  <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 18px; padding: 28px; box-shadow: 4px 4px 0 rgba(0,0,0,0.08); max-width: 960px; margin: 0 auto;">
+    <div class="tape" style="right: 40px;"></div>
+
+    <div style="font-size: 22px; margin-bottom: 6px;">🏢 HR 系统触发 EMPLOYEE_OFFBOARD 事件</div>
+    <div style="font-size: 15px; color: #666; margin-bottom: 10px;">通过 Outbox / CDC / 内部 API 传播，确保离职权限回收不可绕过</div>
+
+    <div class="timeline">
+      <div class="tl-item" style="background: #fecaca;">
+        <div class="tl-time">T+0 当日立即</div>
+        <div class="tl-desc">
+          🔒 <strong>紧急冻结</strong>
+          <br>
+          &nbsp;&nbsp;• pms_user.status = 4（离职冻结）
+          <br>
+          &nbsp;&nbsp;• 强制踢出所有会话（Redis DEL 该用户所有 token）
+          <br>
+          &nbsp;&nbsp;• MQ 广播缓存失效事件
+        </div>
+      </div>
+      <div class="tl-item" style="background: #fef6e0;">
+        <div class="tl-time">T+1 内完成</div>
+        <div class="tl-desc">
+          🔄 <strong>权限接替</strong>
+          <br>
+          &nbsp;&nbsp;• 触发"权限接替工单"，指派直属主管
+          <br>
+          &nbsp;&nbsp;• 主管指定接替人员，一键迁移角色
+          <br>
+          &nbsp;&nbsp;• 迁移记录强制留痕（审计日志）
+        </div>
+      </div>
+      <div class="tl-item" style="background: #e8fde8;">
+        <div class="tl-time">T+7 内完成</div>
+        <div class="tl-desc">
+          🗑️ <strong>彻底回收</strong>
+          <br>
+          &nbsp;&nbsp;• 所有角色标记为 REVOKED
+          <br>
+          &nbsp;&nbsp;• 业务数据（客户、订单）自动转接
+          <br>
+          &nbsp;&nbsp;• 审计日志归档，保留 5 年以上
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box red" style="margin-top: 16px;">
+      🔒 <strong>硬性合规</strong>：离职冻结在代码层强制执行，不可绕过。即使 HR 事件延迟，PMS 定时扫描也会自动冻结已标记离职的账号
+    </div>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <div class="footer">
+    <div style="font-size: 32px; margin-bottom: 8px;">🛡️🔑📋✅</div>
+    <div>权限系统 (PMS) 架构流程图</div>
+    <div style="margin-top: 4px;">Permission Management System · 14 Tables · 12 Steps · RBAC + ABAC + PBAC</div>
+    <div style="margin-top: 8px; font-size: 14px; color: #bbb;">Generated on 2026-04-19</div>
+  </div>
+
+</div><!-- end flow-container -->
+
+</body>
+</html>

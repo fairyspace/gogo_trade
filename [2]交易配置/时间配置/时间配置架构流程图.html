@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>时间配置系统架构流程图</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #fefcf3;
+    background-image: radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 24px 24px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: #2d2d2d;
+    min-height: 100vh;
+    padding: 30px;
+  }
+
+  /* Title */
+  .main-title { text-align: center; margin-bottom: 10px; }
+  .main-title h1 {
+    font-family: var(--font-hand); font-size: 52px; color: #333;
+    letter-spacing: 6px; text-shadow: 3px 3px 0 #ffd36e;
+    position: relative; display: inline-block; font-weight: 400;
+  }
+  .main-title h1::after {
+    content: ''; position: absolute; bottom: -4px; left: -10px; right: -10px;
+    height: 6px; background: #ff6b6b; border-radius: 3px; transform: rotate(-0.5deg);
+  }
+  .main-title .subtitle {
+    font-size: 18px; color: #555; margin-top: 14px;
+    font-weight: 600; line-height: 1.5;
+  }
+
+  /* Section Title */
+  .section-title {
+    font-family: var(--font-hand); font-size: 34px; font-weight: 400;
+    color: #2d2d2d; margin: 40px 0 20px 0; padding: 8px 20px;
+    border-left: 8px solid #ff6b6b;
+    background: linear-gradient(90deg, #fff3cd 0%, transparent 100%);
+    border-radius: 0 12px 12px 0; display: inline-block;
+  }
+
+  .flow-container { max-width: 1300px; margin: 0 auto; position: relative; }
+
+  /* DB Overview */
+  .db-overview {
+    display: flex; justify-content: center; gap: 20px;
+    flex-wrap: wrap; margin-bottom: 30px; padding: 4px 0 8px;
+  }
+  .db-group {
+    background: #fff; border: 3.5px solid #2d2d2d; border-radius: 18px;
+    padding: 20px 22px; flex: 1 1 280px; max-width: 400px;
+    min-width: min(100%, 260px); position: relative;
+    box-shadow: 5px 5px 0 #2d2d2d;
+  }
+  .db-group-title {
+    font-family: var(--font-hand); font-size: 22px; font-weight: 400;
+    color: #fff; background: #2d2d2d; display: inline-block;
+    padding: 4px 16px; border-radius: 10px; margin-bottom: 14px;
+  }
+  .db-group.config { background: #dbeafe; }
+  .db-group.compute { background: #dcfce7; }
+  .db-group.runtime { background: #fee2e2; }
+  .db-group.infra { background: #fef3c7; }
+  .db-table {
+    font-size: 15px; padding: 6px 0; border-bottom: 2px dashed #bbb;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .db-table:last-child { border-bottom: none; }
+  .db-table .tname { font-weight: bold; color: #1e40af; word-break: break-word; }
+  .db-table .tdesc { color: #555; }
+  .db-group.compute .db-table .tname { color: #16a34a; }
+  .db-group.runtime .db-table .tname { color: #b91c1c; }
+  .db-group.infra .db-table .tname { color: #b45309; }
+
+  /* Flow Steps */
+  .flow-steps {
+    position: relative; display: flex; flex-direction: column;
+    align-items: center; gap: 0;
+  }
+
+  .step-card {
+    background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px;
+    padding: 24px 30px; width: 90%; max-width: 900px;
+    position: relative; box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
+    margin-bottom: 0;
+  }
+
+  .step-card.blue { background: #dbeafe; }
+  .step-card.green { background: #dcfce7; }
+  .step-card.yellow { background: #fef9c3; }
+  .step-card.purple { background: #f3e8ff; }
+  .step-card.pink { background: #fce7f3; }
+  .step-card.orange { background: #ffedd5; }
+  .step-card.red { background: #fee2e2; }
+
+  .step-num {
+    position: absolute; top: -18px; left: 24px;
+    background: #ff6b6b; color: #fff; font-size: 18px; font-weight: 700;
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 3px solid #2d2d2d; box-shadow: 2px 2px 0 #2d2d2d;
+  }
+
+  .step-title {
+    font-family: var(--font-hand); font-size: 28px; font-weight: 400;
+    color: #1a1a2e; margin-bottom: 10px; padding-left: 36px; line-height: 1.35;
+  }
+  .step-body { font-size: 17px; line-height: 1.65; color: #333; }
+
+  .role-tag {
+    display: inline-block; background: #fbbf24; color: #78350f;
+    font-size: 14px; padding: 2px 10px; border-radius: 8px;
+    border: 2px solid #78350f; margin-right: 6px; font-weight: bold;
+  }
+  .role-tag.sys { background: #93c5fd; color: #1e3a5f; border-color: #1e3a5f; }
+  .role-tag.risk { background: #fca5a5; color: #7f1d1d; border-color: #7f1d1d; }
+  .role-tag.ext { background: #c4b5fd; color: #3b0764; border-color: #3b0764; }
+  .role-tag.engine { background: #6ee7b7; color: #064e3b; border-color: #064e3b; }
+
+  .table-tags {
+    margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .table-tag {
+    background: #1e293b; color: #e2e8f0; font-size: 13px;
+    padding: 3px 12px; border-radius: 10px;
+    font-family: 'JetBrains Mono', 'Consolas', var(--font-ui);
+    letter-spacing: 0.3px; white-space: nowrap;
+  }
+
+  /* Arrow */
+  .arrow-down {
+    display: flex; flex-direction: column; align-items: center;
+    height: auto; min-height: 48px; padding: 6px 0 10px;
+  }
+  .arrow-down .arrow-line {
+    width: 5px; flex: 0 0 32px; min-height: 32px;
+    background: repeating-linear-gradient(to bottom,
+      #2d2d2d 0px, #2d2d2d 8px, transparent 8px, transparent 14px);
+    border-radius: 3px;
+  }
+  .arrow-down .arrow-head {
+    width: 0; height: 0;
+    border-left: 14px solid transparent; border-right: 14px solid transparent;
+    border-top: 18px solid #2d2d2d;
+  }
+  .arrow-label {
+    margin-top: 8px; background: #fff7ed; border: 2px solid #ea580c;
+    border-radius: 10px; padding: 4px 14px; font-size: 15px;
+    font-weight: 600; color: #9a3412; text-align: center;
+    line-height: 1.4; box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  }
+
+  /* Decision Box */
+  .decision-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 14px;
+  }
+  .decision-item {
+    background: #fff; border: 3px solid #2d2d2d; border-radius: 14px;
+    padding: 16px; text-align: center; box-shadow: 3px 3px 0 rgba(0,0,0,0.12);
+  }
+  .decision-item.pass { background: #bbf7d0; border-color: #16a34a; }
+  .decision-item.warn { background: #fef9c3; border-color: #ca8a04; }
+  .decision-item.fail { background: #fecaca; border-color: #dc2626; }
+  .decision-item.info { background: #e9d5ff; border-color: #7c3aed; }
+  .decision-item .di-icon { font-size: 32px; margin-bottom: 6px; }
+  .decision-item .di-title { font-size: 20px; font-weight: bold; }
+  .decision-item .di-desc { font-size: 15px; color: #555; margin-top: 4px; }
+
+  /* Pipeline visual */
+  .pipeline {
+    display: flex; align-items: center; gap: 8px; margin: 16px 0;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .pp-stage {
+    background: #fff; border: 3px solid #2d2d2d; border-radius: 14px;
+    padding: 10px 16px; text-align: center; min-width: 120px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.12);
+  }
+  .pp-stage.intersect { background: #fef3c7; border-color: #ca8a04; }
+  .pp-stage.union { background: #dbeafe; border-color: #2563eb; }
+  .pp-stage.override { background: #fce7f3; border-color: #e11d48; }
+  .pp-stage .pp-name { font-size: 18px; font-weight: bold; }
+  .pp-stage .pp-desc { font-size: 13px; color: #555; }
+  .pp-arrow { font-size: 28px; color: #2d2d2d; font-weight: bold; }
+
+  /* Status Flow */
+  .status-flow {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    justify-content: center; margin: 20px 0; padding: 6px 0 8px;
+  }
+  .sf-node {
+    background: #fff; border: 3px solid #2d2d2d; border-radius: 14px;
+    padding: 10px 14px; text-align: center; min-width: 90px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .sf-node.active { background: #bbf7d0; border-color: #16a34a; }
+  .sf-node.pending { background: #fef9c3; border-color: #ca8a04; }
+  .sf-node.fail { background: #fecaca; border-color: #dc2626; }
+  .sf-node.replaced { background: #e9d5ff; border-color: #7c3aed; }
+  .sf-node .sf-code { font-size: 20px; font-weight: bold; }
+  .sf-node .sf-label { font-size: 13px; color: #555; }
+  .sf-arrow {
+    font-size: 26px; color: #2d2d2d; margin: 0 4px; font-weight: bold;
+  }
+
+  /* Cascade Layer */
+  .cascade-layers {
+    display: flex; flex-direction: column; gap: 6px; margin: 16px 0;
+  }
+  .cascade-layer {
+    background: #fff; border: 3px solid #2d2d2d; border-radius: 12px;
+    padding: 12px 18px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .cascade-layer.l1 { background: #fee2e2; border-color: #dc2626; }
+  .cascade-layer.l2 { background: #ffedd5; border-color: #ea580c; }
+  .cascade-layer.l3 { background: #fef9c3; border-color: #ca8a04; }
+  .cascade-layer.l4 { background: #dcfce7; border-color: #16a34a; }
+  .cascade-icon { font-size: 28px; }
+  .cascade-title { font-size: 18px; font-weight: bold; min-width: 120px; }
+  .cascade-desc { color: #555; font-size: 15px; flex: 1; }
+
+  /* Cache Layers */
+  .cache-stack {
+    display: flex; flex-direction: column; gap: 8px; align-items: stretch;
+  }
+  .cache-layer {
+    border: 3px solid #2d2d2d; border-radius: 14px;
+    padding: 14px 18px; display: grid;
+    grid-template-columns: 60px 130px 1fr 100px;
+    align-items: center; gap: 14px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .cache-layer.l1 { background: #dbeafe; border-color: #2563eb; }
+  .cache-layer.l2 { background: #fce7f3; border-color: #e11d48; }
+  .cache-layer.l3 { background: #fef9c3; border-color: #ca8a04; }
+  .cache-layer.db { background: #dcfce7; border-color: #16a34a; }
+  .cache-icon { font-size: 36px; text-align: center; }
+  .cache-name { font-weight: bold; font-size: 17px; }
+  .cache-detail { color: #555; font-size: 14px; line-height: 1.4; }
+  .cache-sla {
+    background: #1e293b; color: #f1f5f9; padding: 4px 10px;
+    border-radius: 8px; font-size: 13px; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* SLA Table */
+  .sla-table {
+    width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 14px;
+    border: 3px solid #2d2d2d; border-radius: 14px; overflow: hidden;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .sla-table th {
+    background: #1e293b; color: #f1f5f9; padding: 10px 14px;
+    font-size: 17px; text-align: left;
+  }
+  .sla-table td {
+    padding: 10px 14px; font-size: 16px;
+    border-bottom: 2px dashed #ddd; background: #fff;
+  }
+  .sla-table tr:last-child td { border-bottom: none; }
+  .sla-table td:first-child { font-weight: bold; color: #1e40af; }
+  .sla-table .ok { color: #16a34a; font-weight: bold; }
+  .sla-table .warn-th { color: #ca8a04; font-weight: bold; }
+
+  /* Footer */
+  .footer {
+    text-align: center; margin-top: 50px; padding: 20px;
+    color: #999; font-size: 16px;
+  }
+
+  /* Tape */
+  .tape {
+    position: absolute; width: 80px; height: 28px;
+    background: rgba(255, 222, 89, 0.6);
+    border: 1.5px solid rgba(200, 170, 50, 0.4);
+    transform: rotate(-35deg); top: -10px; right: 30px;
+    border-radius: 2px; z-index: 2;
+  }
+
+  /* Corner Deco */
+  .corner-deco {
+    position: fixed; pointer-events: none; z-index: 0;
+  }
+  .corner-deco.tl { top: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.tr { top: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.bl { bottom: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.br { bottom: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .decision-grid { grid-template-columns: 1fr; }
+    .step-card { width: 98%; padding: 18px; }
+    .db-overview { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+    .db-group { min-width: auto; width: 95%; flex-shrink: 1; }
+    .main-title h1 { font-size: 36px; }
+    .cache-layer { grid-template-columns: 1fr; text-align: center; }
+  }
+
+  /* Print */
+  @page { size: A4 portrait; margin: 10mm 11mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body {
+      background: #fff !important; background-image: none !important;
+      font-size: 10.5pt; padding: 0 !important;
+    }
+    .flow-container { max-width: 100% !important; padding: 0 !important; }
+    .corner-deco, .tape { display: none !important; }
+    .main-title { margin-bottom: 5mm; page-break-after: avoid; }
+    .main-title h1 { font-size: 22pt !important; letter-spacing: 2px !important; }
+    .main-title .subtitle { font-size: 9.5pt !important; }
+    .section-title { font-size: 15pt !important; margin: 6mm 0 4mm !important; page-break-after: avoid; }
+    .db-overview { flex-wrap: wrap !important; justify-content: center !important; }
+    .db-group {
+      flex: 1 1 48% !important; max-width: 100% !important; min-width: 0 !important;
+      box-shadow: none !important; border-width: 2px !important; page-break-inside: avoid;
+    }
+    .db-table { font-size: 9.5pt !important; }
+    .step-card {
+      width: 100% !important; max-width: 100% !important;
+      box-shadow: none !important; border-width: 2px !important;
+      page-break-inside: avoid; padding: 10px 12px !important;
+    }
+    .step-title { font-size: 13pt !important; padding-left: 28px !important; }
+    .step-body { font-size: 10pt !important; }
+    .arrow-down { padding: 3mm 0 !important; }
+    .decision-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
+    .sla-table { font-size: 9.5pt !important; }
+    .sla-table th, .sla-table td { padding: 6px 8px !important; }
+    .cache-layer { padding: 8px 12px !important; }
+    .footer { margin-top: 8mm; font-size: 9pt; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Corner Decorations -->
+<div class="corner-deco tl">🕒</div>
+<div class="corner-deco tr">🌅</div>
+<div class="corner-deco bl">📅</div>
+<div class="corner-deco br">⏰</div>
+
+<div class="flow-container">
+
+  <!-- ==================== TITLE ==================== -->
+  <div class="main-title">
+    <h1>🕒 时间配置系统架构流程图</h1>
+    <div class="subtitle">Trading Time Configuration · db_time_config · 10 Tables · Full Lifecycle · UTC Native</div>
+  </div>
+
+  <!-- ==================== SECTION 1: DB OVERVIEW ==================== -->
+  <div class="section-title">📦 数据库架构总览 (db_time_config)</div>
+
+  <div class="db-overview">
+    <!-- Config Layer -->
+    <div class="db-group config">
+      <div class="tape"></div>
+      <div class="db-group-title">📘 配置层 (6张)</div>
+      <div class="db-table"><span class="tname">t_platform_session</span><span class="tdesc">平台周时段</span></div>
+      <div class="db-table"><span class="tname">t_symbol_session</span><span class="tdesc">品种周时段+DST</span></div>
+      <div class="db-table"><span class="tname">t_special_session_rule</span><span class="tdesc">特殊日期规则</span></div>
+      <div class="db-table"><span class="tname">t_special_session</span><span class="tdesc">特殊日期实例</span></div>
+      <div class="db-table"><span class="tname">t_exchange_holiday</span><span class="tdesc">交易所假日</span></div>
+      <div class="db-table"><span class="tname">t_dst_schedule</span><span class="tdesc">DST切换日历</span></div>
+    </div>
+
+    <!-- Compute Layer -->
+    <div class="db-group compute">
+      <div class="tape"></div>
+      <div class="db-group-title">⚙️ 计算层 (2张)</div>
+      <div class="db-table"><span class="tname">t_daily_session</span><span class="tdesc">每日时段快照</span></div>
+      <div class="db-table"><span class="tname">t_snapshot_run_log</span><span class="tdesc">预计算运行日志</span></div>
+      <div style="margin-top: 14px; font-size: 14px; color: #555; line-height: 1.6;">
+        ✏️ 每日00:00 UTC 调度预计算<br>
+        ✏️ 按 trading_date 季度分区<br>
+        ✏️ 主键查询微秒级响应
+      </div>
+    </div>
+
+    <!-- Runtime Layer -->
+    <div class="db-group runtime">
+      <div class="tape"></div>
+      <div class="db-group-title">🚨 运行层 (1张)</div>
+      <div class="db-table"><span class="tname">t_session_override</span><span class="tdesc">实时覆盖</span></div>
+      <div style="margin-top: 14px; font-size: 14px; color: #555; line-height: 1.6;">
+        🛑 优先级最高，可覆盖一切静态配置<br>
+        🔑 idempotency_key 防重复<br>
+        📜 MiFID II 公开披露字段
+      </div>
+    </div>
+
+    <!-- Infra -->
+    <div class="db-group infra">
+      <div class="tape"></div>
+      <div class="db-group-title">📝 基础设施 (1张)</div>
+      <div class="db-table"><span class="tname">t_config_audit</span><span class="tdesc">配置变更审计</span></div>
+      <div style="margin-top: 14px; font-size: 14px; color: #555; line-height: 1.6;">
+        🔒 只 INSERT,不 UPDATE/DELETE<br>
+        📋 MiFID II / SEC 17a-4 合规字段<br>
+        🔍 reason/request_id/approver/client_ip
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 2: FULL FLOW ==================== -->
+  <div class="section-title">🗺️ 完整时间配置生命周期 (10步)</div>
+
+  <div class="flow-steps">
+
+    <!-- ========== STEP 1 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">1</div>
+      <div class="step-title">🏛️ 平台每周交易时段配置</div>
+      <div class="step-body">
+        <span class="role-tag">运营</span> 维护平台周一到周日的开闭市基线时段，所有品种时段必须落在此范围内<br><br>
+        <span class="role-tag sys">系统</span> 校验 <code>close_min > open_min</code>、<code>close_min ≤ 2880</code>（允许跨日）、同 weekday 内不重叠
+        <div style="margin-top: 10px; background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 10px; padding: 10px 14px; font-size: 16px;">
+          📌 <strong>session_type</strong> 仅允许静态时段类型：PRE_OPEN / OPEN / PRE_CLOSE / CLOSE_ONLY / AUCTION / POST_CLOSE<br>
+          ⛔ <strong>HALT / MAINTENANCE / QUOTE_ONLY</strong> 属于运行时状态，由 Step 8 覆盖表表达
+        </div>
+        <div class="table-tags">
+          <span class="table-tag">📄 t_platform_session (CRUD)</span>
+          <span class="table-tag">📝 t_config_audit (INSERT)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">平台基线确定 → 配置品种时段 📈</div>
+    </div>
+
+    <!-- ========== STEP 2 ========== -->
+    <div class="step-card green">
+      <div class="step-num">2</div>
+      <div class="step-title">📈 品种每周时段 + DST Profile 标记</div>
+      <div class="step-body">
+        <span class="role-tag">运营</span> 为每个品种配置周时段，标记 <strong>dst_profile</strong>（USA/EUROPE/AUSTRALIA/CHILE/NZ/NONE）<br><br>
+        <span class="role-tag sys">系统</span> 校验：①不超出平台时段；②同 (symbol_id, week_day) 不重叠；③跨日时段单行表达 (close_min ∈ [0,2880])
+
+        <div style="margin-top: 12px; background: #f0fdf4; border: 2px dashed #22c55e; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>关键设计 - 跨日时段：</strong>周日 22:00 → 周一 05:00 单行表达<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<code>week_day=7, open_min=1320 (22:00), close_min=1740 (次日05:00)</code><br>
+          🔑 <strong>关键设计 - 版本管理：</strong>同 (symbol_id, week_day, seq_no) 多版本通过 effective_from/to 隔离
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_symbol_session (CRUD)</span>
+          <span class="table-tag">📖 t_platform_session (READ-校验)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">品种配置完成 → 接入外部假日数据 🌐</div>
+    </div>
+
+    <!-- ========== STEP 3 ========== -->
+    <div class="step-card yellow">
+      <div class="step-num">3</div>
+      <div class="step-title">🌐 交易所日历数据接入（多源 + 冲突仲裁）</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 定期从外部数据源同步交易所假日数据，多源数据共存于 <code>t_exchange_holiday</code>，按 <code>confidence</code> 仲裁
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">📡 外部数据源</div>
+            <span class="role-tag ext">第三方</span> 主要来源:<br>
+            &nbsp;&nbsp;• JPX J-Quants API (东京)<br>
+            &nbsp;&nbsp;• HKEX iCal (香港)<br>
+            &nbsp;&nbsp;• EODHD API (70+交易所)<br>
+            &nbsp;&nbsp;• Nasdaq Data Link EFPH<br>
+            &nbsp;&nbsp;• pandas_market_calendars
+          </div>
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">⚖️ 冲突仲裁</div>
+            <span class="role-tag">运营</span> 处理冲突:<br>
+            &nbsp;&nbsp;1. 自动按 <code>confidence DESC</code> 取主<br>
+            &nbsp;&nbsp;2. 字段冲突 → 告警<br>
+            &nbsp;&nbsp;3. 运营裁定 → status=1<br>
+            &nbsp;&nbsp;4. 其他版本置 superseded_by<br>
+            &nbsp;&nbsp;5. 转特殊日期实例
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #fffbeb; border: 2px dashed #ca8a04; border-radius: 10px; padding: 12px; font-size: 15px;">
+          🔑 <strong>关键设计：</strong>交易所日历仅作参考数据，不直接参与运行时计算。运营确认后转化为 <code>t_special_session</code> 实例 (<code>source=EXCHANGE_SYNC</code>)
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_exchange_holiday (CREATE)</span>
+          <span class="table-tag">⚖️ resolve_conflict</span>
+          <span class="table-tag">📄 t_special_session (INSERT)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">外部数据 → 内部规则定义 📜</div>
+    </div>
+
+    <!-- ========== STEP 4 ========== -->
+    <div class="step-card purple">
+      <div class="step-num">4</div>
+      <div class="step-title">📜 特殊日期规则定义 + 年度递推</div>
+      <div class="step-body">
+        <span class="role-tag">运营</span> 一次定义、自动递推 — 支持 <strong>9 种 recur_type</strong>，覆盖全球主要节日体系<br><br>
+
+        <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08); margin-top: 10px;">
+          <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">🗓️ recur_type 全类型</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;">
+            <div>📅 <strong>FIXED</strong> — 公历固定日期（元旦）</div>
+            <div>📆 <strong>WEEKDAY_OBSERVED</strong> — 周末顺延（独立日）</div>
+            <div>🔢 <strong>NTH_WEEKDAY</strong> — 第N个星期几（感恩节）</div>
+            <div>🔚 <strong>LAST_WEEKDAY</strong> — 最后周几（阵亡纪念日）</div>
+            <div>🌙 <strong>LUNAR</strong> — 农历（春节，CN/JP/KR/VN）</div>
+            <div>🕌 <strong>ISLAMIC</strong> — 伊斯兰历（开斋节）</div>
+            <div>✡️ <strong>JEWISH</strong> — 希伯来历（赎罪日）</div>
+            <div>🧮 <strong>EXPRESSION</strong> — DSL（easter+1d）</div>
+            <div style="grid-column: span 2;">✋ <strong>MANUAL</strong> — 不自动递推，临时手动</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #faf5ff; border: 2px dashed #7c3aed; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>实务指引：</strong>99% 场景使用 <code>stack_policy=OVERRIDE</code>（默认值）<br>
+          📐 INTERSECT 仅在"收窄原时段"时用; UNION 仅在"周日加开"等扩展场景使用<br>
+          🔮 提供 <code>/dry-run</code> 接口预览未来 5 年生成实例
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_special_session_rule (CRUD)</span>
+          <span class="table-tag">🧠 规则引擎递推</span>
+          <span class="table-tag">📄 t_special_session (BATCH INSERT)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">规则定义完成 → DST 半自动接管 🌅</div>
+    </div>
+
+    <!-- ========== STEP 5 ========== -->
+    <div class="step-card pink">
+      <div class="step-num">5</div>
+      <div class="step-title">🌅 DST 半自动版本生成</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 每年 12 月触发，为下一年所有 <code>dst_profile != 'NONE'</code> 的品种自动生成春令时/冬令时版本<br><br>
+
+        <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+          <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">🤖 自动生成步骤</div>
+          <ol style="padding-left: 22px; font-size: 15px; line-height: 1.8;">
+            <li>查 <code>t_dst_schedule(profile, year+1)</code> → 获取春进/秋退日期</li>
+            <li>扫描所有 <code>t_symbol_session</code> 中 <code>effective_to IS NULL</code> 的记录</li>
+            <li>春进日：原版本 <code>effective_to=spring_forward_date</code>；新版本 open/close -60min</li>
+            <li>秋退日：再生成版本 open/close +60min 复原（UTC 视角看时段提前/延后）</li>
+            <li><code>source='DST_AUTO'</code>, <code>version+=1</code>，写 <code>t_snapshot_run_log</code></li>
+          </ol>
+        </div>
+
+        <div style="margin-top: 14px; background: #fdf2f8; border: 2px dashed #ec4899; border-radius: 10px; padding: 12px; font-size: 15px;">
+          💡 <strong>关键价值：</strong>1万品种 × 每年 2 次切换 = 2万条手动版本 → 全部自动化<br>
+          🛡️ <strong>合规：</strong>所有自动生成均写入 <code>t_config_audit</code> 审计，change_source=DST_AUTO
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 t_dst_schedule (READ)</span>
+          <span class="table-tag">📄 t_symbol_session (INSERT versions)</span>
+          <span class="table-tag">📝 t_config_audit (BATCH)</span>
+          <span class="table-tag">📊 t_snapshot_run_log</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">配置就绪 → 每日预计算 ⏰</div>
+    </div>
+
+    <!-- ========== STEP 6 ========== -->
+    <div class="step-card orange">
+      <div class="step-num">6</div>
+      <div class="step-title">⏰ 每日预计算调度 + 三阶段管道</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 每日 <strong>00:00 UTC</strong> 触发调度任务，合并平台 ∩ 品种 ∩ 特殊日期，通过三阶段管道生成最终时段
+
+        <div class="pipeline">
+          <div class="pp-stage" style="background: #fff;">
+            <div class="pp-name">📥 基础时段</div>
+            <div class="pp-desc">品种 ∩ 平台</div>
+          </div>
+          <span class="pp-arrow">→</span>
+          <div class="pp-stage intersect">
+            <div class="pp-name">阶段1 INTERSECT</div>
+            <div class="pp-desc">收窄窗口</div>
+          </div>
+          <span class="pp-arrow">→</span>
+          <div class="pp-stage union">
+            <div class="pp-name">阶段2 UNION</div>
+            <div class="pp-desc">扩展窗口</div>
+          </div>
+          <span class="pp-arrow">→</span>
+          <div class="pp-stage override">
+            <div class="pp-name">阶段3 OVERRIDE</div>
+            <div class="pp-desc">替换结果</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #fff7ed; border: 2px dashed #ea580c; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>三阶段管道处理顺序固定 (避免歧义)：</strong><br>
+          &nbsp;&nbsp;1️⃣ <strong>INTERSECT 在前</strong>：先施加约束，避免 UNION 扩展又被截掉<br>
+          &nbsp;&nbsp;2️⃣ <strong>UNION 在中</strong>：受限范围内扩展（"受限开放"）<br>
+          &nbsp;&nbsp;3️⃣ <strong>OVERRIDE 在后</strong>：最高优先级直接拍板<br>
+          ⚡ <strong>路径匹配在 Trie 预编译阶段完成</strong>，运行时零路径解析开销
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 t_platform_session (READ)</span>
+          <span class="table-tag">📖 t_symbol_session (READ)</span>
+          <span class="table-tag">📖 t_special_session (READ)</span>
+          <span class="table-tag">🧠 三阶段管道</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">管道执行完毕 → 写入快照 📸</div>
+    </div>
+
+    <!-- ========== STEP 7 ========== -->
+    <div class="step-card green">
+      <div class="step-num">7</div>
+      <div class="step-title">📸 写入 t_daily_session 快照（按季分区）</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 批量写入 <code>t_daily_session</code>，按 <code>trading_date</code> RANGE 季度分区，<code>state=SCHEDULED</code>
+
+        <div class="status-flow" style="margin-top: 12px;">
+          <div class="sf-node pending"><div class="sf-code">SCHEDULED</div><div class="sf-label">已排期</div></div>
+          <span class="sf-arrow">→</span>
+          <div class="sf-node active"><div class="sf-code">ACTIVE</div><div class="sf-label">交易中</div></div>
+          <span class="sf-arrow">→</span>
+          <div class="sf-node"><div class="sf-code">COMPLETED</div><div class="sf-label">已结束</div></div>
+          <span class="sf-arrow" style="color:#dc2626;">↘</span>
+          <div class="sf-node fail"><div class="sf-code">CANCELLED</div><div class="sf-label">取消</div></div>
+        </div>
+
+        <div style="margin-top: 14px; background: #f0fdf4; border: 2px dashed #22c55e; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>state vs runtime_state 解耦：</strong><br>
+          &nbsp;&nbsp;• <code>state</code> 描述时段生命周期 (SCHEDULED/ACTIVE/COMPLETED/CANCELLED)<br>
+          &nbsp;&nbsp;• <code>runtime_state</code> 描述当下是否被覆盖到非常规状态 (HALT/MAINTENANCE/QUOTE_ONLY)<br>
+          🗂️ <strong>分区策略：</strong>按季度 RANGE，归档时 DROP PARTITION 秒级完成
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_daily_session (BATCH INSERT)</span>
+          <span class="table-tag">📊 t_snapshot_run_log (UPDATE)</span>
+          <span class="table-tag">📨 Pub/Sub 缓存失效</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">静态快照就绪 → 实时事件可能覆盖 🚨</div>
+    </div>
+
+    <!-- ========== STEP 8 ========== -->
+    <div class="step-card red">
+      <div class="step-num">8</div>
+      <div class="step-title">🚨 实时覆盖叠加（最高优先级）</div>
+      <div class="step-body">
+        <span class="role-tag risk">风控</span><span class="role-tag ext">交易所</span><span class="role-tag sys">运维</span><span class="role-tag ext">监管</span> 任一发起 → 写入 <code>t_session_override</code>，立即生效
+
+        <div class="cascade-layers" style="margin-top: 14px;">
+          <div class="cascade-layer l1">
+            <div class="cascade-icon">🌍</div>
+            <div class="cascade-title">PLATFORM</div>
+            <div class="cascade-desc">全平台所有品种 — 如系统故障、监管市场关闭</div>
+          </div>
+          <div class="cascade-layer l2">
+            <div class="cascade-icon">🏛️</div>
+            <div class="cascade-title">EXCHANGE</div>
+            <div class="cascade-desc">指定交易所(MIC) — 如 NYSE 熔断、HKEX 台风</div>
+          </div>
+          <div class="cascade-layer l3">
+            <div class="cascade-icon">📂</div>
+            <div class="cascade-title">CATEGORY</div>
+            <div class="cascade-desc">指定品种路径 — 如 Crypto/** 极端行情限制开仓</div>
+          </div>
+          <div class="cascade-layer l4">
+            <div class="cascade-icon">📌</div>
+            <div class="cascade-title">PRODUCT</div>
+            <div class="cascade-desc">单品种 — 如个股 LULD 波动暂停、监管个案</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #fee2e2; border: 2px dashed #dc2626; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>核心机制：</strong><br>
+          &nbsp;&nbsp;• 🔑 <strong>幂等性</strong> — <code>idempotency_key</code> 唯一约束，防止重复推送<br>
+          &nbsp;&nbsp;• 📋 <strong>合规披露</strong> — severity≥3 强制 <code>disclosed_at + public_announcement_id</code><br>
+          &nbsp;&nbsp;• 👥 <strong>双人审批</strong> — severity≥3 强制 <code>approver</code> 字段非空<br>
+          &nbsp;&nbsp;• 🪜 <strong>分阶段恢复</strong> — PHASED 模式按 resume_phases 逐步推进<br>
+          &nbsp;&nbsp;• 🔄 <strong>层级评估</strong> — 取 PLATFORM/EXCHANGE/CATEGORY/PRODUCT 最严格
+        </div>
+
+        <!-- Status flow for override -->
+        <div class="status-flow" style="margin-top: 14px;">
+          <div class="sf-node pending"><div class="sf-code">PENDING</div><div class="sf-label">预排期</div></div>
+          <span class="sf-arrow">→</span>
+          <div class="sf-node active"><div class="sf-code">ACTIVE</div><div class="sf-label">生效中</div></div>
+          <span class="sf-arrow">→</span>
+          <div class="sf-node fail"><div class="sf-code">LIFTED</div><div class="sf-label">手动解除</div></div>
+          <span class="sf-arrow">|</span>
+          <div class="sf-node fail"><div class="sf-code">EXPIRED</div><div class="sf-label">自动过期</div></div>
+          <span class="sf-arrow">|</span>
+          <div class="sf-node replaced"><div class="sf-code">SUPERSEDED</div><div class="sf-label">被替换</div></div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_session_override (CREATE/UPDATE)</span>
+          <span class="table-tag">📄 t_daily_session (UPDATE runtime_state)</span>
+          <span class="table-tag">📨 Pub/Sub 全网广播</span>
+          <span class="table-tag">📋 disclosure 监管推送</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">运行时数据就绪 → 三级缓存查询 ⚡</div>
+    </div>
+
+    <!-- ========== STEP 9 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">9</div>
+      <div class="step-title">⚡ 交易引擎三级缓存查询（微秒级）</div>
+      <div class="step-body">
+        <span class="role-tag engine">引擎</span> 下单时调用 <code>can-trade</code> 接口，三级缓存逐级查询，命中即返回
+
+        <div class="cache-stack" style="margin-top: 14px;">
+          <div class="cache-layer l1">
+            <div class="cache-icon">⚡</div>
+            <div class="cache-name">L1 Caffeine<br>本地内存</div>
+            <div class="cache-detail">Key: symbol_id → today daily_session list<br>TTL: 60s · 容量 50MB · 命中率 &gt;80%</div>
+            <div class="cache-sla">P50 &lt; 200μs</div>
+          </div>
+          <div class="cache-layer l2">
+            <div class="cache-icon">🔴</div>
+            <div class="cache-name">L2 Redis<br>分布式</div>
+            <div class="cache-detail">Hash · Key: session:{date}:{symbol_id}<br>TTL: 24h · 命中率 &gt;95%</div>
+            <div class="cache-sla">P50 &lt; 2ms</div>
+          </div>
+          <div class="cache-layer db">
+            <div class="cache-icon">🗄️</div>
+            <div class="cache-name">L3 MySQL<br>持久层</div>
+            <div class="cache-detail">t_daily_session + t_session_override<br>主键查询 + 季度分区</div>
+            <div class="cache-sla">P99 &lt; 10ms</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔄 <strong>失效策略：</strong><br>
+          &nbsp;&nbsp;• 预计算完成 → Redis SET + Pub/Sub 广播 L1 失效 (&lt; 200ms)<br>
+          &nbsp;&nbsp;• 覆盖生效/解除 → Pub/Sub 广播 L1+L2 失效 (&lt; 100ms)<br>
+          &nbsp;&nbsp;• 规则变更 → 标记影响范围，下次预计算前不主动失效（次日生效）<br>
+          🎯 <strong>整体 SLA：</strong>can-trade P99 &lt; 1ms (本地命中) / P99 &lt; 5ms (Redis命中)
+        </div>
+
+        <div class="decision-grid">
+          <div class="decision-item pass">
+            <div class="di-icon">✅</div>
+            <div class="di-title">can_trade=true</div>
+            <div class="di-desc">runtime_state=null<br>session_type=OPEN<br>正常交易</div>
+          </div>
+          <div class="decision-item warn">
+            <div class="di-icon">⚠️</div>
+            <div class="di-title">CLOSE_ONLY</div>
+            <div class="di-desc">runtime_state=CLOSE_ONLY<br>仅允许平仓<br>开仓拒绝</div>
+          </div>
+          <div class="decision-item fail">
+            <div class="di-icon">🛑</div>
+            <div class="di-title">HALT</div>
+            <div class="di-desc">runtime_state=HALT<br>所有订单拒绝<br>事件级告警</div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 t_daily_session (READ)</span>
+          <span class="table-tag">📖 t_session_override (READ)</span>
+          <span class="table-tag">⚡ L1+L2 三级缓存</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">查询完成 → 全程审计追溯 🔍</div>
+    </div>
+
+    <!-- ========== STEP 10 ========== -->
+    <div class="step-card yellow">
+      <div class="step-num">10</div>
+      <div class="step-title">🔍 配置审计 + 可观测性（合规）</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> 所有配置变更 → <code>t_config_audit</code>；所有预计算 → <code>t_snapshot_run_log</code>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">📝 t_config_audit</div>
+            <div style="font-size: 14px; line-height: 1.6;">
+              ✓ before_data + after_data (JSON 快照)<br>
+              ✓ reason (变更原因)<br>
+              ✓ request_id (追踪 ID)<br>
+              ✓ change_source (UI/API/SCRIPT/DST_AUTO)<br>
+              ✓ operator + approver (双人审批)<br>
+              ✓ client_ip + user_agent<br>
+              <span style="color: #b91c1c; font-weight: bold;">→ MiFID II / SEC 17a-4 合规</span>
+            </div>
+          </div>
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">📊 t_snapshot_run_log</div>
+            <div style="font-size: 14px; line-height: 1.6;">
+              ✓ run_type (DAILY/MANUAL/REPAIR/DST_VERSION_GEN)<br>
+              ✓ symbol_count / session_count<br>
+              ✓ rule_matches (规则匹配数)<br>
+              ✓ error_count / error_message<br>
+              ✓ duration_ms (耗时)<br>
+              ✓ triggered_by (SCHEDULER/MANUAL/API)<br>
+              <span style="color: #16a34a; font-weight: bold;">→ SLA 监控 / 告警</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📝 t_config_audit (INSERT only)</span>
+          <span class="table-tag">📊 t_snapshot_run_log (CREATE)</span>
+          <span class="table-tag">📡 Metrics (Prometheus)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== SECTION 3: KEY MECHANISMS ==================== -->
+  <div class="section-title">🎯 核心机制专题</div>
+
+  <!-- Mechanism 1: 三阶段管道 -->
+  <div class="step-card" style="background: #fff7ed; border-color: #2d2d2d; width: 90%; max-width: 900px; margin: 0 auto 16px;">
+    <div class="step-num" style="background: #ea580c;">🧠</div>
+    <div class="step-title">三阶段管道 — 多规则叠加确定性</div>
+    <div class="step-body">
+      <div class="pipeline">
+        <div class="pp-stage intersect">
+          <div class="pp-name">阶段1 INTERSECT</div>
+          <div class="pp-desc">逐条取交集<br>open=max, close=min</div>
+        </div>
+        <span class="pp-arrow">→</span>
+        <div class="pp-stage union">
+          <div class="pp-name">阶段2 UNION</div>
+          <div class="pp-desc">区间合并<br>多时段展开多行</div>
+        </div>
+        <span class="pp-arrow">→</span>
+        <div class="pp-stage override">
+          <div class="pp-name">阶段3 OVERRIDE</div>
+          <div class="pp-desc">最高优先级替换<br>priority+created_at</div>
+        </div>
+      </div>
+      <div style="margin-top: 12px; font-size: 15px; line-height: 1.7;">
+        <strong>示例：</strong>常规 09:30-16:00，假期 OVERRIDE 缩短到 09:30-13:00 + 盘前 UNION 加开 08:00-09:30<br>
+        → 阶段1透传 [570,960] → 阶段2 UNION 后无变化（OVERRIDE 优先级更高）→ 阶段3 OVERRIDE 替换为 [570,780]
+        <br>
+        <em>注：实际混合规则按各 stack_policy 进入对应阶段，OVERRIDE 优先级 > UNION/INTERSECT</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mechanism 2: 覆盖状态机 -->
+  <div class="step-card" style="background: #fef2f2; border-color: #2d2d2d; width: 90%; max-width: 900px; margin: 0 auto 16px;">
+    <div class="step-num" style="background: #dc2626;">🚦</div>
+    <div class="step-title">实时覆盖状态机</div>
+    <div class="step-body">
+      <div class="status-flow">
+        <div class="sf-node pending"><div class="sf-code">PENDING</div><div class="sf-label">预排期</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node active"><div class="sf-code">ACTIVE</div><div class="sf-label">生效中</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node fail"><div class="sf-code">LIFTED</div><div class="sf-label">手动解除</div></div>
+      </div>
+      <div class="status-flow">
+        <div class="sf-node active"><div class="sf-code">ACTIVE</div><div class="sf-label">→</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node fail"><div class="sf-code">EXPIRED</div><div class="sf-label">自动过期</div></div>
+        <span class="sf-arrow">|</span>
+        <div class="sf-node replaced"><div class="sf-code">SUPERSEDED</div><div class="sf-label">被替换</div></div>
+      </div>
+      <div class="status-flow">
+        <div class="sf-node pending"><div class="sf-code">PENDING</div><div class="sf-label">预排期</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node fail"><div class="sf-code">CANCELLED</div><div class="sf-label">取消</div></div>
+      </div>
+      <div style="margin-top: 12px; font-size: 15px; line-height: 1.7;">
+        <strong>SUPERSEDED 替换链：</strong>同 target 出现更严格覆盖时，旧记录置 SUPERSEDED + <code>superseded_by</code> 关联新记录，保留完整事件链<br>
+        <strong>PHASED 链路：</strong>每个阶段产生新 override，通过 <code>previous_phase_id</code> 串联，任一阶段可手动 LIFT 跳过后续
+      </div>
+    </div>
+  </div>
+
+  <!-- Mechanism 3: 层级覆盖 -->
+  <div class="step-card" style="background: #f0f9ff; border-color: #2d2d2d; width: 90%; max-width: 900px; margin: 0 auto 16px;">
+    <div class="step-num" style="background: #2563eb;">🏗️</div>
+    <div class="step-title">层级覆盖 — 取最严格状态</div>
+    <div class="step-body">
+      <div style="font-size: 15px; line-height: 1.8;">
+        品种实际状态 = 最严格 (PLATFORM + EXCHANGE + CATEGORY + PRODUCT 各自的 ACTIVE override)<br>
+        严格度排序：<strong>HALT &gt; CLOSE_ONLY &gt; MAINTENANCE &gt; QUOTE_ONLY &gt; PRE_OPEN &gt; AUCTION</strong>
+      </div>
+      <div style="margin-top: 12px; background: #fff; border: 2px dashed #2563eb; border-radius: 10px; padding: 12px; font-size: 14px; line-height: 1.7;">
+        🔑 <strong>规则：</strong><br>
+        ① 高层级生效自动级联到低层级<br>
+        ② 同 (target_kind, target_value) 同时只能有一条 ACTIVE (UNIQUE KEY)<br>
+        ③ 低层级覆盖不覆盖高层级 (PLATFORM HALT 时 PRODUCT 写入被拒绝)<br>
+        ④ 高层级解除时，低层级品种恢复各自原状态
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 4: SLA ==================== -->
+  <div class="section-title">🎯 关键指标 SLA</div>
+
+  <div style="max-width: 900px; margin: 0 auto;">
+    <table class="sla-table">
+      <tr>
+        <th>指标</th>
+        <th>目标</th>
+        <th>告警阈值</th>
+        <th>测量点</th>
+      </tr>
+      <tr>
+        <td>can-trade P99 延迟</td>
+        <td class="ok">&lt; 1ms</td>
+        <td>&gt; 5ms</td>
+        <td>引擎下单链路</td>
+      </tr>
+      <tr>
+        <td>can-trade P50 延迟</td>
+        <td class="ok">&lt; 200μs</td>
+        <td>&gt; 800μs</td>
+        <td>L1 缓存命中场景</td>
+      </tr>
+      <tr>
+        <td>预计算完成时间</td>
+        <td class="ok">每日 00:30 UTC 前</td>
+        <td>超时 30 分钟</td>
+        <td>t_snapshot_run_log</td>
+      </tr>
+      <tr>
+        <td>覆盖生效全网可见</td>
+        <td class="ok">&lt; 100ms</td>
+        <td>&gt; 500ms</td>
+        <td>覆盖写入 → 全网失效</td>
+      </tr>
+      <tr>
+        <td>t_daily_session 命中率</td>
+        <td class="ok">&gt; 99%</td>
+        <td>&lt; 95%</td>
+        <td>查询不命中即回源</td>
+      </tr>
+      <tr>
+        <td>缓存命中率 (L1+L2)</td>
+        <td class="ok">&gt; 90%</td>
+        <td>&lt; 80%</td>
+        <td>Caffeine + Redis</td>
+      </tr>
+      <tr>
+        <td>DST 自动版本生成</td>
+        <td class="ok">每年 12 月成功</td>
+        <td>失败 / 漏单</td>
+        <td>t_snapshot_run_log</td>
+      </tr>
+      <tr>
+        <td>合规披露及时率</td>
+        <td class="ok">severity≥3 必披露</td>
+        <td>未填 disclosed_at</td>
+        <td>MiFID II Art.49</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    时间配置系统架构流程图 · v2 重构稿 · 10 Tables · 10 Steps · UTC Native · DST 半自动 · PHASED Resume · MiFID II Ready
+  </div>
+
+</div>
+
+</body>
+</html>

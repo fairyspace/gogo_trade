@@ -1,0 +1,2635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>账户体系 API 接口设计 - 场景式漫画文档</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+    --ink: #1a1a2e;
+    --paper: #fefcf3;
+    --blue: #dbeafe; --blue-mid: #93c5fd; --blue-deep: #2563eb; --blue-dark: #1e3a5f;
+    --green: #dcfce7; --green-mid: #86efac; --green-deep: #16a34a; --green-dark: #166534;
+    --yellow: #fef9c3; --yellow-mid: #fde047; --yellow-deep: #ca8a04; --yellow-dark: #854d0e;
+    --purple: #f3e8ff; --purple-mid: #c4b5fd; --purple-deep: #7c3aed; --purple-dark: #5b21b6;
+    --pink: #fce7f3; --pink-mid: #f9a8d4; --pink-deep: #ec4899; --pink-dark: #9d174d;
+    --orange: #ffedd5; --orange-mid: #fdba74; --orange-deep: #ea580c; --orange-dark: #9a3412;
+    --red: #fecaca; --red-deep: #dc2626; --red-dark: #991b1b;
+    --slate: #f1f5f9; --slate-deep: #475569;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    background-image: radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 22px 22px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: var(--ink);
+    padding: 24px;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  .hero { text-align: center; padding: 40px 20px 30px; position: relative; }
+  .hero h1 {
+    font-family: var(--font-hand);
+    font-size: 54px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    color: var(--ink);
+    position: relative;
+    display: inline-block;
+  }
+  .hero h1::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: -12px; right: -12px;
+    height: 6px;
+    background: linear-gradient(90deg, #f9a8d4, #fde68a, #93c5fd, #c4b5fd);
+    border-radius: 4px;
+    transform: rotate(-0.4deg);
+    opacity: 0.8;
+  }
+  .hero .tagline {
+    font-family: var(--font-ui);
+    font-size: 17px;
+    font-weight: 600;
+    color: #666;
+    margin-top: 16px;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.5;
+  }
+  .hero .badge-row {
+    display: flex; justify-content: center; gap: 10px; margin-top: 16px;
+    flex-wrap: wrap; overflow-x: visible; padding: 4px 0 8px;
+  }
+  .hero .badge {
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-ui);
+    border: 1.5px solid rgba(0,0,0,0.12);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    white-space: nowrap;
+  }
+
+  .nav-bar {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+    margin: 10px auto 30px; max-width: 1300px;
+    overflow-x: visible;
+    padding: 4px 0 10px;
+  }
+  .nav-bar a {
+    text-decoration: none;
+    padding: 6px 18px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .nav-bar a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+    border-color: #93c5fd;
+  }
+
+  .scene {
+    background: #fff;
+    border: 2.5px solid #d1d5db;
+    border-radius: 22px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+    position: relative;
+  }
+  .scene-header {
+    padding: 20px 28px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    border-bottom: 2px dashed #e5e7eb;
+    flex-wrap: wrap;
+  }
+  .scene-num {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700;
+    border: 2.5px solid #fff;
+    box-shadow: 0 3px 10px rgba(238,90,36,0.35);
+    font-family: var(--font-ui);
+    flex-shrink: 0;
+  }
+  .scene-meta { flex: 1; min-width: 0; }
+  .scene-title {
+    font-family: var(--font-hand); font-size: 32px; font-weight: 400;
+    white-space: normal; line-height: 1.3;
+  }
+  .scene-subtitle { font-size: 15px; color: #555; font-family: var(--font-ui); font-weight: 600; }
+  .scene-body { padding: 20px 28px 28px; }
+
+  .tape {
+    position: absolute; width: 80px; height: 26px;
+    background: rgba(255,222,89,0.55);
+    border: 1.5px solid rgba(200,170,50,0.35);
+    border-radius: 2px; z-index: 2;
+  }
+  .tape-tr { top: -8px; right: 28px; transform: rotate(-32deg); }
+  .tape-tl { top: -8px; left: 28px; transform: rotate(32deg); }
+
+  .story {
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1.5px dashed;
+    margin-bottom: 20px;
+    font-size: 17px;
+    line-height: 1.8;
+    position: relative;
+  }
+  .story .char {
+    font-size: 36px;
+    float: left;
+    margin-right: 10px;
+    margin-top: -4px;
+  }
+
+  .api-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    position: relative;
+    transition: box-shadow .2s;
+  }
+  .api-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .api-card:last-child { margin-bottom: 0; }
+  .api-bar {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 18px;
+    font-size: 17px;
+    font-weight: 600;
+    border-bottom: 1.5px solid #e2e8f0;
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .method {
+    display: inline-block;
+    padding: 3px 14px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: 0.5px;
+    border: 1.5px solid;
+    flex-shrink: 0;
+  }
+  .method.get { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .method.post { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .method.put { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+  .method.delete { background: var(--red); color: var(--red-dark); border-color: var(--red-deep); }
+  .method.internal { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .api-path {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 14px; font-weight: 500;
+    color: var(--ink);
+    white-space: normal;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+  .api-desc {
+    margin-left: auto;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    white-space: normal;
+    flex: 0 1 auto;
+    text-align: right;
+    min-width: 120px;
+  }
+  .api-content { padding: 16px 18px; }
+
+  .param-section { margin-bottom: 16px; }
+  .param-label {
+    font-size: 16px; font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 8px;
+    display: inline-block;
+    margin-bottom: 8px;
+    border: 1.5px solid;
+  }
+  .param-label.req { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .param-label.res { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .param-label.path { background: var(--orange); color: var(--orange-dark); border-color: var(--orange-deep); }
+  .param-label.query { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .param-label.header { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+  .param-label.cb { background: var(--pink); color: var(--pink-dark); border-color: var(--pink-deep); }
+
+  .ptable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 15px;
+  }
+  .ptable th {
+    background: linear-gradient(135deg, #f1f5f9, #e8edf3);
+    color: #475569;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 13px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border-bottom: 1.5px solid #cbd5e1;
+  }
+  .ptable td {
+    padding: 7px 12px;
+    border-bottom: 1.5px dashed #e2e8f0;
+    vertical-align: top;
+  }
+  .ptable tr:last-child td { border-bottom: none; }
+  .ptable tr:nth-child(even) td { background: #fafafa; }
+  .ptable .fname {
+    font-weight: 600; color: var(--blue-deep);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+  }
+  .ptable .ftype {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--purple-deep);
+    background: var(--purple);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .ptable .freq { color: var(--red-deep); font-weight: bold; font-size: 12px; }
+  .ptable .fopt { color: #999; font-size: 12px; }
+  .ptable .fdb {
+    font-size: 12px;
+    color: var(--slate-deep);
+    background: var(--slate);
+    padding: 1px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 2px;
+  }
+
+  .json-block {
+    background: #f8fafc;
+    color: #334155;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: visible;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    border: 1.5px solid #e2e8f0;
+    position: relative;
+    margin-top: 8px;
+  }
+  .json-block .jk { color: #2563eb; }
+  .json-block .jv { color: #16a34a; }
+  .json-block .jn { color: #d97706; }
+  .json-block .jc { color: #94a3b8; font-style: italic; }
+  .json-block .jb { color: #c026d3; }
+  .json-label {
+    position: absolute; top: 8px; right: 12px;
+    font-size: 11px; color: #94a3b8;
+    font-family: var(--font-ui);
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  .scene-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    height: auto; min-height: 44px;
+    position: relative;
+    padding: 6px 0 10px;
+  }
+  .scene-arrow .sa-line {
+    width: 3px; flex: 0 0 28px; min-height: 28px;
+    background: repeating-linear-gradient(to bottom, #94a3b8 0px, #94a3b8 5px, transparent 5px, transparent 10px);
+  }
+  .scene-arrow .sa-head {
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid #94a3b8;
+    flex-shrink: 0;
+  }
+  .scene-arrow .sa-label {
+    position: static;
+    margin-top: 8px;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 4px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: #475569;
+    white-space: normal;
+    max-width: 100%;
+    overflow-x: visible;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .tip {
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    margin-top: 12px;
+    border: 1.5px solid;
+    border-left-width: 4px;
+  }
+  .tip.warn { background: #fef3c7; border-color: #d97706; color: #92400e; }
+  .tip.info { background: #dbeafe; border-color: #2563eb; color: #1e3a5f; }
+  .tip.ok { background: #dcfce7; border-color: #16a34a; color: #166534; }
+  .tip.danger { background: #fecaca; border-color: #dc2626; color: #991b1b; }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:900px){
+    .duo { grid-template-columns: 1fr; }
+    .hero .tagline { white-space: normal; }
+    .scene-title { white-space: normal; }
+  }
+
+  .enum-list {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+  }
+  .enum-item {
+    background: #fff;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: 13px;
+    color: #475569;
+  }
+
+  .footer {
+    text-align: center; margin-top: 40px; padding: 20px;
+    color: #aaa; font-size: 15px;
+  }
+
+  .scene-tag {
+    display: inline-block;
+    font-size: 12px; font-weight: bold;
+    padding: 2px 10px;
+    border-radius: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .scene-tag.client { background: var(--blue); color: var(--blue-deep); border: 1px solid var(--blue-mid); }
+  .scene-tag.server { background: var(--green); color: var(--green-deep); border: 1px solid var(--green-mid); }
+  .scene-tag.admin { background: var(--pink); color: var(--pink-deep); border: 1px solid var(--pink-mid); }
+  .scene-tag.system { background: var(--purple); color: var(--purple-dark); border: 1px solid var(--purple-mid); }
+
+  .dataflow {
+    margin: 0 0 22px 0;
+    padding: 18px;
+    background: linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%);
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    overflow-x: visible;
+  }
+  .dataflow-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 14px;
+    color: #475569;
+  }
+  .df-chain {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 4px;
+    min-width: 0;
+  }
+  .df-node {
+    flex: 0 0 auto;
+    width: 128px;
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    border: 1.5px solid;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .df-node .df-icon { font-size: 24px; }
+  .df-node .df-label { font-size: 13px; font-weight: bold; line-height: 1.3; }
+  .df-node .df-detail {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.4;
+    font-family: var(--font-ui);
+  }
+  .df-node.user { background: #dbeafe; border-color: #93c5fd; }
+  .df-node.gateway { background: #fef3c7; border-color: #fde047; }
+  .df-node.service { background: #dcfce7; border-color: #86efac; }
+  .df-node.crypto { background: #fce7f3; border-color: #f9a8d4; }
+  .df-node.db { background: #e0e7ff; border-color: #a5b4fc; }
+  .df-node.mq { background: #f3e8ff; border-color: #c4b5fd; }
+  .df-node.ext { background: #ffedd5; border-color: #fdba74; }
+  .df-node.check { background: #ccfbf1; border-color: #5eead4; }
+  .df-node.admin { background: #fce7f3; border-color: #f9a8d4; }
+  .df-node.cache { background: #fef3c7; border-color: #fbbf24; }
+  .df-node.engine { background: #fee2e2; border-color: #fca5a5; }
+
+  .df-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .df-arrow::before {
+    content: '';
+    width: 24px; height: 2px;
+    background: #94a3b8;
+  }
+  .df-arrow::after {
+    content: '';
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid #94a3b8;
+  }
+  .df-arrow .df-alabel {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #94a3b8;
+    white-space: nowrap;
+    font-family: var(--font-ui);
+  }
+
+  @page { size: A4 portrait; margin: 10mm 11mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body {
+      width: 100% !important; max-width: 100% !important;
+      margin: 0 !important; padding: 0 !important;
+      background: #fff !important; background-image: none !important;
+      font-size: 9.5pt;
+    }
+    .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+    .tape { display: none !important; }
+    .hero { padding: 4mm 0 !important; page-break-after: avoid; }
+    .hero h1 { font-size: 20pt !important; }
+    .hero .tagline { font-size: 9pt !important; }
+    .nav-bar { justify-content: center !important; gap: 6px !important; page-break-inside: avoid; }
+    .nav-bar a { padding: 4px 12px !important; font-size: 9pt !important; }
+    .scene { page-break-inside: avoid; break-inside: avoid; box-shadow: none !important; margin-bottom: 6mm !important; border-width: 1.5px !important; }
+    .scene-header { padding: 10px 14px !important; }
+    .scene-body { padding: 12px 14px 16px !important; }
+    .scene-title { font-size: 13pt !important; }
+    .scene-subtitle { font-size: 9pt !important; }
+    .api-card { box-shadow: none !important; }
+    .api-bar { padding: 8px 12px !important; font-size: 10pt !important; }
+    .api-path { font-size: 9pt !important; }
+    .ptable { font-size: 9pt !important; }
+    .ptable th, .ptable td { padding: 5px 8px !important; }
+    .json-block { font-size: 7.5pt !important; line-height: 1.45 !important; overflow: visible !important; white-space: pre-wrap; word-break: break-all; }
+    .dataflow { padding: 10px !important; page-break-inside: avoid; }
+    .df-node { width: 108px !important; padding: 6px 4px !important; }
+    .df-node .df-label { font-size: 11px !important; }
+    .df-node .df-detail { font-size: 9px !important; }
+    .story { font-size: 10pt !important; }
+    .duo { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .footer { margin-top: 6mm; font-size: 9pt; }
+    a { color: inherit !important; text-decoration: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <h1>🏦 账户体系 API 接口设计</h1>
+  <div class="tagline">Account Service Interface Design &mdash; Scene-based Comic Documentation</div>
+  <div class="badge-row">
+    <span class="badge" style="background:var(--blue);">50+ APIs</span>
+    <span class="badge" style="background:var(--green);">10 DB Tables</span>
+    <span class="badge" style="background:var(--yellow);">8 Scenes</span>
+    <span class="badge" style="background:var(--purple);">Multi-Entity</span>
+    <span class="badge" style="background:var(--pink);">MAM/PAMM</span>
+    <span class="badge" style="background:var(--orange);">动态杠杆</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav-bar">
+  <a href="#s1">S1 账户组</a>
+  <a href="#s2">S2 开户链路</a>
+  <a href="#s3">S3 交易账户</a>
+  <a href="#s4">S4 授权管理</a>
+  <a href="#s5">S5 动态杠杆</a>
+  <a href="#s6">S6 资管</a>
+  <a href="#s7">S7 不活跃/休眠</a>
+  <a href="#s8">S8 审计日志</a>
+  <a href="#admin">Admin</a>
+  <a href="#mq">MQ 事件</a>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 1: 账户组                             -->
+<!-- ============================================================ -->
+<div class="scene" id="s1">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S1</div>
+    <div class="scene-meta">
+      <div class="scene-title">📋 账户组(参数中枢) <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">Account Group &mdash; "One group, one set of rules."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--blue); border-color:var(--blue-deep);">
+      <div class="char">⚙️</div>
+      <strong>剧情：</strong>账户组 = 监管实体 + 保证金模型 + 杠杆策略 + 风控阈值 + 品种 + 手续费 的<strong>完整参数组合</strong>(对标 MT5 Group / cTrader Account Type)。
+      开户即归组继承。Admin 在后台配置组,客户端开户页按 <code>entity_id</code> 过滤可见组。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 账户组配置流程</div>
+      <div class="df-chain">
+        <div class="df-node admin">
+          <div class="df-icon">🛠️</div>
+          <div class="df-label">Admin 配置</div>
+          <div class="df-detail">组代码/名称<br>entity/类型/币种<br>杠杆/保证金</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">RPC</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">参数校验</div>
+          <div class="df-detail">实体隔离<br>组代码唯一<br>参数合法性</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">TX</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_account_group</div>
+          <div class="df-detail">主表写入<br>关联 5 张<br>子配置表</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">发布</span></div>
+        <div class="df-node cache">
+          <div class="df-icon">🔴</div>
+          <div class="df-label">Redis 缓存</div>
+          <div class="df-detail">group_id<br>→ 配置全量</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">MQ</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">GroupChanged</div>
+          <div class="df-detail">下游:<br>撮合/开户页/<br>风控</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 1.1: 创建账户组 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/admin/account-groups</span>
+        <span class="api-desc">创建账户组</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label header">📮 Header</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">X-Admin-Token</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>Admin 鉴权</td></tr>
+            <tr><td class="fname">X-Operator-Id</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>操作员工号,审计留痕</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">group_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>组代码,如 LIVE_STD_USD,全局唯一 <span class="fdb">group.group_code</span></td></tr>
+            <tr><td class="fname">group_name</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>组名称,如 Standard USD <span class="fdb">group.group_name</span></td></tr>
+            <tr><td class="fname">description</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>组描述 <span class="fdb">group.description</span></td></tr>
+            <tr><td class="fname">entity_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>所属监管实体ID(牌照隔离) <span class="fdb">group.entity_id</span></td></tr>
+            <tr><td class="fname">regulatory_entity</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>ASIC/CYSEC/FCA/SVG/VFSC <span class="fdb">group.regulatory_entity</span></td></tr>
+            <tr><td class="fname">environment</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-Live 2-Demo <span class="fdb">group.environment</span></td></tr>
+            <tr><td class="fname">account_type</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-个人保证金 2-个人现金 3-企业/机构 4-联名 5-信托 <span class="fdb">group.account_type</span></td></tr>
+            <tr><td class="fname">margin_calc_model</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-杠杆名义额 2-RegT 3-组合保证金 4-SPAN <span class="fdb">group.margin_calc_model</span></td></tr>
+            <tr><td class="fname">currency</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>ISO4217,USD/EUR/BTC <span class="fdb">group.currency</span></td></tr>
+            <tr><td class="fname">default_leverage</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>默认杠杆,如 100 表示 1:100 <span class="fdb">group.default_leverage</span></td></tr>
+            <tr><td class="fname">max_leverage</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>允许最大杠杆 <span class="fdb">group.max_leverage</span></td></tr>
+            <tr><td class="fname">leverage_options</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>可选杠杆,逗号分隔,如 "1,10,50,100,200,500" <span class="fdb">group.leverage_options</span></td></tr>
+            <tr><td class="fname">leverage_template_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>动态杠杆模板ID <span class="fdb">group.leverage_template_id</span></td></tr>
+            <tr><td class="fname">margin_call_level</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>追保预警%,默认 100 <span class="fdb">group.margin_call_level</span></td></tr>
+            <tr><td class="fname">stop_out_level</td><td><span class="ftype">Decimal</span></td><td class="freq">Y</td><td>强平%,默认 50 <span class="fdb">group.stop_out_level</span></td></tr>
+            <tr><td class="fname">stop_out_mode</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-亏损最大优先 2-保证金占用最大优先 3-Smart部分平仓 <span class="fdb">group.stop_out_mode</span></td></tr>
+            <tr><td class="fname">max_positions</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>最大活跃持仓数,默认 200 <span class="fdb">group.max_positions</span></td></tr>
+            <tr><td class="fname">max_pending_orders</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>最大挂单数,默认 200 <span class="fdb">group.max_pending_orders</span></td></tr>
+            <tr><td class="fname">max_lots</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>最大总持仓手数,NULL=不限 <span class="fdb">group.max_lots</span></td></tr>
+            <tr><td class="fname">daily_loss_limit</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>组级单日最大亏损 <span class="fdb">group.daily_loss_limit</span></td></tr>
+            <tr><td class="fname">negative_balance_protection</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>0-关闭 1-开启(ESMA 零售强制 1) <span class="fdb">group.negative_balance_protection</span></td></tr>
+            <tr><td class="fname">allow_expert</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>是否允许 EA,默认 1 <span class="fdb">group.allow_expert</span></td></tr>
+            <tr><td class="fname">allow_hedging</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-净额 1-对冲 <span class="fdb">group.allow_hedging</span></td></tr>
+            <tr><td class="fname">min_deposit</td><td><span class="ftype">Decimal</span></td><td class="freq">Y</td><td>最低入金要求 <span class="fdb">group.min_deposit</span></td></tr>
+            <tr><td class="fname">inactivity_days</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>不活跃阈值天数,NULL=不收 <span class="fdb">group.inactivity_days</span></td></tr>
+            <tr><td class="fname">inactivity_fee</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>不活跃月费 <span class="fdb">group.inactivity_fee</span></td></tr>
+            <tr><td class="fname">dormant_days</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>自动休眠天数,NULL=不自动休眠 <span class="fdb">group.dormant_days</span></td></tr>
+            <tr><td class="fname">demo_initial_balance</td><td><span class="ftype">Decimal</span></td><td class="fopt">C*</td><td>Demo 初始虚拟资金,仅 Demo <span class="fdb">group.demo_initial_balance</span></td></tr>
+            <tr><td class="fname">demo_expire_days</td><td><span class="ftype">Integer</span></td><td class="fopt">C*</td><td>Demo 有效天数,NULL=永久 <span class="fdb">group.demo_expire_days</span></td></tr>
+            <tr><td class="fname">is_default</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>是否默认开户组 <span class="fdb">group.is_default</span></td></tr>
+            <tr><td class="fname">is_visible</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>是否开户页可见,默认 1 <span class="fdb">group.is_visible</span></td></tr>
+            <tr><td class="fname">sort_order</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>展示排序 <span class="fdb">group.sort_order</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"id"</span>: <span class="jn">1001</span>,
+    <span class="jk">"group_code"</span>: <span class="jv">"LIVE_STD_USD"</span>,
+    <span class="jk">"status"</span>: <span class="jn">1</span>,
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 <code>group_code</code> 全局唯一,推荐命名 <code>{环境}_{类型}_{币种}</code>(如 LIVE_STD_USD / DEMO_PRO_USD);<code>is_default=1</code> 在同一 (entity_id, environment) 下最多一个</div>
+      </div>
+    </div>
+
+    <!-- API 1.2: 查询账户组详情 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/account-groups/{groupId}</span>
+        <span class="api-desc">查询账户组详情</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label path">📍 Path Params</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">groupId</td><td><span class="ftype">Long</span></td><td>组 ID,或 <code>group_code</code> 字符串 <span class="fdb">group.id</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"id"</span>: <span class="jn">1001</span>,
+    <span class="jk">"group_code"</span>: <span class="jv">"LIVE_STD_USD"</span>,
+    <span class="jk">"group_name"</span>: <span class="jv">"Standard USD"</span>,
+    <span class="jk">"entity_id"</span>: <span class="jn">1</span>,
+    <span class="jk">"regulatory_entity"</span>: <span class="jv">"SVG"</span>,
+    <span class="jk">"environment"</span>: <span class="jn">1</span>,
+    <span class="jk">"account_type"</span>: <span class="jn">1</span>,
+    <span class="jk">"margin_calc_model"</span>: <span class="jn">1</span>,
+    <span class="jk">"currency"</span>: <span class="jv">"USD"</span>,
+    <span class="jk">"default_leverage"</span>: <span class="jn">100</span>,
+    <span class="jk">"max_leverage"</span>: <span class="jn">500</span>,
+    <span class="jk">"leverage_options"</span>: <span class="jv">"1,10,25,50,100,200,300,500"</span>,
+    <span class="jk">"leverage_template_id"</span>: <span class="jn">10</span>,
+    <span class="jk">"margin_call_level"</span>: <span class="jv">"100.00"</span>,
+    <span class="jk">"stop_out_level"</span>: <span class="jv">"50.00"</span>,
+    <span class="jk">"max_positions"</span>: <span class="jn">200</span>,
+    <span class="jk">"min_deposit"</span>: <span class="jv">"100.00"</span>,
+    <span class="jk">"negative_balance_protection"</span>: <span class="jn">1</span>,
+    <span class="jk">"allow_hedging"</span>: <span class="jn">1</span>,
+    <span class="jk">"inactivity_days"</span>: <span class="jn">90</span>,
+    <span class="jk">"inactivity_fee"</span>: <span class="jv">"10.00"</span>,
+    <span class="jk">"is_default"</span>: <span class="jn">1</span>,
+    <span class="jk">"is_visible"</span>: <span class="jn">1</span>,
+    <span class="jk">"status"</span>: <span class="jn">1</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 1.3: 更新账户组 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/admin/account-groups/{groupId}</span>
+        <span class="api-desc">更新账户组(部分字段)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">group_name</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>新组名</td></tr>
+            <tr><td class="fname">description</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>新描述</td></tr>
+            <tr><td class="fname">max_leverage</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>新最大杠杆(谨慎,影响所有在用账户)</td></tr>
+            <tr><td class="fname">leverage_options</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>新可选杠杆集</td></tr>
+            <tr><td class="fname">stop_out_level</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>新强平线</td></tr>
+            <tr><td class="fname">min_deposit</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>新最低入金</td></tr>
+            <tr><td class="fname">is_visible</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>是否开户页可见</td></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-停用(不允许新开户) 1-启用</td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>变更原因,审计必填</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"id"</span>: <span class="jn">1001</span>,
+    <span class="jk">"updated_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 修改 <code>stop_out_level</code> / <code>max_leverage</code> 等风控参数,经 MQ 发 <code>AccountGroupUpdatedEvent</code>,撮合引擎热加载;停用(status=0)不会影响在用账户</div>
+      </div>
+    </div>
+
+    <!-- API 1.4: 列表查询 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/account-groups</span>
+        <span class="api-desc">分页查询账户组</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">entity_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>按监管实体过滤</td></tr>
+            <tr><td class="fname">environment</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-Live 2-Demo</td></tr>
+            <tr><td class="fname">account_type</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>账户类型</td></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-停用 1-启用</td></tr>
+            <tr><td class="fname">is_visible</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>是否开户页可见</td></tr>
+            <tr><td class="fname">page</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 1</td></tr>
+            <tr><td class="fname">size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 20,最大 100</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">42</span>,
+    <span class="jk">"groups"</span>: [
+      {
+        <span class="jk">"id"</span>: <span class="jn">1001</span>,
+        <span class="jk">"group_code"</span>: <span class="jv">"LIVE_STD_USD"</span>,
+        <span class="jk">"group_name"</span>: <span class="jv">"Standard USD"</span>,
+        <span class="jk">"environment"</span>: <span class="jn">1</span>,
+        <span class="jk">"currency"</span>: <span class="jv">"USD"</span>,
+        <span class="jk">"default_leverage"</span>: <span class="jn">100</span>,
+        <span class="jk">"account_count"</span>: <span class="jn">8421</span>,
+        <span class="jk">"status"</span>: <span class="jn">1</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 1.5: 开户可见组(按实体) -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/account-groups/visible</span>
+        <span class="api-desc">开户页可见组(按用户实体过滤)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">entity_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>当前用户所属监管实体</td></tr>
+            <tr><td class="fname">environment</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-Live 2-Demo,默认 1</td></tr>
+            <tr><td class="fname">client_category</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>用户客户分类(1-零售 2-专业 3-ECP),用于杠杆合规过滤</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"groups"</span>: [
+      {
+        <span class="jk">"id"</span>: <span class="jn">1001</span>,
+        <span class="jk">"group_code"</span>: <span class="jv">"LIVE_STD_USD"</span>,
+        <span class="jk">"group_name"</span>: <span class="jv">"Standard USD"</span>,
+        <span class="jk">"description"</span>: <span class="jv">"标准美元账户,适合大多数交易者"</span>,
+        <span class="jk">"currency"</span>: <span class="jv">"USD"</span>,
+        <span class="jk">"default_leverage"</span>: <span class="jn">100</span>,
+        <span class="jk">"leverage_options"</span>: [<span class="jn">1</span>,<span class="jn">10</span>,<span class="jn">25</span>,<span class="jn">50</span>,<span class="jn">100</span>,<span class="jn">200</span>],
+        <span class="jk">"max_leverage_for_user"</span>: <span class="jn">30</span>,  <span class="jc">// ESMA 零售限杠杆</span>
+        <span class="jk">"min_deposit"</span>: <span class="jv">"100.00"</span>,
+        <span class="jk">"is_default"</span>: <span class="jn">1</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 客户端无鉴权调用;<code>max_leverage_for_user</code> 由 <code>client_category</code> 决定(ESMA 零售 30:1、专业 500:1、ECP 无上限)</div>
+      </div>
+    </div>
+
+    <!-- API 1.6: 组品种配置 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/admin/account-groups/{groupId}/symbol-configs</span>
+        <span class="api-desc">配置组可交易品种</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">symbol_category</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>FOREX/METALS/ENERGIES/INDICES/STOCKS/CRYPTO <span class="fdb">config.symbol_category</span></td></tr>
+            <tr><td class="fname">symbol_pattern</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>具体品种如 EURUSD,NULL=该类全部 <span class="fdb">config.symbol_pattern</span></td></tr>
+            <tr><td class="fname">enabled</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>0-禁止 1-允许 <span class="fdb">config.enabled</span></td></tr>
+            <tr><td class="fname">max_leverage_override</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>品种级最大杠杆覆盖 <span class="fdb">config.max_leverage_override</span></td></tr>
+            <tr><td class="fname">min_lot</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>最小手数,如 0.01 <span class="fdb">config.min_lot</span></td></tr>
+            <tr><td class="fname">max_lot</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>单笔最大手数 <span class="fdb">config.max_lot</span></td></tr>
+            <tr><td class="fname">lot_step</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>手数步进 <span class="fdb">config.lot_step</span></td></tr>
+            <tr><td class="fname">trade_mode</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-完整 2-仅平仓 3-禁止 <span class="fdb">config.trade_mode</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: { <span class="jk">"id"</span>: <span class="jn">5001</span>, <span class="jk">"group_id"</span>: <span class="jn">1001</span> }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 同一 (group_id, symbol_category, symbol_pattern) 唯一,重复 POST 等同于更新</div>
+      </div>
+    </div>
+
+    <!-- API 1.7: 组手续费规则 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/admin/account-groups/{groupId}/commissions</span>
+        <span class="api-desc">配置组手续费规则</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">symbol_category</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>ALL/FOREX/METALS/ENERGIES/INDICES/STOCKS/CRYPTO <span class="fdb">commission.symbol_category</span></td></tr>
+            <tr><td class="fname">symbol_pattern</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>具体品种 <span class="fdb">commission.symbol_pattern</span></td></tr>
+            <tr><td class="fname">charge_type</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-每手固定 2-每笔固定 3-成交额比例 4-成交点数 <span class="fdb">commission.charge_type</span></td></tr>
+            <tr><td class="fname">charge_value</td><td><span class="ftype">Decimal</span></td><td class="freq">Y</td><td>收费值 <span class="fdb">commission.charge_value</span></td></tr>
+            <tr><td class="fname">charge_currency</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>手续费币种 <span class="fdb">commission.charge_currency</span></td></tr>
+            <tr><td class="fname">charge_moment</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-开仓全额 2-开平各半 3-平仓全额,默认 1 <span class="fdb">commission.charge_moment</span></td></tr>
+            <tr><td class="fname">min_charge</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>单笔最低 <span class="fdb">commission.min_charge</span></td></tr>
+            <tr><td class="fname">max_charge</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>单笔最高 <span class="fdb">commission.max_charge</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: { <span class="jk">"id"</span>: <span class="jn">6001</span>, <span class="jk">"group_id"</span>: <span class="jn">1001</span> }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 计费示例:FOREX + charge_type=1 + charge_value=3.5 + charge_moment=2 → 1 手 EURUSD 开平各收 3.5 USD</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">组就绪 → 进入开户链路 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 2: 开户链路                           -->
+<!-- ============================================================ -->
+<div class="scene" id="s2">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S2</div>
+    <div class="scene-meta">
+      <div class="scene-title">🆕 开户链路(交易账户创建) <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Account Opening &mdash; "Welcome aboard."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--green); border-color:var(--green-deep);">
+      <div class="char">🆕</div>
+      <strong>剧情：</strong>用户已通过 KYC(<code>kyc_level ≥ 1</code>),按 <code>entity_id</code> 选组 → 选杠杆 → 提交开户。
+      系统生成 <code>account_no</code>(如 80012345)、bcrypt 加密交易密码、创建 <code>t_user_account_relation(OWNER)</code>。
+      首次入金后 <code>status: 0 → 1</code> 激活;Demo 账户即时激活。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 开户数据流</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📱</div>
+          <div class="df-label">选组选杠杆</div>
+          <div class="df-detail">GET visible<br>group + leverage<br><b>用户 ~30s 决策</b></div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">POST</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">开户服务</div>
+          <div class="df-detail">实体校验<br>KYC 等级校验<br>杠杆合规校验</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">TX</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">写 3 张表</div>
+          <div class="df-detail">t_trading_account<br>t_user_account_relation<br>t_account_ledger(Demo init)</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">下发</span></div>
+        <div class="df-node user">
+          <div class="df-icon">📲</div>
+          <div class="df-label">展示账号</div>
+          <div class="df-detail">account_no<br>密码仅输入一次</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">MQ</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">AccountOpened</div>
+          <div class="df-detail">下游:<br>撮合/通知/IB</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 2.1: 申请开户 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/trading-accounts</span>
+        <span class="api-desc">申请开户</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label header">📮 Header</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">Authorization</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>Bearer access_token(用户已登录)</td></tr>
+            <tr><td class="fname">X-Entity-Id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>用户所属监管实体</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">group_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>所选账户组ID <span class="fdb">account.group_id</span></td></tr>
+            <tr><td class="fname">leverage</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>选择杠杆(必须在 group.leverage_options 内,且 ≤ max_leverage_for_user) <span class="fdb">account.leverage</span></td></tr>
+            <tr><td class="fname">trade_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>交易密码(明文,服务端 bcrypt) <span class="fdb">account.trade_password_hash</span></td></tr>
+            <tr><td class="fname">swap_free</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-正常 1-免隔夜利息(伊斯兰账户) <span class="fdb">account.swap_free</span></td></tr>
+            <tr><td class="fname">display_name</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>账户别名,如"主交易账户" <span class="fdb">relation.display_name</span></td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"account_no"</span>: <span class="jv">"80012345"</span>,
+    <span class="jk">"group_code"</span>: <span class="jv">"LIVE_STD_USD"</span>,
+    <span class="jk">"currency"</span>: <span class="jv">"USD"</span>,
+    <span class="jk">"leverage"</span>: <span class="jn">100</span>,
+    <span class="jk">"status"</span>: <span class="jn">0</span>,                  <span class="jc">// 0-待激活(Live) / 1-活跃(Demo)</span>
+    <span class="jk">"client_category"</span>: <span class="jn">1</span>,
+    <span class="jk">"opened_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 关键校验:① <code>user.status=1</code> ② <code>kyc_level ≥ 1</code> ③ <code>group.entity_id = user.entity_id</code>(牌照隔离) ④ 杠杆合规(ESMA 零售 ≤ 30:1) ⑤ Live 首次入金激活,Demo 即时激活</div>
+      </div>
+    </div>
+
+    <!-- API 2.2: 模拟账户创建 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/trading-accounts/demo</span>
+        <span class="api-desc">创建模拟账户(免 KYC 即时)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">group_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>所选 Demo 账户组ID <span class="fdb">account.group_id</span></td></tr>
+            <tr><td class="fname">leverage</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>杠杆 <span class="fdb">account.leverage</span></td></tr>
+            <tr><td class="fname">display_name</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>账户别名 <span class="fdb">relation.display_name</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20002</span>,
+    <span class="jk">"account_no"</span>: <span class="jv">"D90001234"</span>,         <span class="jc">// Demo 前缀 D</span>
+    <span class="jk">"group_code"</span>: <span class="jv">"DEMO_STD_USD"</span>,
+    <span class="jk">"currency"</span>: <span class="jv">"USD"</span>,
+    <span class="jk">"balance"</span>: <span class="jv">"10000.0000"</span>,           <span class="jc">// 初始虚拟资金</span>
+    <span class="jk">"status"</span>: <span class="jn">1</span>,                       <span class="jc">// Demo 直接活跃</span>
+    <span class="jk">"demo_expire_at"</span>: <span class="jv">"2026-08-15T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip ok">✅ Demo 账户免 KYC、即时激活、按 <code>group.demo_initial_balance</code> 注入虚拟资金(经 ledger,类型=CREDIT_IN)、<code>demo_expire_at</code> 按 <code>demo_expire_days</code> 计算</div>
+      </div>
+    </div>
+
+    <!-- API 2.3: 激活 Live 账户 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method internal">INTERNAL</span>
+        <span class="api-path">/internal/v1/trading-accounts/{accountId}/activate</span>
+        <span class="api-desc">首次入金后激活(资金系统调用)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">trigger_source</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>FIRST_DEPOSIT(由资金系统入金回调触发)</td></tr>
+            <tr><td class="fname">deposit_ledger_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>入金 ledger ID,溯源用</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"status"</span>: <span class="jn">1</span>,
+    <span class="jk">"activated_at"</span>: <span class="jv">"2026-07-16T10:30:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 仅资金系统可调;状态 0→1,写 <code>audit_log(STATUS_CHANGED)</code>,发 <code>AccountActivatedEvent</code></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">开户完成 → 交易账户自助管理 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 3: 交易账户管理                       -->
+<!-- ============================================================ -->
+<div class="scene" id="s3">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S3</div>
+    <div class="scene-meta">
+      <div class="scene-title">💼 交易账户自助管理 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Account Self-Service &mdash; "Tweak it your way."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--yellow); border-color:var(--yellow-deep);">
+      <div class="char">💼</div>
+      <strong>剧情：</strong>用户查看自己所有交易账户、切换当前账户、改交易密码/观摩密码、设别名、调整杠杆、关闭账户。
+      关键属性变更走 <code>audit_log</code>。<strong>资金字段只读</strong>(由撮合引擎同步,真实值以 <code>t_account_ledger</code> 为准)。
+    </div>
+
+    <!-- API 3.1: 我的账户列表 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/trading-accounts</span>
+        <span class="api-desc">查询我的所有交易账户</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">environment</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-Live 2-Demo</td></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-待激活 1-活跃 2-只读 3-冻结 4-归档 5-休眠</td></tr>
+            <tr><td class="fname">relation_type</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>OWNER/MANAGER/VIEWER,默认 OWNER</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">3</span>,
+    <span class="jk">"accounts"</span>: [
+      {
+        <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+        <span class="jk">"account_no"</span>: <span class="jv">"80012345"</span>,
+        <span class="jk">"display_name"</span>: <span class="jv">"主交易账户"</span>,
+        <span class="jk">"group_code"</span>: <span class="jv">"LIVE_STD_USD"</span>,
+        <span class="jk">"currency"</span>: <span class="jv">"USD"</span>,
+        <span class="jk">"leverage"</span>: <span class="jn">100</span>,
+        <span class="jk">"environment"</span>: <span class="jn">1</span>,
+        <span class="jk">"status"</span>: <span class="jn">1</span>,
+        <span class="jk">"relation_type"</span>: <span class="jv">"OWNER"</span>,
+        <span class="jk">"balance"</span>: <span class="jv">"10000.0000"</span>,
+        <span class="jk">"equity"</span>: <span class="jv">"10250.0000"</span>,
+        <span class="jk">"margin_free"</span>: <span class="jv">"9525.0000"</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 3.2: 账户详情 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/trading-accounts/{accountId}</span>
+        <span class="api-desc">查询账户详情</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"account_no"</span>: <span class="jv">"80012345"</span>,
+    <span class="jk">"entity_id"</span>: <span class="jn">1</span>,
+    <span class="jk">"group"</span>: {
+      <span class="jk">"group_code"</span>: <span class="jv">"LIVE_STD_USD"</span>,
+      <span class="jk">"group_name"</span>: <span class="jv">"Standard USD"</span>,
+      <span class="jk">"account_type"</span>: <span class="jn">1</span>,
+      <span class="jk">"margin_calc_model"</span>: <span class="jn">1</span>,
+      <span class="jk">"stop_out_level"</span>: <span class="jv">"50.00"</span>,
+      <span class="jk">"allow_hedging"</span>: <span class="jn">1</span>
+    },
+    <span class="jk">"leverage"</span>: <span class="jn">100</span>,
+    <span class="jk">"currency"</span>: <span class="jv">"USD"</span>,
+    <span class="jk">"swap_free"</span>: <span class="jn">0</span>,
+    <span class="jk">"client_category"</span>: <span class="jn">1</span>,
+    <span class="jk">"balance"</span>: <span class="jv">"10000.0000"</span>,
+    <span class="jk">"credit"</span>: <span class="jv">"0.0000"</span>,
+    <span class="jk">"equity"</span>: <span class="jv">"10250.0000"</span>,
+    <span class="jk">"margin_used"</span>: <span class="jv">"725.0000"</span>,
+    <span class="jk">"margin_free"</span>: <span class="jv">"9525.0000"</span>,
+    <span class="jk">"floating_pnl"</span>: <span class="jv">"250.0000"</span>,
+    <span class="jk">"frozen_balance"</span>: <span class="jv">"0.0000"</span>,
+    <span class="jk">"status"</span>: <span class="jn">1</span>,
+    <span class="jk">"trade_enabled"</span>: <span class="jn">1</span>,
+    <span class="jk">"expert_enabled"</span>: <span class="jn">1</span>,
+    <span class="jk">"blocked_reason"</span>: <span class="jb">null</span>,
+    <span class="jk">"last_activity_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>,
+    <span class="jk">"dormant_at"</span>: <span class="jb">null</span>,
+    <span class="jk">"opened_at"</span>: <span class="jv">"2026-07-01T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 资金字段为撮合引擎定期同步的快照,实时精确值查 <code>t_account_ledger</code>;C 端只能查自己 OWNER/MANAGER/VIEWER 的账户</div>
+      </div>
+    </div>
+
+    <!-- API 3.3: 修改交易密码 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/trading-accounts/{accountId}/trade-password</span>
+        <span class="api-desc">修改交易密码</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">old_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>旧交易密码(明文) <span class="fdb">account.trade_password_hash</span></td></tr>
+            <tr><td class="fname">new_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>新交易密码(明文,服务端 bcrypt) <span class="fdb">account.trade_password_hash</span></td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"password_updated_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>,
+    <span class="jk">"audit_id"</span>: <span class="jn">998877</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 改密仅影响当前账户(不同于用户体系的 <code>security_stamp</code>);写 <code>audit_log(PASSWORD_CHANGED)</code>;用户层 <code>security_stamp</code> 不刷新</div>
+      </div>
+    </div>
+
+    <!-- API 3.4: 重置观摩密码 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/trading-accounts/{accountId}/investor-password</span>
+        <span class="api-desc">重置观摩密码(只读权限)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">new_investor_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>新观摩密码(明文,服务端 bcrypt) <span class="fdb">account.investor_password_hash</span></td></tr>
+            <tr><td class="fname">trade_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>交易密码二次确认</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"updated_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 观摩密码用于只读接入(MT4/MT5 Investor Password);可置 NULL 关闭观摩访问</div>
+      </div>
+    </div>
+
+    <!-- API 3.5: 设置账户别名 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/users/{userId}/accounts/{accountId}/alias</span>
+        <span class="api-desc">设置账户别名(用户级)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">display_name</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>新别名,如"日内策略账户" <span class="fdb">relation.display_name</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"display_name"</span>: <span class="jv">"日内策略账户"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 别名仅对设置者可见(对其他关系人显示为空),记在 <code>t_user_account_relation.display_name</code></div>
+      </div>
+    </div>
+
+    <!-- API 3.6: 调整杠杆 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/trading-accounts/{accountId}/leverage</span>
+        <span class="api-desc">调整账户杠杆</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">new_leverage</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>新杠杆(必须在 group.leverage_options 内,且 ≤ client_category 上限) <span class="fdb">account.leverage</span></td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"old_leverage"</span>: <span class="jn">100</span>,
+    <span class="jk">"new_leverage"</span>: <span class="jn">200</span>,
+    <span class="jk">"changed_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 降杠杆需校验:有持仓时新杠杆不能导致 <code>margin_used &gt; equity</code>(强平);写 <code>audit_log(LEVERAGE_CHANGED, old, new)</code>;经 MQ 通知撮合引擎</div>
+      </div>
+    </div>
+
+    <!-- API 3.7: 申请销户 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/trading-accounts/{accountId}/close</span>
+        <span class="api-desc">申请销户(归档)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">trade_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>交易密码二次确认</td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证</td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>销户原因,审计用</td></tr>
+            <tr><td class="fname">withdraw_all</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>是否同时将余额全部提取到用户钱包,默认 true</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"status"</span>: <span class="jn">4</span>,                       <span class="jc">// 4-归档</span>
+    <span class="jk">"closed_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 销户前必须:① 关闭所有持仓 ② 撤销所有挂单 ③ 余额清零(经 ledger WITHDRAWAL 或 TRANSFER_OUT) ④ 解除所有关系 ⑤ 写 <code>audit_log(STATUS_CHANGED, old=1, new=4)</code></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">账户可被多人多角色访问 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 4: 授权管理(关系)                    -->
+<!-- ============================================================ -->
+<div class="scene" id="s4">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S4</div>
+    <div class="scene-meta">
+      <div class="scene-title">🤝 用户-账户授权管理 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Authorization &mdash; "Share wisely."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--pink); border-color:var(--pink-deep);">
+      <div class="char">🤝</div>
+      <strong>剧情：</strong>账户 OWNER 可将账户授权给其他用户:<strong>MANAGER</strong>(代操盘,不能出金)、<strong>VIEWER</strong>(观摩只读)。
+      资管场景:基金经理对投资人账户为 MANAGER(详见 S6)。OWNER 可随时撤销授权。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 授权链路</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">👤</div>
+          <div class="df-label">OWNER 发起</div>
+          <div class="df-detail">填被授权人<br>UID/邮箱<br>+ 角色</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">RPC</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">授权服务</div>
+          <div class="df-detail">校验被授权人<br>权限位(can_trade/<br>can_withdraw)</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">INSERT</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_user_account<br>_relation</div>
+          <div class="df-detail">MANAGER 关系<br>can_withdraw=0<br>硬隔离客户资金</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">通知</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">GrantSent</div>
+          <div class="df-detail">被授权人<br>收到通知</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 4.1: 发起授权邀请 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/trading-accounts/{accountId}/grants</span>
+        <span class="api-desc">发起授权邀请</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">grantee_user_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>被授权人用户ID <span class="fdb">relation.user_id</span></td></tr>
+            <tr><td class="fname">relation_type</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>MANAGER / VIEWER <span class="fdb">relation.relation_type</span></td></tr>
+            <tr><td class="fname">can_trade</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>MANAGER 时是否可下单,默认 1 <span class="fdb">relation.can_trade</span></td></tr>
+            <tr><td class="fname">manager_id</td><td><span class="ftype">Long</span></td><td class="fopt">C*</td><td>资管场景关联 <code>t_money_manager.id</code> <span class="fdb">relation.manager_id</span></td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>OWNER 短信/邮箱二次验证</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"relation_id"</span>: <span class="jn">88001</span>,
+    <span class="jk">"grantee_user_id"</span>: <span class="jn">20088</span>,
+    <span class="jk">"relation_type"</span>: <span class="jv">"MANAGER"</span>,
+    <span class="jk">"can_trade"</span>: <span class="jn">1</span>,
+    <span class="jk">"can_withdraw"</span>: <span class="jn">0</span>,                  <span class="jc">// 恒为 0(资金隔离)</span>
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ <code>can_withdraw</code> 硬性恒为 0(仅 OWNER 可出金),防止 MANAGER 挪用客户资金;被授权人需在同一 <code>entity_id</code> 实体下</div>
+      </div>
+    </div>
+
+    <!-- API 4.2: 查询我的授权 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/account-grants</span>
+        <span class="api-desc">我授权给他人的账户列表</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"grants"</span>: [
+      {
+        <span class="jk">"relation_id"</span>: <span class="jn">88001</span>,
+        <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+        <span class="jk">"account_no"</span>: <span class="jv">"80012345"</span>,
+        <span class="jk">"grantee_user_id"</span>: <span class="jn">20088</span>,
+        <span class="jk">"grantee_email"</span>: <span class="jv">"advisor@example.com"</span>,
+        <span class="jk">"relation_type"</span>: <span class="jv">"MANAGER"</span>,
+        <span class="jk">"can_trade"</span>: <span class="jn">1</span>,
+        <span class="jk">"status"</span>: <span class="jn">1</span>,
+        <span class="jk">"created_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 4.3: 撤销授权 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method delete">DELETE</span>
+        <span class="api-path">/api/v1/trading-accounts/{accountId}/grants/{relationId}</span>
+        <span class="api-desc">撤销授权(OWNER 操作)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">trade_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>OWNER 交易密码二次确认</td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"relation_id"</span>: <span class="jn">88001</span>,
+    <span class="jk">"status"</span>: <span class="jn">0</span>,                  <span class="jc">// 0-已解除</span>
+    <span class="jk">"revoked_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 软解除 <code>status=0</code> 保留审计痕迹;MANAGER 在撮合引擎侧的会话立即失效</div>
+      </div>
+    </div>
+
+    <!-- API 4.4: 查询我被授权的账户 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/accessible-accounts</span>
+        <span class="api-desc">查询我被授权的账户</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"accounts"</span>: [
+      {
+        <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+        <span class="jk">"account_no"</span>: <span class="jv">"80012345"</span>,
+        <span class="jk">"owner_user_id"</span>: <span class="jn">10086</span>,
+        <span class="jk">"relation_type"</span>: <span class="jv">"MANAGER"</span>,
+        <span class="jk">"can_trade"</span>: <span class="jn">1</span>,
+        <span class="jk">"can_withdraw"</span>: <span class="jn">0</span>,
+        <span class="jk">"manager_id"</span>: <span class="jn">501</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 撮合网关查此接口获取"当前 token 对应的所有可访问账户";客户端选择"当前操盘账户"时使用</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">动态杠杆管理 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 5: 动态杠杆模板                       -->
+<!-- ============================================================ -->
+<div class="scene" id="s5">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S5</div>
+    <div class="scene-meta">
+      <div class="scene-title">📐 动态杠杆模板(敞口阶梯) <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">Dynamic Leverage Template &mdash; "Bigger exposure, lower leverage."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--orange); border-color:var(--orange-deep);">
+      <div class="char">📐</div>
+      <strong>剧情：</strong>对标 MT5 Dynamic Leverage。<code>t_leverage_template</code>(头) + <code>t_leverage_tier</code>(分级明细) 构成完整的"敞口越大杠杆越低"风控阶梯。
+      账户组通过 <code>leverage_template_id</code> 引用;撮合引擎在下单时按敞口/净值实时计算当前 tier。
+    </div>
+
+    <!-- API 5.1: 创建模板 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/admin/leverage-templates</span>
+        <span class="api-desc">创建动态杠杆模板</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">template_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>模板代码,全局唯一,如 DYN_FX_STANDARD <span class="fdb">template.template_code</span></td></tr>
+            <tr><td class="fname">template_name</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>模板名称 <span class="fdb">template.template_name</span></td></tr>
+            <tr><td class="fname">basis</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-账户净值(Equity) 2-名义敞口 3-单品种持仓量 <span class="fdb">template.basis</span></td></tr>
+            <tr><td class="fname">basis_currency</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>基准币种 <span class="fdb">template.basis_currency</span></td></tr>
+            <tr><td class="fname">scope</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-账户整体 2-按品种类别分别计算,默认 1 <span class="fdb">template.scope</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: { <span class="jk">"id"</span>: <span class="jn">10</span>, <span class="jk">"template_code"</span>: <span class="jv">"DYN_FX_STANDARD"</span> }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 5.2: 配置分级 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/admin/leverage-templates/{templateId}/tiers</span>
+        <span class="api-desc">配置杠杆分级</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">symbol_category</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>适用品种类别,NULL=通用 <span class="fdb">tier.symbol_category</span></td></tr>
+            <tr><td class="fname">tier_min</td><td><span class="ftype">Decimal</span></td><td class="freq">Y</td><td>区间下界(含) <span class="fdb">tier.tier_min</span></td></tr>
+            <tr><td class="fname">tier_max</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>区间上界(不含),NULL=∞ <span class="fdb">tier.tier_max</span></td></tr>
+            <tr><td class="fname">leverage</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>该区间适用杠杆上限,如 500 表示 1:500 <span class="fdb">tier.leverage</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: { <span class="jk">"id"</span>: <span class="jn">101</span>, <span class="jk">"tier_min"</span>: <span class="jv">"0.0000"</span>, <span class="jk">"tier_max"</span>: <span class="jv">"100000.0000"</span>, <span class="jk">"leverage"</span>: <span class="jn">500</span> }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 示例(basis=2 名义敞口 USD):<br>tier1: [0, 100000) → 1:500 | tier2: [100000, 500000) → 1:200 | tier3: [500000, 2000000) → 1:100 | tier4: [2000000, ∞) → 1:50</div>
+      </div>
+    </div>
+
+    <!-- API 5.3: 查询模板详情 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/leverage-templates/{templateId}</span>
+        <span class="api-desc">查询模板详情(含全部 tier)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"id"</span>: <span class="jn">10</span>,
+    <span class="jk">"template_code"</span>: <span class="jv">"DYN_FX_STANDARD"</span>,
+    <span class="jk">"basis"</span>: <span class="jn">2</span>,
+    <span class="jk">"basis_currency"</span>: <span class="jv">"USD"</span>,
+    <span class="jk">"scope"</span>: <span class="jn">1</span>,
+    <span class="jk">"tiers"</span>: [
+      { <span class="jk">"tier_min"</span>: <span class="jv">"0.0000"</span>,     <span class="jk">"tier_max"</span>: <span class="jv">"100000.0000"</span>,  <span class="jk">"leverage"</span>: <span class="jn">500</span> },
+      { <span class="jk">"tier_min"</span>: <span class="jv">"100000.0000"</span>, <span class="jk">"tier_max"</span>: <span class="jv">"500000.0000"</span>,  <span class="jk">"leverage"</span>: <span class="jn">200</span> },
+      { <span class="jk">"tier_min"</span>: <span class="jv">"500000.0000"</span>, <span class="jk">"tier_max"</span>: <span class="jv">"2000000.0000"</span>, <span class="jk">"leverage"</span>: <span class="jn">100</span> },
+      { <span class="jk">"tier_min"</span>: <span class="jv">"2000000.0000"</span>, <span class="jk">"tier_max"</span>: <span class="jb">null</span>,            <span class="jk">"leverage"</span>: <span class="jn">50</span> }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 5.4: 内部计算当前杠杆 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method internal">INTERNAL</span>
+        <span class="api-path">/internal/v1/leverage-templates/resolve</span>
+        <span class="api-desc">根据敞口解析当前杠杆(撮合调用)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">template_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>模板ID</td></tr>
+            <tr><td class="fname">symbol_category</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>品种类别(scope=2 时必填)</td></tr>
+            <tr><td class="fname">basis_value</td><td><span class="ftype">Decimal</span></td><td class="freq">Y</td><td>当前基准值(净值或名义敞口)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"tier_leverage"</span>: <span class="jn">200</span>,
+    <span class="jk">"tier_min"</span>: <span class="jv">"100000.0000"</span>,
+    <span class="jk">"tier_max"</span>: <span class="jv">"500000.0000"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 撮合引擎高频调用(下单前);模板结构缓存在 Redis,毫秒级返回;实际杠杆 = MIN(账户 leverage, 组 max_leverage, 品种 max_leverage_override, tier_leverage)</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">资管:MAM/PAMM 跟单体系 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 6: 资管 MAM/PAMM                      -->
+<!-- ============================================================ -->
+<div class="scene" id="s6">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S6</div>
+    <div class="scene-meta">
+      <div class="scene-title">💼 资管(MAM/PAMM/跟单) <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">Money Manager &mdash; "One trader, many followers."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--purple); border-color:var(--purple-deep);">
+      <div class="char">💼</div>
+      <strong>剧情：</strong>基金经理开操盘主账户(<code>master_account_id</code>)→ 投资人加入(<code>t_mam_allocation</code>)。
+      操盘账户对投资人账户为 MANAGER(自动授权);分配引擎(独立子系统)按 <code>allocation_method</code> 分摊成交。
+      <strong>份额/业绩费/高水位线计算由独立"资管结算"子系统负责</strong>,账户体系仅承载关系与收费配置。
+    </div>
+
+    <!-- API 6.1: 创建资管 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/admin/money-managers</span>
+        <span class="api-desc">创建资管主体</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">manager_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>资管代码,如 MM_QUANT_001 <span class="fdb">mm.manager_code</span></td></tr>
+            <tr><td class="fname">manager_name</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>策略名称,如"全球宏观对冲" <span class="fdb">mm.manager_name</span></td></tr>
+            <tr><td class="fname">owner_user_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>基金经理用户ID <span class="fdb">mm.owner_user_id</span></td></tr>
+            <tr><td class="fname">master_account_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>操盘主账户ID <span class="fdb">mm.master_account_id</span></td></tr>
+            <tr><td class="fname">mode</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-MAM 2-PAMM 3-Copy 跟单 <span class="fdb">mm.mode</span></td></tr>
+            <tr><td class="fname">mgmt_fee_rate</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>管理费年化%,0=不收 <span class="fdb">mm.mgmt_fee_rate</span></td></tr>
+            <tr><td class="fname">perf_fee_rate</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>业绩费%,0=不收 <span class="fdb">mm.perf_fee_rate</span></td></tr>
+            <tr><td class="fname">use_high_water_mark</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-否 1-启用高水位线 <span class="fdb">mm.use_high_water_mark</span></td></tr>
+            <tr><td class="fname">settlement_period</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-日 2-周 3-月 4-季,默认 3 <span class="fdb">mm.settlement_period</span></td></tr>
+            <tr><td class="fname">min_investment</td><td><span class="ftype">Decimal</span></td><td class="freq">Y</td><td>最低加入金额 <span class="fdb">mm.min_investment</span></td></tr>
+            <tr><td class="fname">currency</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>结算币种 <span class="fdb">mm.currency</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"id"</span>: <span class="jn">501</span>,
+    <span class="jk">"manager_code"</span>: <span class="jv">"MM_QUANT_001"</span>,
+    <span class="jk">"status"</span>: <span class="jn">1</span>,                     <span class="jc">// 1-募集中</span>
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 一个 <code>master_account_id</code> 只能作为一个资管的主账户(UNIQUE 约束);基金经理可同时运营多个资管</div>
+      </div>
+    </div>
+
+    <!-- API 6.2: 投资人加入 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/money-managers/{managerId}/investors</span>
+        <span class="api-desc">投资人加入资管</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">investor_account_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>投资人交易账户ID <span class="fdb">alloc.investor_account_id</span></td></tr>
+            <tr><td class="fname">allocation_method</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-按净值占比 2-按余额占比 3-按固定比例 4-按固定手数 <span class="fdb">alloc.allocation_method</span></td></tr>
+            <tr><td class="fname">allocation_value</td><td><span class="ftype">Decimal</span></td><td class="fopt">C*</td><td>方式 3 为比例(0.5=50%),方式 4 为手数系数 <span class="fdb">alloc.allocation_value</span></td></tr>
+            <tr><td class="fname">perf_fee_rate_override</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>该投资人业绩费率覆盖 <span class="fdb">alloc.perf_fee_rate_override</span></td></tr>
+            <tr><td class="fname">lock_until</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>锁定期截止,NULL=无锁定 <span class="fdb">alloc.lock_until</span></td></tr>
+            <tr><td class="fname">trade_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>投资人交易密码确认</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"alloc_id"</span>: <span class="jn">8001</span>,
+    <span class="jk">"manager_id"</span>: <span class="jn">501</span>,
+    <span class="jk">"investor_account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"relation_id"</span>: <span class="jn">88001</span>,           <span class="jc">// 自动建立 MANAGER 关系</span>
+    <span class="jk">"status"</span>: <span class="jn">1</span>,
+    <span class="jk">"joined_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 加入资管=同步在 <code>t_user_account_relation</code> 建立基金经理对投资人账户的 MANAGER 关系(<code>manager_id</code> 关联);撮合引擎读 relation 即可知道哪类订单需要分摊</div>
+      </div>
+    </div>
+
+    <!-- API 6.3: 退出资管 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/money-managers/{managerId}/investors/{allocId}/quit</span>
+        <span class="api-desc">退出资管</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">trade_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>投资人交易密码</td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>退出原因</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"alloc_id"</span>: <span class="jn">8001</span>,
+    <span class="jk">"status"</span>: <span class="jn">0</span>,                  <span class="jc">// 0-已退出</span>
+    <span class="jk">"quit_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ <code>lock_until</code> 未到期则拒绝;退出后 MANAGER 关系自动撤销(<code>relation.status=0</code>);最终结算金额由资管结算子系统计算后经 ledger 划转</div>
+      </div>
+    </div>
+
+    <!-- API 6.4: 资管详情 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/money-managers/{managerId}</span>
+        <span class="api-desc">资管详情(含投资人列表)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"id"</span>: <span class="jn">501</span>,
+    <span class="jk">"manager_code"</span>: <span class="jv">"MM_QUANT_001"</span>,
+    <span class="jk">"manager_name"</span>: <span class="jv">"全球宏观对冲"</span>,
+    <span class="jk">"mode"</span>: <span class="jn">2</span>,
+    <span class="jk">"mgmt_fee_rate"</span>: <span class="jv">"2.0000"</span>,
+    <span class="jk">"perf_fee_rate"</span>: <span class="jv">"20.0000"</span>,
+    <span class="jk">"use_high_water_mark"</span>: <span class="jn">1</span>,
+    <span class="jk">"settlement_period"</span>: <span class="jn">3</span>,
+    <span class="jk">"investor_count"</span>: <span class="jn">128</span>,
+    <span class="jk">"total_aum"</span>: <span class="jv">"5200000.00"</span>,
+    <span class="jk">"status"</span>: <span class="jn">2</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 <code>investor_count</code> 与 <code>total_aum</code> 由资管结算子系统定期汇总回写</div>
+      </div>
+    </div>
+
+    <!-- API 6.5: 更新收费配置 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/admin/money-managers/{managerId}/fee-config</span>
+        <span class="api-desc">更新资管收费配置</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">mgmt_fee_rate</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>新管理费率 <span class="fdb">mm.mgmt_fee_rate</span></td></tr>
+            <tr><td class="fname">perf_fee_rate</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>新业绩费率 <span class="fdb">mm.perf_fee_rate</span></td></tr>
+            <tr><td class="fname">settlement_period</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>新结算周期 <span class="fdb">mm.settlement_period</span></td></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-停用 1-募集中 2-运作中 3-已清算 <span class="fdb">mm.status</span></td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>变更原因,审计</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: { <span class="jk">"id"</span>: <span class="jn">501</span>, <span class="jk">"updated_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span> }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 已加入的投资人用旧费率直至退出;新投资人用新费率;<code>use_high_water_mark</code> 一旦启用不可关闭(合规)</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">自动管理:不活跃与休眠 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 7: 不活跃/休眠                       -->
+<!-- ============================================================ -->
+<div class="scene" id="s7">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S7</div>
+    <div class="scene-meta">
+      <div class="scene-title">😴 不活跃费 & 休眠管理 <span class="scene-tag system">系统</span></div>
+      <div class="scene-subtitle">Inactivity & Dormant Management &mdash; "Asleep, but not forgotten."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--slate); border-color:var(--slate-deep);">
+      <div class="char">😴</div>
+      <strong>剧情：</strong>每日定时任务扫描 <code>t_trading_account</code>:<br>
+      ① <code>NOW - last_activity_at ≥ group.inactivity_days</code> → 经 ledger 扣不活跃费<br>
+      ② <code>NOW - last_activity_at ≥ group.dormant_days</code> → <code>status → 5(休眠)</code>,写审计<br>
+      ③ 休眠账户再次登录/入金 → <code>status → 1, dormant_at = NULL</code>,写审计
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 定时任务流程</div>
+      <div class="df-chain">
+        <div class="df-node check">
+          <div class="df-icon">⏰</div>
+          <div class="df-label">每日 02:00</div>
+          <div class="df-detail">Cron Job<br>扫描所有<br>活跃账户</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">RPC</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">不活跃判定</div>
+          <div class="df-detail">last_activity_at<br>vs group<br>inactivity/dormant</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">扣费</span></div>
+        <div class="df-node db">
+          <div class="df-icon">💸</div>
+          <div class="df-label">t_account_ledger</div>
+          <div class="df-detail">ledger_type=FEE<br>类型 10<br>不活跃费</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">休眠</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">状态变更</div>
+          <div class="df-detail">status=5<br>dormant_at=NOW<br>+ audit_log</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 7.1: 扫描不活跃 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method internal">INTERNAL</span>
+        <span class="api-path">/internal/v1/inactivity/scan</span>
+        <span class="api-desc">扫描不活跃账户(定时任务调用)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">batch_size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>每批处理数量,默认 500</td></tr>
+            <tr><td class="fname">dry_run</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>true=只查询不执行,默认 false</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"scanned"</span>: <span class="jn">8421</span>,
+    <span class="jk">"inactive_charged"</span>: <span class="jn">37</span>,
+    <span class="jk">"newly_dormant"</span>: <span class="jn">8</span>,
+    <span class="jk">"total_fee_charged"</span>: <span class="jv">"370.00"</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 7.2: 查询休眠账户 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/trading-accounts/dormant</span>
+        <span class="api-desc">查询休眠账户列表</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">entity_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>按实体过滤</td></tr>
+            <tr><td class="fname">dormant_since</td><td><span class="ftype">Date</span></td><td class="fopt">N</td><td>休眠起始日期</td></tr>
+            <tr><td class="fname">page</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 1</td></tr>
+            <tr><td class="fname">size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 20,最大 100</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">128</span>,
+    <span class="jk">"accounts"</span>: [
+      {
+        <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+        <span class="jk">"account_no"</span>: <span class="jv">"80012345"</span>,
+        <span class="jk">"owner_user_id"</span>: <span class="jn">10086</span>,
+        <span class="jk">"dormant_at"</span>: <span class="jv">"2026-07-01T02:00:00.000Z"</span>,
+        <span class="jk">"days_dormant"</span>: <span class="jn">15</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 7.3: 手动激活休眠账户 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/trading-accounts/{accountId}/reactivate</span>
+        <span class="api-desc">激活休眠账户</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">trade_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>交易密码二次确认</td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"status"</span>: <span class="jn">1</span>,                    <span class="jc">// 1-活跃</span>
+    <span class="jk">"dormant_at"</span>: <span class="jb">null</span>,
+    <span class="jk">"reactivated_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 状态 5→1,清空 dormant_at,写 <code>audit_log(REACTIVATED)</code>;也可由定时任务(用户登录/入金)自动触发</div>
+      </div>
+    </div>
+
+    <!-- API 7.4: 手动转休眠 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/admin/trading-accounts/{accountId}/mark-dormant</span>
+        <span class="api-desc">手动将账户转休眠(Admin)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>休眠原因(合规留痕)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"status"</span>: <span class="jn">5</span>,
+    <span class="jk">"dormant_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 手动休眠不依赖 inactivity_days;写 <code>audit_log(DORMANT)</code></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">所有关键变更留痕:审计日志 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 8: 审计日志                           -->
+<!-- ============================================================ -->
+<div class="scene" id="s8">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S8</div>
+    <div class="scene-meta">
+      <div class="scene-title">📝 账户变更审计日志 <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">Audit Logs &mdash; "Every change, forever remembered."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--yellow); border-color:var(--yellow-deep);">
+      <div class="char">🔍</div>
+      <strong>剧情：</strong><code>t_trading_account_audit_log</code> 只 INSERT 不 UPDATE/DELETE;按季度分区滚动;记录账户<strong>关键属性变更</strong>(杠杆/状态/组迁移/密码/客户分类/资管关系等),不记录资金变动(那是 ledger 的职责)。
+    </div>
+
+    <!-- API 8.1: 查询审计日志 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/trading-accounts/{accountId}/audit-logs</span>
+        <span class="api-desc">查询账户审计日志</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">action</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>LEVERAGE_CHANGED/STATUS_CHANGED/GROUP_CHANGED/PASSWORD_CHANGED/CATEGORY_CHANGED/MAM_JOINED/MAM_QUIT/DORMANT/REACTIVATED</td></tr>
+            <tr><td class="fname">begin_time</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>开始时间</td></tr>
+            <tr><td class="fname">end_time</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>结束时间</td></tr>
+            <tr><td class="fname">page</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 1</td></tr>
+            <tr><td class="fname">size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 50,最大 200</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">42</span>,
+    <span class="jk">"logs"</span>: [
+      {
+        <span class="jk">"id"</span>: <span class="jn">100001</span>,
+        <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+        <span class="jk">"action"</span>: <span class="jv">"LEVERAGE_CHANGED"</span>,
+        <span class="jk">"field_name"</span>: <span class="jv">"leverage"</span>,
+        <span class="jk">"old_value"</span>: <span class="jv">"100"</span>,
+        <span class="jk">"new_value"</span>: <span class="jv">"200"</span>,
+        <span class="jk">"reason"</span>: <span class="jv">"用户主动调整"</span>,
+        <span class="jk">"trigger_source"</span>: <span class="jv">"USER"</span>,
+        <span class="jk">"operator_id"</span>: <span class="jn">10086</span>,
+        <span class="jk">"client_ip"</span>: <span class="jv">"203.0.113.42"</span>,
+        <span class="jk">"created_at"</span>: <span class="jv">"2026-07-16T10:00:00.000Z"</span>
+      },
+      {
+        <span class="jk">"id"</span>: <span class="jn">100002</span>,
+        <span class="jk">"action"</span>: <span class="jv">"DORMANT"</span>,
+        <span class="jk">"reason"</span>: <span class="jv">"连续 365 天无活动"</span>,
+        <span class="jk">"trigger_source"</span>: <span class="jv">"SYSTEM"</span>,
+        <span class="jk">"operator_id"</span>: <span class="jb">null</span>,
+        <span class="jk">"created_at"</span>: <span class="jv">"2026-07-01T02:00:00.000Z"</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 8.2: 全局变更追溯 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/audit-logs</span>
+        <span class="api-desc">全局变更追溯(按 action 跨账户查询)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">entity_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>按监管实体</td></tr>
+            <tr><td class="fname">action</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>变更动作</td></tr>
+            <tr><td class="fname">trigger_source</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>USER/ADMIN/SYSTEM/API</td></tr>
+            <tr><td class="fname">begin_time</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>起始时间</td></tr>
+            <tr><td class="fname">end_time</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>结束时间</td></tr>
+            <tr><td class="fname">page</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 1</td></tr>
+            <tr><td class="fname">size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 50,最大 200</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">8421</span>,
+    <span class="jk">"logs"</span>: [
+      { <span class="jk">"id"</span>: <span class="jn">100001</span>, <span class="jk">"account_id"</span>: <span class="jn">20001</span>, <span class="jk">"action"</span>: <span class="jv">"LEVERAGE_CHANGED"</span>, <span class="jk">"operator_id"</span>: <span class="jn">10086</span>, <span class="jk">"created_at"</span>: <span class="jv">"..."</span> }
+    ]
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 全局追溯仅供合规/风控使用;<code>RBAC</code> 限定到操作员管辖的实体范围</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">Admin 后台综合查询 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   ADMIN 后台                                 -->
+<!-- ============================================================ -->
+<div class="scene" id="admin">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">A</div>
+    <div class="scene-meta">
+      <div class="scene-title">🛠️ Admin 后台综合 API <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">Admin Backstage &mdash; "Operator's cockpit."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--pink); border-color:var(--pink-deep);">
+      <div class="char">👮</div>
+      <strong>剧情：</strong>客服 / 风控 / 合规 / 运营 通过 Admin 后台查询账户全景,所有接口走 <code>X-Admin-Token</code> + <code>X-Operator-Id</code> 审计,RBAC 限定实体范围。
+    </div>
+
+    <!-- A.1: 分页查询账户 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/trading-accounts</span>
+        <span class="api-desc">后台分页查询账户</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">entity_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>按监管实体</td></tr>
+            <tr><td class="fname">account_no</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>账号精确匹配</td></tr>
+            <tr><td class="fname">owner_user_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>按开户人</td></tr>
+            <tr><td class="fname">group_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>按账户组</td></tr>
+            <tr><td class="fname">environment</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-Live 2-Demo</td></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0/1/2/3/4/5</td></tr>
+            <tr><td class="fname">client_category</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-零售 2-专业 3-ECP</td></tr>
+            <tr><td class="fname">introducing_broker_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>按 IB 过滤</td></tr>
+            <tr><td class="fname">min_balance</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>最小余额</td></tr>
+            <tr><td class="fname">max_balance</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>最大余额</td></tr>
+            <tr><td class="fname">page</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 1</td></tr>
+            <tr><td class="fname">size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 20,最大 100</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">8421</span>,
+    <span class="jk">"accounts"</span>: [
+      {
+        <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+        <span class="jk">"account_no"</span>: <span class="jv">"80012345"</span>,
+        <span class="jk">"owner_user_id"</span>: <span class="jn">10086</span>,
+        <span class="jk">"group_code"</span>: <span class="jv">"LIVE_STD_USD"</span>,
+        <span class="jk">"currency"</span>: <span class="jv">"USD"</span>,
+        <span class="jk">"leverage"</span>: <span class="jn">100</span>,
+        <span class="jk">"balance"</span>: <span class="jv">"10000.00"</span>,
+        <span class="jk">"equity"</span>: <span class="jv">"10250.00"</span>,
+        <span class="jk">"status"</span>: <span class="jn">1</span>,
+        <span class="jk">"client_category"</span>: <span class="jn">1</span>,
+        <span class="jk">"opened_at"</span>: <span class="jv">"2026-07-01T10:00:00.000Z"</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 全部 Admin 接口要求 <code>X-Admin-Token</code> 鉴权 + <code>X-Operator-Id</code> 写审计;查询范围受 RBAC 限制</div>
+      </div>
+    </div>
+
+    <!-- A.2: 调整账户状态(强制) -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/admin/trading-accounts/{accountId}/status</span>
+        <span class="api-desc">强制调整账户状态(冻结/只读/解冻)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">target_status</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-活跃 2-只读 3-冻结 4-归档 <span class="fdb">account.status</span></td></tr>
+            <tr><td class="fname">trade_enabled</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-禁开新仓 1-允许 <span class="fdb">account.trade_enabled</span></td></tr>
+            <tr><td class="fname">blocked_reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>RISK_HOLD/AML_REVIEW/KYC_EXPIRED/USER_REQUEST <span class="fdb">account.blocked_reason</span></td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>操作原因(详情),审计必填</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+    <span class="jk">"old_status"</span>: <span class="jn">1</span>,
+    <span class="jk">"new_status"</span>: <span class="jn">3</span>,                  <span class="jc">// 3-冻结</span>
+    <span class="jk">"audit_id"</span>: <span class="jn">100010</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 强制冻结/只读是高危操作:写 <code>audit_log(STATUS_CHANGED)</code>,经 MQ 通知撮合引擎立即停接该账户订单;同时刷该用户所有 token(可选)</div>
+      </div>
+    </div>
+
+    <!-- A.3: 账户全档案 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/trading-accounts/{accountId}/full-profile</span>
+        <span class="api-desc">账户全档案(10 表 JOIN)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response(简略)</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"account"</span>: { <span class="jc">/* t_trading_account 全部字段 */</span> },
+    <span class="jk">"group"</span>: { <span class="jc">/* t_account_group 全部字段 */</span> },
+    <span class="jk">"group_symbol_configs"</span>: [{ <span class="jc">/* t_account_group_symbol_config */</span> }],
+    <span class="jk">"group_commissions"</span>: [{ <span class="jc">/* t_account_group_commission */</span> }],
+    <span class="jk">"leverage_template"</span>: { <span class="jc">/* t_leverage_template + tiers */</span> },
+    <span class="jk">"user_relation"</span>: {
+      <span class="jk">"owner_user_id"</span>: <span class="jn">10086</span>,
+      <span class="jk">"relations"</span>: [
+        { <span class="jk">"relation_type"</span>: <span class="jv">"OWNER"</span>, <span class="jk">"user_id"</span>: <span class="jn">10086</span> },
+        { <span class="jk">"relation_type"</span>: <span class="jv">"MANAGER"</span>, <span class="jk">"user_id"</span>: <span class="jn">20088</span>, <span class="jk">"manager_id"</span>: <span class="jn">501</span> }
+      ]
+    },
+    <span class="jk">"mam_allocations"</span>: [{ <span class="jc">/* t_mam_allocation */</span> }],
+    <span class="jk">"recent_audit_logs"</span>: [{ <span class="jc">/* 最近 20 条 */</span> }]
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 一次性聚合 10 张表,客服"一屏看完";高开销,仅 Admin 端调用,带 5 分钟 Redis 缓存</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">事件驱动:与下游系统解耦 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   MQ 事件契约                                -->
+<!-- ============================================================ -->
+<div class="scene" id="mq">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">M</div>
+    <div class="scene-meta">
+      <div class="scene-title">📨 MQ 事件契约(发布/消费) <span class="scene-tag system">系统</span></div>
+      <div class="scene-subtitle">Event-driven Integration &mdash; "Asynchronous decoupling."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--purple); border-color:var(--purple-deep);">
+      <div class="char">📨</div>
+      <strong>剧情：</strong>账户体系通过 MQ 与撮合引擎/资金系统/风控/通知/资管结算 解耦。<strong>只发不收</strong>(除消费资金系统的入金事件触发激活)。
+      消费侧必须<strong>幂等</strong>(<code>event_id</code> 去重),必须<strong>支持乱序</strong>(<code>source_version</code>)。
+    </div>
+
+    <div class="duo">
+      <!-- 发布事件 -->
+      <div class="api-card" style="background: linear-gradient(135deg, #faf5ff 0%, #fff 60%);">
+        <div class="api-bar" style="background: var(--purple);">
+          <span class="method internal">PUBLISH</span>
+          <span class="api-path">topic: account.events</span>
+          <span class="api-desc">本服务发布的事件</span>
+        </div>
+        <div class="api-content">
+          <table class="ptable">
+            <tr><th>事件类型</th><th>触发时机</th><th>下游消费者</th></tr>
+            <tr><td class="fname">AccountGroupCreatedEvent</td><td>创建账户组</td><td>开户页缓存/撮合</td></tr>
+            <tr><td class="fname">AccountGroupUpdatedEvent</td><td>账户组参数变更</td><td>撮合热加载/风控</td></tr>
+            <tr><td class="fname">AccountGroupStatusChangedEvent</td><td>启用/停用组</td><td>开户页缓存</td></tr>
+            <tr><td class="fname">AccountOpenedEvent</td><td>开户成功</td><td>撮合加载/通知/IB</td></tr>
+            <tr><td class="fname">AccountActivatedEvent</td><td>首次入金激活</td><td>撮合/通知/IB</td></tr>
+            <tr><td class="fname">AccountStatusChangedEvent</td><td>冻结/只读/解冻</td><td>撮合停接单/通知</td></tr>
+            <tr><td class="fname">AccountLeverageChangedEvent</td><td>调整杠杆</td><td>撮合重算保证金</td></tr>
+            <tr><td class="fname">AccountPasswordChangedEvent</td><td>改密</td><td>撮合/通知</td></tr>
+            <tr><td class="fname">AccountRelationGrantedEvent</td><td>授权/撤销</td><td>撮合/通知</td></tr>
+            <tr><td class="fname">AccountClosedEvent</td><td>销户</td><td>撮合清理/通知</td></tr>
+            <tr><td class="fname">AccountDormantEvent</td><td>转休眠</td><td>通知/合规</td></tr>
+            <tr><td class="fname">AccountReactivatedEvent</td><td>休眠激活</td><td>通知</td></tr>
+            <tr><td class="fname">MoneyManagerCreatedEvent</td><td>资管创建</td><td>资管结算/通知</td></tr>
+            <tr><td class="fname">InvestorJoinedEvent</td><td>投资人加入</td><td>资管结算/通知</td></tr>
+            <tr><td class="fname">InvestorQuitEvent</td><td>投资人退出</td><td>资管结算/通知</td></tr>
+            <tr><td class="fname">LeverageTemplateUpdatedEvent</td><td>杠杆模板变更</td><td>撮合热加载</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- 消费事件 -->
+      <div class="api-card" style="background: linear-gradient(135deg, #f0fdf4 0%, #fff 60%);">
+        <div class="api-bar" style="background: var(--green);">
+          <span class="method internal">SUBSCRIBE</span>
+          <span class="api-path">topic: fund.events</span>
+          <span class="api-desc">本服务消费的事件</span>
+        </div>
+        <div class="api-content">
+          <div class="story" style="background: var(--green); border-color: var(--green-deep); font-size: 15px; padding: 12px;">
+            <div class="char">⬇️</div>
+            <strong>FirstDepositEvent</strong>(来自 资金系统)<br>
+            触发:Live 账户首次入金成功 → 自动激活
+          </div>
+          <div class="json-block" style="margin-top: 10px;">
+            <span class="json-label">Event Payload</span>
+{
+  <span class="jk">"event_id"</span>: <span class="jv">"evt_a1b2c3"</span>,
+  <span class="jk">"event_type"</span>: <span class="jv">"FirstDepositEvent"</span>,
+  <span class="jk">"event_time"</span>: <span class="jv">"2026-07-16T10:30:00.000Z"</span>,
+  <span class="jk">"account_id"</span>: <span class="jn">20001</span>,
+  <span class="jk">"ledger_id"</span>: <span class="jn">500100</span>,
+  <span class="jk">"deposit_amount"</span>: <span class="jv">"1000.00"</span>,
+  <span class="jk">"currency"</span>: <span class="jv">"USD"</span>
+}
+          </div>
+          <div class="tip info">💡 消费逻辑:① 校验 <code>account.status=0</code>(待激活) ② 改 status=1, <code>opened_at</code>=NOW, <code>last_activity_at</code>=NOW ③ 写 <code>audit_log(STATUS_CHANGED, old=0, new=1)</code> ④ 发 <code>AccountActivatedEvent</code>;失败重试 3 次入死信</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 事件通用结构 -->
+    <div class="api-card" style="margin-top: 20px;">
+      <div class="api-bar" style="background: var(--slate);">
+        <span class="method internal">SCHEMA</span>
+        <span class="api-path">事件通用结构(所有事件共)</span>
+        <span class="api-desc">消息契约</span>
+      </div>
+      <div class="api-content">
+        <div class="json-block">
+          <span class="json-label">Common Envelope</span>
+{
+  <span class="jk">"event_id"</span>: <span class="jv">"uuid-v7"</span>,                     <span class="jc">// 唯一,消费侧去重</span>
+  <span class="jk">"event_type"</span>: <span class="jv">"AccountLeverageChangedEvent"</span>,
+  <span class="jk">"event_time"</span>: <span class="jv">"ISO 8601 UTC"</span>,
+  <span class="jk">"source"</span>: <span class="jv">"account-service"</span>,
+  <span class="jk">"trace_id"</span>: <span class="jv">"trace_a1b2c3"</span>,                  <span class="jc">// 全链路追踪</span>
+  <span class="jk">"entity_id"</span>: <span class="jn">1</span>,                              <span class="jc">// 多租户隔离</span>,
+  <span class="jk">"account_id"</span>: <span class="jn">20001</span>,                         <span class="jc">// 业务主键</span>
+  <span class="jk">"source_version"</span>: <span class="jn">3</span>,                          <span class="jc">// ⭐ 乱序防护</span>
+  <span class="jk">"payload"</span>: { <span class="jv">"..."</span> }                            <span class="jc">// 业务字段</span>
+}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">
+  🏦 账户体系 API 接口设计 · Account Service API · Generated 2026.07
+</div>
+
+</div><!-- end container -->
+
+</body>
+</html>

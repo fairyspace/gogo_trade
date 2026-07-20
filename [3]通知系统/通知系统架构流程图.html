@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>通知系统 (Notification Center) 架构流程图</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+    --ink: #261a35;
+    --ink-body: #3d2f4d;
+    --paper: #f7f2fa;
+    --accent-gold: #8b6914;
+    --accent-orchid: #6b21a8;
+    --accent-cinnabar: #9b1c3a;
+    --accent-jade: #134e4a;
+    --wash-violet: linear-gradient(105deg, rgba(107, 33, 168, 0.14) 0%, rgba(139, 105, 20, 0.08) 50%, transparent 100%);
+    --wash-rose: linear-gradient(180deg, transparent 58%, rgba(155, 28, 58, 0.16) 58%);
+  }
+
+  body {
+    background: var(--paper);
+    background-image:
+      radial-gradient(ellipse 100% 55% at 80% -5%, rgba(129, 140, 248, 0.12) 0%, transparent 50%),
+      radial-gradient(circle, #ded2e5 1px, transparent 1px);
+    background-size: 100% 400px, 22px 22px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: var(--ink-body);
+    min-height: 100vh;
+    padding: 30px;
+  }
+
+  .main-title {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .main-title h1 {
+    font-family: var(--font-hand);
+    font-size: 52px;
+    font-weight: 400;
+    color: var(--ink);
+    letter-spacing: 0.1em;
+    text-shadow: 2px 3px 0 rgba(129, 140, 248, 0.35);
+    position: relative;
+    display: inline-block;
+  }
+  .main-title h1::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: -10px;
+    right: -10px;
+    height: 6px;
+    background: linear-gradient(90deg, #6366f1, var(--accent-gold), #c026d3);
+    border-radius: 3px;
+    transform: rotate(-0.5deg);
+    opacity: 0.92;
+  }
+  .main-title .subtitle {
+    font-size: 17px;
+    color: #5b4a68;
+    margin-top: 14px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.5;
+  }
+
+  .section-title {
+    font-family: var(--font-hand);
+    font-size: 34px;
+    font-weight: 400;
+    color: var(--ink);
+    margin: 40px 0 20px 0;
+    padding: 10px 22px;
+    border-left: 8px solid var(--accent-orchid);
+    background: var(--wash-violet);
+    border-radius: 0 12px 12px 0;
+    display: inline-block;
+    transform: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .flow-container {
+    max-width: 1300px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ---- DB Overview ---- */
+  .db-overview {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    margin-bottom: 30px;
+    padding: 4px 0 8px;
+  }
+  .db-group {
+    background: #fff;
+    border: 3.5px solid #2d2d2d;
+    border-radius: 18px;
+    padding: 20px 20px;
+    flex: 1 1 240px;
+    max-width: 380px;
+    min-width: min(100%, 220px);
+    position: relative;
+    box-shadow: 5px 5px 0 #2d2d2d;
+  }
+  .db-group:nth-child(1),
+  .db-group:nth-child(2),
+  .db-group:nth-child(3),
+  .db-group:nth-child(4) { transform: none; }
+  .db-group-title {
+    font-family: var(--font-hand);
+    font-size: 21px;
+    font-weight: 400;
+    color: #fff;
+    background: #2d2d2d;
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    transform: none;
+  }
+  .db-group.core { background: #dbeafe; }
+  .db-group.tpl { background: #dcfce7; }
+  .db-group.user { background: #fef3c7; }
+  .db-group.ops { background: #f3e8ff; }
+  .db-table {
+    font-size: 14px;
+    padding: 5px 0;
+    border-bottom: 2px dashed #bbb;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+  .db-table:last-child { border-bottom: none; }
+  .db-table .tname {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--accent-jade);
+    background: linear-gradient(90deg, rgba(19, 78, 74, 0.14), rgba(107, 33, 168, 0.07));
+    padding: 3px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(19, 78, 74, 0.22);
+    word-break: break-all;
+  }
+  .db-table .tdesc { color: #4a3f55; font-size: 15px; }
+  .db-group.tpl .db-table .tname { color: #14532d; border-color: rgba(20, 83, 45, 0.3); background: linear-gradient(90deg, rgba(20, 83, 45, 0.12), transparent); }
+  .db-group.user .db-table .tname { color: #7c2d12; border-color: rgba(124, 45, 18, 0.28); background: linear-gradient(90deg, rgba(124, 45, 18, 0.1), transparent); }
+  .db-group.ops .db-table .tname { color: #5b21b6; border-color: rgba(91, 33, 182, 0.28); background: linear-gradient(90deg, rgba(91, 33, 182, 0.1), transparent); }
+
+  .tape {
+    position: absolute;
+    width: 80px;
+    height: 28px;
+    background: rgba(255, 222, 89, 0.6);
+    border: 1.5px solid rgba(200, 170, 50, 0.4);
+    transform: rotate(-35deg);
+    top: -10px;
+    right: 30px;
+    border-radius: 2px;
+    z-index: 2;
+  }
+
+  /* ---- Flow Steps ---- */
+  .flow-steps {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .step-card {
+    background: #fff;
+    border: 3.5px solid #2d2d2d;
+    border-radius: 20px;
+    padding: 24px 30px;
+    width: 90%;
+    max-width: 960px;
+    position: relative;
+    box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
+    margin-bottom: 0;
+  }
+  .step-card:nth-child(odd),
+  .step-card:nth-child(even) { transform: none; }
+
+  .step-card.blue { background: #dbeafe; }
+  .step-card.green { background: #dcfce7; }
+  .step-card.yellow { background: #fef9c3; }
+  .step-card.purple { background: #f3e8ff; }
+  .step-card.pink { background: #fce7f3; }
+  .step-card.orange { background: #ffedd5; }
+  .step-card.indigo { background: #e0e7ff; }
+
+  .step-num {
+    position: absolute;
+    top: -18px;
+    left: 24px;
+    background: #818cf8;
+    color: #fff;
+    font-size: 20px;
+    font-weight: bold;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #2d2d2d;
+    box-shadow: 2px 2px 0 #2d2d2d;
+    font-family: var(--font-ui);
+    font-weight: 700;
+  }
+
+  .step-title {
+    font-family: var(--font-hand);
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 10px;
+    padding-left: 36px;
+    border-left: 4px solid var(--accent-orchid);
+    margin-left: 8px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    background: linear-gradient(90deg, rgba(107, 33, 168, 0.08), transparent 72%);
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.35;
+  }
+
+  .step-body {
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--ink-body);
+  }
+
+  .step-body strong {
+    color: var(--accent-cinnabar);
+    font-weight: 700;
+    background: var(--wash-rose);
+  }
+
+  .step-body .role-tag {
+    display: inline-block;
+    background: #c4b5fd;
+    color: #3b0764;
+    font-size: 14px;
+    padding: 2px 10px;
+    border-radius: 8px;
+    border: 2px solid #3b0764;
+    margin-right: 6px;
+    font-weight: bold;
+  }
+  .step-body .role-tag.engine {
+    background: #93c5fd;
+    color: #1e3a5f;
+    border-color: #1e3a5f;
+  }
+  .step-body .role-tag.gateway {
+    background: #fbbf24;
+    color: #78350f;
+    border-color: #78350f;
+  }
+
+  .table-tags {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .table-tag {
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 13px;
+    padding: 3px 12px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  /* ---- Arrow between steps ---- */
+  .arrow-down {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: auto;
+    min-height: 48px;
+    position: relative;
+    padding: 6px 0 10px;
+  }
+  .arrow-down .arrow-line {
+    width: 5px;
+    flex: 0 0 32px;
+    min-height: 32px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #2d2d2d 0px,
+      #2d2d2d 8px,
+      transparent 8px,
+      transparent 14px
+    );
+    border-radius: 3px;
+  }
+  .arrow-down .arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 18px solid #2d2d2d;
+    flex-shrink: 0;
+  }
+  .arrow-label {
+    position: static;
+    margin-top: 8px;
+    background: #fff7ed;
+    border: 2px solid #7c3aed;
+    border-radius: 10px;
+    padding: 4px 14px;
+    font-size: 15px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    color: #5b21b6;
+    white-space: normal;
+    max-width: 100%;
+    overflow-x: visible;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  }
+
+  /* ---- Priority / SLA Table ---- */
+  .check-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 14px;
+    border: 3px solid #2d2d2d;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .check-table th {
+    background: #1e293b;
+    color: #f1f5f9;
+    padding: 10px 14px;
+    font-size: 16px;
+    text-align: left;
+  }
+  .check-table td {
+    padding: 10px 14px;
+    font-size: 15px;
+    border-bottom: 2px dashed #ddd;
+    background: #fff;
+  }
+  .check-table tr:last-child td { border-bottom: none; }
+  .check-table td:first-child {
+    font-weight: 700;
+    color: var(--accent-orchid);
+    background: linear-gradient(90deg, rgba(107, 33, 168, 0.1), transparent);
+  }
+
+  /* ---- Status Flow ---- */
+  .status-flow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+    overflow-x: visible;
+    padding: 6px 0 8px;
+  }
+  .sf-node {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 14px;
+    padding: 10px 12px;
+    text-align: center;
+    min-width: 72px;
+    flex: 0 1 auto;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .sf-node.active { background: #bbf7d0; border-color: #16a34a; }
+  .sf-node.fail { background: #fecaca; border-color: #dc2626; }
+  .sf-node.warn { background: #fef3c7; border-color: #d97706; }
+  .sf-node .sf-code {
+    font-size: 15px;
+    font-weight: 700;
+    font-family: var(--font-ui);
+    color: var(--accent-cinnabar);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(129, 140, 248, 0.15));
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+  .sf-node .sf-label { font-size: 13px; color: #5b4a68; font-weight: 600; font-family: var(--font-ui); }
+  .sf-arrow {
+    font-size: 28px;
+    color: #2d2d2d;
+    margin: 0 4px;
+    font-weight: bold;
+  }
+
+  /* ---- Decision Grid ---- */
+  .decision-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .decision-item {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    position: relative;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.12);
+  }
+  .decision-item.pass { background: #bbf7d0; border-color: #16a34a; }
+  .decision-item.reject { background: #fecaca; border-color: #dc2626; }
+  .decision-item.manual { background: #e9d5ff; border-color: #7c3aed; }
+  .decision-item.orange { background: #ffedd5; border-color: #ea580c; }
+  .decision-item .di-icon { font-size: 32px; margin-bottom: 6px; }
+  .decision-item .di-title { font-size: 18px; font-weight: 700; color: var(--ink); background: rgba(255, 255, 255, 0.55); padding: 2px 8px; border-radius: 6px; display: inline-block; }
+  .decision-item .di-desc { font-size: 14px; color: #4a3f55; margin-top: 4px; }
+
+  /* ---- Notif Grid ---- */
+  .notif-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .notif-item {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .notif-item .ni-icon { font-size: 36px; margin-bottom: 6px; }
+  .notif-item .ni-text { font-size: 15px; color: #555; }
+
+  /* ---- Channel grid ---- */
+  .channel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .ch-card {
+    background: #fff;
+    border: 3px solid #2d2d2d;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .ch-card h4 { font-family: var(--font-hand); font-size: 22px; font-weight: 400; margin-bottom: 8px; color: var(--ink); border-left: 4px solid var(--accent-gold); padding-left: 10px; }
+  .ch-card .ch-providers {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding-bottom: 2px;
+  }
+  .ch-provider {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 2px solid #3730a3;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  /* ---- Degradation Timeline ---- */
+  .timeline {
+    position: relative;
+    padding-left: 40px;
+    margin-top: 16px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: repeating-linear-gradient(to bottom, #818cf8 0px, #818cf8 6px, transparent 6px, transparent 10px);
+    border-radius: 2px;
+  }
+  .tl-item {
+    position: relative;
+    margin-bottom: 18px;
+    padding: 14px 18px;
+    background: #fff;
+    border: 2.5px solid #2d2d2d;
+    border-radius: 14px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.08);
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -32px;
+    top: 18px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #818cf8;
+    border: 3px solid #2d2d2d;
+  }
+  .tl-time {
+    font-family: var(--font-hand);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--accent-orchid);
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, rgba(107, 33, 168, 0.12), transparent);
+    padding: 2px 10px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+  .tl-desc { font-size: 16px; color: #4a3f55; }
+
+  /* ---- Corner Decorations ---- */
+  .corner-deco {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .corner-deco.tl { top: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.tr { top: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.bl { bottom: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.br { bottom: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+
+  .footer {
+    text-align: center;
+    margin-top: 50px;
+    padding: 20px;
+    color: #999;
+    font-size: 16px;
+  }
+
+  .hw-underline {
+    background-image: linear-gradient(120deg, rgba(107, 33, 168, 0.4) 0%, rgba(139, 105, 20, 0.35) 100%);
+    background-repeat: no-repeat;
+    background-size: 100% 0.42em;
+    background-position: 0 88%;
+  }
+
+  .info-box {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 16px;
+    border: 2px dashed;
+  }
+  .info-box.blue { background: #eff6ff; border-color: #3b82f6; }
+  .info-box.green { background: #f0fdf4; border-color: #22c55e; }
+  .info-box.purple { background: #f5f3ff; border-color: #7c3aed; }
+  .info-box.pink { background: #fdf2f8; border-color: #ec4899; }
+  .info-box.orange { background: #fff7ed; border-color: #ea580c; }
+  .info-box.red { background: #fef2f2; border-color: #dc2626; }
+
+  @media (max-width: 768px) {
+    .decision-grid,
+    .channel-grid,
+    .notif-grid {
+      grid-template-columns: 1fr;
+    }
+    .step-card { width: 98%; padding: 18px; }
+    .db-group { flex: 1 1 100%; max-width: 100%; }
+    .main-title h1 { font-size: 36px; }
+    .status-flow { gap: 4px; }
+    .sf-node { min-width: 64px; padding: 8px 10px; }
+  }
+
+  /* ---- A4 打印稿 ---- */
+  @page {
+    size: A4 portrait;
+    margin: 10mm 11mm;
+  }
+
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      background-image: none !important;
+      font-size: 10.5pt;
+    }
+    .flow-container {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .corner-deco,
+    .tape {
+      display: none !important;
+    }
+    .main-title { margin-bottom: 5mm; page-break-after: avoid; }
+    .main-title h1 { font-size: 22pt !important; }
+    .main-title .subtitle { font-size: 9.5pt !important; }
+    .section-title { font-size: 15pt !important; margin: 6mm 0 4mm !important; page-break-after: avoid; }
+    .db-overview { flex-wrap: wrap !important; justify-content: center !important; }
+    .db-group {
+      flex: 1 1 48% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-shadow: none !important;
+      border-width: 2px !important;
+      page-break-inside: avoid;
+    }
+    .step-card {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-shadow: none !important;
+      border-width: 2px !important;
+      page-break-inside: avoid;
+      padding: 10px 12px !important;
+    }
+    .step-title { font-size: 13pt !important; }
+    .step-body { font-size: 10pt !important; }
+    .decision-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
+    .channel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .notif-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
+    .check-table { font-size: 9.5pt !important; }
+    .timeline::before { left: 12px !important; }
+    .footer { margin-top: 8mm; font-size: 9pt; }
+  }
+</style>
+</head>
+<body>
+
+<div class="corner-deco tl">🔔</div>
+<div class="corner-deco tr">📨</div>
+<div class="corner-deco bl">🏦</div>
+<div class="corner-deco br">🛡️</div>
+
+<div class="flow-container">
+
+  <!-- ==================== TITLE ==================== -->
+  <div class="main-title">
+    <h1>🔔 通知系统架构流程图</h1>
+    <div class="subtitle">Notification Center · db_notification · 16 Tables · Event → Message → ChannelTask</div>
+  </div>
+
+  <!-- ==================== SECTION 1: DB OVERVIEW ==================== -->
+  <div class="section-title">📦 数据库架构总览 (db_notification)</div>
+
+  <div class="db-overview">
+    <div class="db-group core">
+      <div class="tape"></div>
+      <div class="db-group-title">📘 核心消息链 (4张)</div>
+      <div class="db-table">
+        <span class="tname">t_notify_event</span>
+        <span class="tdesc">事件接入表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_message</span>
+        <span class="tdesc">消息主表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_channel_task</span>
+        <span class="tdesc">通道任务表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_delivery_attempt</span>
+        <span class="tdesc">投递尝试表</span>
+      </div>
+    </div>
+
+    <div class="db-group tpl">
+      <div class="tape"></div>
+      <div class="db-group-title">⚙️ 模板 & 策略 (4张)</div>
+      <div class="db-table">
+        <span class="tname">t_notify_template</span>
+        <span class="tdesc">模板主表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_template_version</span>
+        <span class="tdesc">模板版本表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_policy</span>
+        <span class="tdesc">策略路由表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_provider</span>
+        <span class="tdesc">供应商配置表</span>
+      </div>
+    </div>
+
+    <div class="db-group user">
+      <div class="tape"></div>
+      <div class="db-group-title">👤 用户 & 设备 (4张)</div>
+      <div class="db-table">
+        <span class="tname">t_notify_preference</span>
+        <span class="tdesc">用户通知偏好</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_consent</span>
+        <span class="tdesc">用户同意授权</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_suppression</span>
+        <span class="tdesc">抑制/黑名单</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_push_device_token</span>
+        <span class="tdesc">Push设备Token</span>
+      </div>
+    </div>
+
+    <div class="db-group ops">
+      <div class="tape"></div>
+      <div class="db-group-title">📝 运营 & 审计 (4张)</div>
+      <div class="db-table">
+        <span class="tname">t_notify_inbox_message</span>
+        <span class="tdesc">站内信收件箱</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_audit_log</span>
+        <span class="tdesc">审计日志表</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_batch_job</span>
+        <span class="tdesc">批量通知任务</span>
+      </div>
+      <div class="db-table">
+        <span class="tname">t_notify_rate_limit_record</span>
+        <span class="tdesc">限频记录表</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 2: THREE LAYER MODEL ==================== -->
+  <div class="section-title">🏗️ 三层对象模型</div>
+
+  <div style="display: flex; justify-content: center; gap: 0; align-items: center; flex-wrap: wrap; margin-bottom: 30px;">
+    <div class="sf-node" style="background: #dbeafe; min-width: 160px; padding: 16px;">
+      <div style="font-size: 32px;">📥</div>
+      <div class="sf-code">Event</div>
+      <div class="sf-label">原始业务事件<br>幂等 & 回放源</div>
+    </div>
+    <div class="sf-arrow" style="font-size: 36px; margin: 0 12px;">→</div>
+    <div class="sf-node" style="background: #dcfce7; min-width: 160px; padding: 16px; border-color: #16a34a;">
+      <div style="font-size: 32px;">📨</div>
+      <div class="sf-code">Message</div>
+      <div class="sf-label">通知主实体<br>策略 + 渲染 + 快照</div>
+    </div>
+    <div class="sf-arrow" style="font-size: 36px; margin: 0 12px;">→</div>
+    <div class="sf-node" style="background: #fef3c7; min-width: 160px; padding: 16px; border-color: #d97706;">
+      <div style="font-size: 32px;">📤</div>
+      <div class="sf-code">ChannelTask</div>
+      <div class="sf-label">通道投递任务<br>独立追踪状态</div>
+    </div>
+    <div class="sf-arrow" style="font-size: 36px; margin: 0 12px;">→</div>
+    <div class="sf-node" style="background: #f3e8ff; min-width: 160px; padding: 16px; border-color: #7c3aed;">
+      <div style="font-size: 32px;">🔍</div>
+      <div class="sf-code">Attempt</div>
+      <div class="sf-label">每次供应商调用<br>请求/响应快照</div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 3: FULL LIFECYCLE ==================== -->
+  <div class="section-title">🗺️ 消息完整生命周期 (8步)</div>
+
+  <div class="flow-steps">
+
+    <!-- ========== STEP 1 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">1</div>
+      <div class="step-title">📥 事件接入（Event Ingestion）</div>
+      <div class="step-body">
+        <span class="role-tag">业务系统</span> 交易/资金/风控/账户等通过 <strong>Outbox/CDC</strong> 或 <strong>Internal API</strong> 发布标准事件
+        <br><br>
+        <span class="role-tag engine">通知引擎</span> 执行：
+        <br>&nbsp;&nbsp;1. Schema 校验 + 来源白名单过滤
+        <br>&nbsp;&nbsp;2. <strong>幂等校验</strong>：Redis GET idempotent:{entityId}:{key}
+        <br>&nbsp;&nbsp;3. 未命中 → Redis SET NX (PROCESSING, TTL=24h)
+        <br>&nbsp;&nbsp;4. 原始事件落库 → 按 priority 路由至对应 MQ Topic
+
+        <div class="info-box purple">
+          📌 <strong>幂等双保险</strong>：Redis SET NX 为第一道防线，DB 唯一索引 (idempotency_key) 为最终兜底
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_notify_event (CREATE)</span>
+          <span class="table-tag">🔑 Redis idempotent key (SET NX)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">事件投递至 MQ Topic 📬</div>
+    </div>
+
+    <!-- ========== STEP 2 ========== -->
+    <div class="step-card green">
+      <div class="step-num">2</div>
+      <div class="step-title">⚙️ 策略编排（Policy Orchestration）</div>
+      <div class="step-body">
+        <span class="role-tag engine">通知引擎</span> 消费 MQ 消息，依次执行六项检查：
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 18px; margin-bottom: 4px;">1️⃣ 策略路由查询</div>
+            <div style="font-size: 15px; color: #555;">查 t_notify_policy<br>确定通道计划 + 降级链 + 聚合规则</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 18px; margin-bottom: 4px;">2️⃣ 用户偏好 + 同意</div>
+            <div style="font-size: 15px; color: #555;">查 t_notify_preference & t_notify_consent<br>P0/P1 不可退订 → 强制发送</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 18px; margin-bottom: 4px;">3️⃣ 抑制检查</div>
+            <div style="font-size: 15px; color: #555;">查 t_notify_suppression<br>黑名单 / 投诉 / 法院禁联 → 抑制</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 18px; margin-bottom: 4px;">4️⃣ 限频检查</div>
+            <div style="font-size: 15px; color: #555;">Redis 滑动窗口<br>P0/P1 跳过限频，营销严格控制</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 18px; margin-bottom: 4px;">5️⃣ 聚合检查</div>
+            <div style="font-size: 15px; color: #555;">5分钟窗口内同类型 ≥ 5条 → 合并<br>P0/P1 始终逐条推送</div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #2d2d2d; border-radius: 12px; padding: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 18px; margin-bottom: 4px;">6️⃣ 静默时段检查</div>
+            <div style="font-size: 15px; color: #555;">用户时区 + quiet_hours<br>P0/P1 突破静默，营销必须遵守</div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 t_notify_policy (READ)</span>
+          <span class="table-tag">📖 t_notify_preference (READ)</span>
+          <span class="table-tag">📖 t_notify_consent (READ)</span>
+          <span class="table-tag">📖 t_notify_suppression (READ)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">策略通过 → 模板渲染 🎨</div>
+    </div>
+
+    <!-- ========== STEP 3 ========== -->
+    <div class="step-card yellow">
+      <div class="step-num">3</div>
+      <div class="step-title">🎨 模板渲染（Template Rendering）</div>
+      <div class="step-body">
+        <span class="role-tag engine">通知引擎</span> 执行：
+        <br>&nbsp;&nbsp;1. 查询活跃模板版本（template_code + locale → PUBLISHED 版本）
+        <br>&nbsp;&nbsp;2. 安全白名单引擎（Mustache/Handlebars）变量替换
+        <br>&nbsp;&nbsp;3. 生成各通道最终内容（Push/SMS/Email/Inbox/Voice）
+        <br>&nbsp;&nbsp;4. 计算 <strong>SHA256 内容哈希</strong>（合规防篡改）
+        <br>&nbsp;&nbsp;5. 渲染快照写入 rendered_snapshot_json（不可变）
+        <br>&nbsp;&nbsp;6. <strong>消息主表入库</strong>
+
+        <div class="info-box green">
+          📌 模板版本化管理：每次变更需审批流 → DRAFT → PENDING_APPROVAL → APPROVED → PUBLISHED
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📖 t_notify_template (READ)</span>
+          <span class="table-tag">📖 t_notify_template_version (READ)</span>
+          <span class="table-tag">📄 t_notify_message (CREATE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">渲染完成 → 拆分通道任务 📤</div>
+    </div>
+
+    <!-- ========== STEP 4 ========== -->
+    <div class="step-card purple">
+      <div class="step-num">4</div>
+      <div class="step-title">📤 通道任务分发（Channel Dispatch）</div>
+      <div class="step-body">
+        <span class="role-tag engine">通知引擎</span> 按 channel_plan 拆分通道任务
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+          <div style="background: #fff; border: 2.5px solid #16a34a; border-radius: 12px; padding: 12px;">
+            <div style="font-size: 20px; margin-bottom: 4px;">🟢 并行通道</div>
+            <div style="font-size: 15px; color: #555;">
+              PUSH + INBOX 同时创建并投递<br>
+              INBOX 直写 DB + WebSocket 推送<br>
+              <strong>INBOX 落库时间 = SLA 基准点</strong>
+            </div>
+          </div>
+          <div style="background: #fff; border: 2.5px solid #d97706; border-radius: 12px; padding: 12px;">
+            <div style="font-size: 20px; margin-bottom: 4px;">🟡 降级通道</div>
+            <div style="font-size: 15px; color: #555;">
+              SMS / VOICE / 人工 → 延迟创建<br>
+              发送延迟补偿任务至 MQ<br>
+              P0: 30s后 | P1: 60s后
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_notify_channel_task (CREATE)</span>
+          <span class="table-tag">📄 t_notify_inbox_message (CREATE)</span>
+          <span class="table-tag">📨 MQ Compensation Delay Topic</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">调用供应商 API 发送 🚀</div>
+    </div>
+
+    <!-- ========== STEP 5 ========== -->
+    <div class="step-card orange">
+      <div class="step-num">5</div>
+      <div class="step-title">🚀 推送网关层（Push Gateway）</div>
+      <div class="step-body">
+        <span class="role-tag gateway">推送网关</span> 通道适配器调用供应商 API，记录每次尝试
+
+        <div class="channel-grid">
+          <div class="ch-card" style="background: #eff6ff;">
+            <h4>📱 App Push</h4>
+            <div style="font-size: 15px; color: #555;">
+              iOS → APNs<br>
+              Android(海外) → FCM<br>
+              Android(国内) → 厂商通道
+            </div>
+            <div class="ch-providers">
+              <span class="ch-provider">APNs</span>
+              <span class="ch-provider">FCM</span>
+              <span class="ch-provider">HMS</span>
+              <span class="ch-provider">MiPush</span>
+              <span class="ch-provider">OPPO</span>
+              <span class="ch-provider">VIVO</span>
+            </div>
+          </div>
+          <div class="ch-card" style="background: #fef3c7;">
+            <h4>💬 短信 SMS</h4>
+            <div style="font-size: 15px; color: #555;">
+              加权路由 + 熔断自动切换<br>
+              连续失败≥5 → 自动熔断
+            </div>
+            <div class="ch-providers">
+              <span class="ch-provider">运营商直连</span>
+              <span class="ch-provider">阿里云SMS</span>
+              <span class="ch-provider">腾讯云SMS</span>
+              <span class="ch-provider">Twilio</span>
+            </div>
+          </div>
+          <div class="ch-card" style="background: #dcfce7;">
+            <h4>📧 邮件 Email</h4>
+            <div style="font-size: 15px; color: #555;">
+              HTML + 纯文本双模板<br>
+              追踪像素/阅读回执
+            </div>
+            <div class="ch-providers">
+              <span class="ch-provider">AWS SES</span>
+              <span class="ch-provider">SMTP</span>
+            </div>
+          </div>
+          <div class="ch-card" style="background: #fce7f3;">
+            <h4>📞 语音外呼 & Webhook</h4>
+            <div style="font-size: 15px; color: #555;">
+              P0 降级专用：TTS 语音<br>
+              Webhook：外部系统回调
+            </div>
+            <div class="ch-providers">
+              <span class="ch-provider">智能外呼平台</span>
+              <span class="ch-provider">Webhook</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_notify_delivery_attempt (CREATE)</span>
+          <span class="table-tag">📖 t_notify_provider (READ)</span>
+          <span class="table-tag">📖 t_push_device_token (READ)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">供应商返回回执 📩</div>
+    </div>
+
+    <!-- ========== STEP 6 ========== -->
+    <div class="step-card pink">
+      <div class="step-num">6</div>
+      <div class="step-title">📩 回执处理 & 梯次降级</div>
+      <div class="step-body">
+        <span class="role-tag engine">通知引擎</span> 监听回执（Webhook / 长轮询 / 客户端上报），处理三种结果：
+
+        <div class="decision-grid">
+          <div class="decision-item pass">
+            <div class="di-icon">✅</div>
+            <div class="di-title">送达成功</div>
+            <div class="di-desc">
+              task_status → DELIVERED<br>
+              记录 delivered_at<br>
+              Token 失效 → 标记 INVALID
+            </div>
+          </div>
+          <div class="decision-item reject">
+            <div class="di-icon">❌</div>
+            <div class="di-title">发送失败</div>
+            <div class="di-desc">
+              可重试 → 指数退避 (1→2→4→8s)<br>
+              不可重试 → DEADLETTER<br>
+              有降级通道 → 触发降级
+            </div>
+          </div>
+          <div class="decision-item orange">
+            <div class="di-icon">⏰</div>
+            <div class="di-title">补偿任务触发</div>
+            <div class="di-desc">
+              延迟补偿检查消息状态<br>
+              未送达 → 创建降级通道任务<br>
+              P0: 30s→SMS→5min→VOICE
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_notify_channel_task (UPDATE)</span>
+          <span class="table-tag">📄 t_notify_message (UPDATE)</span>
+          <span class="table-tag">📄 t_push_device_token (UPDATE if invalid)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">用户已读 / 确认 👁️</div>
+    </div>
+
+    <!-- ========== STEP 7 ========== -->
+    <div class="step-card indigo">
+      <div class="step-num">7</div>
+      <div class="step-title">👁️ 用户已读 & 确认</div>
+      <div class="step-body">
+        <span class="role-tag">用户</span> 在 App / 站内信中查看消息
+
+        <div style="display: flex; gap: 14px; margin-top: 14px; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 200px; background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 22px; text-align: center;">👁️ 已读 (READ)</div>
+            <div style="font-size: 15px; color: #555; margin-top: 6px; text-align: center;">
+              客户端上报 read_at<br>
+              inbox is_read → 1<br>
+              适用：所有消息
+            </div>
+          </div>
+          <div style="flex: 1; min-width: 200px; background: #fff; border: 3px solid #16a34a; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 22px; text-align: center;">✅ 确认 (CONFIRM)</div>
+            <div style="font-size: 15px; color: #555; margin-top: 6px; text-align: center;">
+              用户主动点击"确认"<br>
+              inbox is_acked → 1<br>
+              适用：P0 风控/合规类
+            </div>
+          </div>
+          <div style="flex: 1; min-width: 200px; background: #fff; border: 3px solid #7c3aed; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 22px; text-align: center;">🖊️ 签名 (SIGNATURE)</div>
+            <div style="font-size: 15px; color: #555; margin-top: 6px; text-align: center;">
+              电子签名确认<br>
+              proof_ref 存签名凭证<br>
+              适用：条款/风险揭示
+            </div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_notify_inbox_message (UPDATE)</span>
+          <span class="table-tag">📄 t_notify_channel_task (UPDATE)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">异步写入合规存储 🔒</div>
+    </div>
+
+    <!-- ========== STEP 8 ========== -->
+    <div class="step-card green">
+      <div class="step-num">8</div>
+      <div class="step-title">🔒 审计日志 & WORM 合规归档</div>
+      <div class="step-body">
+        <span class="role-tag engine">通知引擎</span> 异步执行合规存储
+
+        <div class="notif-grid">
+          <div class="notif-item" style="background: #dbeafe;">
+            <div class="ni-icon">📋</div>
+            <div style="font-size: 17px; font-weight: bold;">审计日志</div>
+            <div class="ni-text">全操作留痕<br>模板发布/人工补发/配置变更</div>
+          </div>
+          <div class="notif-item" style="background: #fef3c7;">
+            <div class="ni-icon">🔍</div>
+            <div style="font-size: 17px; font-weight: bold;">ES 全文检索</div>
+            <div class="ni-text">客服查询支持<br>P1/P2 消息12月保留</div>
+          </div>
+          <div class="notif-item" style="background: #fce7f3;">
+            <div class="ni-icon">🔒</div>
+            <div style="font-size: 17px; font-weight: bold;">WORM 不可篡改</div>
+            <div class="ni-text">P0: 20年 / P1: 5年<br>OSS Object Lock Compliance</div>
+          </div>
+        </div>
+
+        <div class="info-box red">
+          🔒 <strong>WORM 写入内容</strong>：消息ID + 渲染快照 + 各通道投递记录 + 用户确认回执 + 时间戳 + SHA256 哈希
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_notify_audit_log (CREATE)</span>
+          <span class="table-tag">📄 t_notify_message.worm_written (UPDATE)</span>
+          <span class="table-tag">☁️ OSS/S3 WORM Object Lock</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end flow-steps -->
+
+  <!-- ==================== SECTION 4: DEGRADATION FLOW ==================== -->
+  <div class="section-title">⬇️ P0 梯次降级时序</div>
+
+  <div style="background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px; padding: 28px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12); max-width: 960px; margin: 0 auto;">
+    <div class="tape" style="right: 40px;"></div>
+
+    <div style="font-size: 22px; margin-bottom: 6px;">🛡️ 示例：MARGIN_CALL_WARNING（追保预警 P0）</div>
+    <div style="font-size: 15px; color: #666; margin-bottom: 10px;">确保关键消息必达，任何单一通道故障不丢消息</div>
+
+    <div class="timeline">
+      <div class="tl-item" style="background: #dbeafe;">
+        <div class="tl-time">T+0s</div>
+        <div class="tl-desc">
+          🟢 <strong>并行投递</strong>：PUSH（主渠道）+ INBOX（强制渠道，SLA基准点）<br>
+          📨 发送 <strong>30s 延迟补偿任务</strong>至 MQ Delay Topic
+        </div>
+      </div>
+      <div class="tl-item" style="background: #fef3c7;">
+        <div class="tl-time">T+30s</div>
+        <div class="tl-desc">
+          ⏰ 补偿任务触发 → 检查 PUSH 状态<br>
+          未 DELIVERED → 🟡 <strong>降级触发 SMS 短信</strong>，创建新 ChannelTask<br>
+          📨 发送 <strong>5min 延迟补偿任务</strong>
+        </div>
+      </div>
+      <div class="tl-item" style="background: #fce7f3;">
+        <div class="tl-time">T+5min</div>
+        <div class="tl-desc">
+          ⏰ 补偿任务触发 → 检查消息是否 ACKED<br>
+          未确认 → 🔴 <strong>降级触发 VOICE 智能语音外呼</strong><br>
+          📨 发送 <strong>5min 延迟补偿任务</strong>
+        </div>
+      </div>
+      <div class="tl-item" style="background: #fecaca;">
+        <div class="tl-time">T+10min</div>
+        <div class="tl-desc">
+          ⏰ 补偿任务触发 → 仍未确认<br>
+          🚨 <strong>升级至人工坐席队列</strong><br>
+          📋 写入"人工介入"审计日志 → WORM 存储
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px; font-size: 15px; color: #666; background: #f0fdf4; border: 2px dashed #22c55e; border-radius: 10px; padding: 10px;">
+      💡 <strong>P1 示例 (ORDER_FILLED)</strong>：T+0s → PUSH+INBOX → T+60s → 未DELIVERED → SMS → T+10min → 记录最终状态，不触发人工
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 5: MESSAGE STATUS MACHINE ==================== -->
+  <div class="section-title">🔄 状态机总览</div>
+
+  <div style="background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px; padding: 28px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12); max-width: 960px; margin: 0 auto;">
+    <div class="tape" style="right: 40px;"></div>
+
+    <div style="font-size: 22px; margin-bottom: 16px; color: #1e40af;">📨 消息主状态 (Message Status)</div>
+    <div class="status-flow">
+      <div class="sf-node" style="background: #e0e7ff;"><div class="sf-code">RECEIVED</div><div class="sf-label">已接收</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #dbeafe;"><div class="sf-code">VALIDATED</div><div class="sf-label">已校验</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #fef3c7;"><div class="sf-code">RENDERED</div><div class="sf-label">已渲染</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #f3e8ff;"><div class="sf-code">DISPATCHING</div><div class="sf-label">投递中</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node active"><div class="sf-code">SENT</div><div class="sf-label">已发送</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node active" style="background: #bbf7d0; border-color: #059669;"><div class="sf-code">COMPLETED</div><div class="sf-label">已完成</div></div>
+    </div>
+    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
+      <div class="sf-node fail"><div class="sf-code">FAILED</div><div class="sf-label">处理失败</div></div>
+      <div class="sf-node" style="background: #fef3c7; border-color: #d97706;"><div class="sf-code">EXPIRED</div><div class="sf-label">已过期</div></div>
+      <div class="sf-node" style="background: #e5e7eb; border-color: #6b7280;"><div class="sf-code">CANCELLED</div><div class="sf-label">已取消</div></div>
+    </div>
+
+    <div style="font-size: 22px; margin: 28px 0 16px 0; color: #16a34a;">📤 通道任务状态 (ChannelTask Status)</div>
+    <div class="status-flow">
+      <div class="sf-node" style="background: #e0e7ff;"><div class="sf-code">PENDING</div><div class="sf-label">待发送</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #fef3c7;"><div class="sf-code">SENDING</div><div class="sf-label">发送中</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #dbeafe;"><div class="sf-code">SENT</div><div class="sf-label">已发送</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node active"><div class="sf-code">DELIVERED</div><div class="sf-label">已送达</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #dcfce7; border-color: #16a34a;"><div class="sf-code">READ</div><div class="sf-label">已读</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node active" style="background: #bbf7d0; border-color: #059669;"><div class="sf-code">ACKED</div><div class="sf-label">已确认</div></div>
+    </div>
+    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
+      <div class="sf-node fail"><div class="sf-code">FAILED</div><div class="sf-label">失败</div></div>
+      <div class="sf-node" style="background: #e5e7eb; border-color: #6b7280;"><div class="sf-code">SUPPRESSED</div><div class="sf-label">被抑制</div></div>
+      <div class="sf-node fail" style="background: #fecdd3;"><div class="sf-code">DEADLETTER</div><div class="sf-label">死信</div></div>
+    </div>
+
+    <div style="font-size: 22px; margin: 28px 0 16px 0; color: #7c3aed;">📋 模板状态 (Template Status)</div>
+    <div class="status-flow">
+      <div class="sf-node" style="background: #e0e7ff;"><div class="sf-code">DRAFT</div><div class="sf-label">草稿</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #fef3c7;"><div class="sf-code">PENDING</div><div class="sf-label">待审批</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #dcfce7;"><div class="sf-code">APPROVED</div><div class="sf-label">已审批</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node active"><div class="sf-code">PUBLISHED</div><div class="sf-label">已发布</div></div>
+      <div class="sf-arrow">→</div>
+      <div class="sf-node" style="background: #e5e7eb;"><div class="sf-code">RETIRED</div><div class="sf-label">已退役</div></div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 6: PRIORITY & SLA ==================== -->
+  <div class="section-title">⚡ 优先级 & SLA & 调度策略</div>
+
+  <div style="max-width: 960px; margin: 0 auto;">
+    <table class="check-table">
+      <tr>
+        <th>优先级</th>
+        <th>典型场景</th>
+        <th>渠道策略</th>
+        <th>降级链</th>
+        <th>SLA</th>
+        <th>MQ隔离</th>
+      </tr>
+      <tr>
+        <td style="color: #dc2626;">P0 紧急</td>
+        <td>强平/追保/异常登录</td>
+        <td>PUSH+INBOX并行</td>
+        <td>30s→SMS→5min→VOICE→10min→人工</td>
+        <td>INBOX &lt;300ms</td>
+        <td>VIP Topic</td>
+      </tr>
+      <tr>
+        <td style="color: #ea580c;">P1 重要</td>
+        <td>成交回报/资金到账</td>
+        <td>PUSH+INBOX并行</td>
+        <td>60s→SMS</td>
+        <td>INBOX &lt;1s</td>
+        <td>Trade Topic</td>
+      </tr>
+      <tr>
+        <td style="color: #2563eb;">P2 普通</td>
+        <td>委托状态/行情预警</td>
+        <td>PUSH+INBOX</td>
+        <td>无降级</td>
+        <td>&lt;10s</td>
+        <td>Biz Topic</td>
+      </tr>
+      <tr>
+        <td style="color: #6b7280;">P3 低优</td>
+        <td>营销/投教/关怀</td>
+        <td>INBOX为主</td>
+        <td>无降级</td>
+        <td>分钟级</td>
+        <td>Offline Topic</td>
+      </tr>
+    </table>
+
+    <div class="info-box blue" style="margin-top: 16px;">
+      📌 <strong>SLA 基准</strong>：Push 受 APNs/FCM 影响，峰值 5-10s。以 <strong>INBOX 落库时间</strong>作为系统可控 SLA 主要度量点
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 7: DUAL MQ ==================== -->
+  <div class="section-title">🔧 双 MQ 架构</div>
+
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; max-width: 960px; margin: 0 auto;">
+    <div style="flex: 1; min-width: 300px; background: #fff; border: 3.5px solid #2d2d2d; border-radius: 18px; padding: 20px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12);">
+      <div class="tape"></div>
+      <div style="font-size: 22px; margin-bottom: 12px;">🚀 RocketMQ <span style="font-size: 14px; color: #777;">事务型消息</span></div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="background: #fecaca; border: 2px solid #dc2626; border-radius: 8px; padding: 8px 12px; font-size: 15px;">
+          <strong>VIP Topic (P0)</strong> → 强平/追保/安全告警
+        </div>
+        <div style="background: #ffedd5; border: 2px solid #ea580c; border-radius: 8px; padding: 8px 12px; font-size: 15px;">
+          <strong>Trade Topic (P1)</strong> → 成交回报/资金到账
+        </div>
+        <div style="background: #dbeafe; border: 2px solid #2563eb; border-radius: 8px; padding: 8px 12px; font-size: 15px;">
+          <strong>Business Topic (P2)</strong> → 普通业务
+        </div>
+        <div style="background: #e5e7eb; border: 2px solid #6b7280; border-radius: 8px; padding: 8px 12px; font-size: 15px;">
+          <strong>Offline Topic (P3)</strong> → 营销批处理（错峰）
+        </div>
+        <div style="background: #f3e8ff; border: 2px solid #7c3aed; border-radius: 8px; padding: 8px 12px; font-size: 15px;">
+          <strong>Compensation Delay</strong> → 梯次降级补偿
+        </div>
+      </div>
+    </div>
+
+    <div style="flex: 1; min-width: 300px; background: #fff; border: 3.5px solid #2d2d2d; border-radius: 18px; padding: 20px; box-shadow: 5px 5px 0 rgba(0,0,0,0.12);">
+      <div class="tape"></div>
+      <div style="font-size: 22px; margin-bottom: 12px;">📊 Kafka <span style="font-size: 14px; color: #777;">数据分发型</span></div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="background: #dcfce7; border: 2px solid #16a34a; border-radius: 8px; padding: 8px 12px; font-size: 15px;">
+          <strong>market-quote</strong> → 行情预警 → Push
+        </div>
+        <div style="background: #fef3c7; border: 2px solid #d97706; border-radius: 8px; padding: 8px 12px; font-size: 15px;">
+          <strong>notification-audit-log</strong> → 审计 → WORM
+        </div>
+        <div style="background: #e0e7ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 8px 12px; font-size: 15px;">
+          <strong>user-behavior-log</strong> → 行为 → ES/HDFS
+        </div>
+      </div>
+      <div style="margin-top: 12px; font-size: 14px; color: #666;">
+        高吞吐 · 流式分析 · 允许部分丢弃
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 8: WORM STORAGE ==================== -->
+  <div class="section-title">🗄️ WORM 合规存储分层</div>
+
+  <div style="max-width: 960px; margin: 0 auto;">
+    <table class="check-table">
+      <tr>
+        <th>消息类型</th>
+        <th>存储介质</th>
+        <th>保留期限</th>
+        <th>备注</th>
+      </tr>
+      <tr>
+        <td style="color: #6b7280;">P3 营销/服务</td>
+        <td>MySQL</td>
+        <td>6个月</td>
+        <td>常规查询，到期归档</td>
+      </tr>
+      <tr>
+        <td style="color: #2563eb;">P2 普通业务</td>
+        <td>MySQL + ES</td>
+        <td>12个月</td>
+        <td>ES 支持全文检索</td>
+      </tr>
+      <tr>
+        <td style="color: #ea580c;">P1 重要业务</td>
+        <td>MySQL + ES + OSS</td>
+        <td>5年</td>
+        <td>成交回报/资金变动</td>
+      </tr>
+      <tr>
+        <td style="color: #dc2626;">P0 风控/强平</td>
+        <td>MySQL + ES + WORM冷存储</td>
+        <td><strong>20年</strong></td>
+        <td>含确认回执 + 操作凭证</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ==================== SECTION 9: MONITORING ==================== -->
+  <div class="section-title">📊 监控告警核心指标</div>
+
+  <div style="max-width: 960px; margin: 0 auto;">
+    <table class="check-table">
+      <tr>
+        <th>监控指标</th>
+        <th>告警阈值</th>
+        <th>告警级别</th>
+        <th>处理预案</th>
+      </tr>
+      <tr>
+        <td>P0 MQ投递延迟</td>
+        <td>&gt; 200ms</td>
+        <td style="color: #dc2626;">P0 电话</td>
+        <td>检查MQ集群，切备用Topic</td>
+      </tr>
+      <tr>
+        <td>P0 INBOX落库延迟</td>
+        <td>&gt; 500ms</td>
+        <td style="color: #dc2626;">P0 电话</td>
+        <td>检查DB连接池写入</td>
+      </tr>
+      <tr>
+        <td>Push成功率</td>
+        <td>&lt; 95%</td>
+        <td style="color: #ea580c;">P1 群告警</td>
+        <td>触发SMS兜底</td>
+      </tr>
+      <tr>
+        <td>SMS成功率</td>
+        <td>&lt; 98%</td>
+        <td style="color: #ea580c;">P1 群告警</td>
+        <td>熔断切换供应商</td>
+      </tr>
+      <tr>
+        <td>WORM写入失败</td>
+        <td>任意失败</td>
+        <td style="color: #dc2626;">P0 合规</td>
+        <td>本地缓存暂存，补写</td>
+      </tr>
+      <tr>
+        <td>死信队列新增</td>
+        <td>任意新增</td>
+        <td style="color: #ea580c;">P1</td>
+        <td>人工介入处理</td>
+      </tr>
+      <tr>
+        <td>P0待确认超时</td>
+        <td>&gt; 15min</td>
+        <td style="color: #ea580c;">P1</td>
+        <td>触发人工坐席</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <div class="footer">
+    <div style="font-size: 32px; margin-bottom: 8px;">🔔📨🛡️✅</div>
+    <div>通知系统 (Notification Center) 架构流程图</div>
+    <div style="margin-top: 4px;">db_notification · 16 Tables · 8 Steps · Event → Message → ChannelTask</div>
+    <div style="margin-top: 8px; font-size: 14px; color: #bbb;">Generated on 2026-04-09</div>
+  </div>
+
+</div><!-- end flow-container -->
+
+</body>
+</html>

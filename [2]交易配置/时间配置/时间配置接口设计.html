@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>时间配置 API 接口设计 - 场景式漫画文档</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+    --ink: #1a1a2e;
+    --paper: #fefcf3;
+    --blue: #dbeafe; --blue-mid: #93c5fd; --blue-deep: #2563eb; --blue-dark: #1e3a5f;
+    --green: #dcfce7; --green-mid: #86efac; --green-deep: #16a34a; --green-dark: #166534;
+    --yellow: #fef9c3; --yellow-mid: #fde047; --yellow-deep: #ca8a04; --yellow-dark: #854d0e;
+    --purple: #f3e8ff; --purple-mid: #c4b5fd; --purple-deep: #7c3aed; --purple-dark: #5b21b6;
+    --pink: #fce7f3; --pink-mid: #f9a8d4; --pink-deep: #ec4899; --pink-dark: #9d174d;
+    --orange: #ffedd5; --orange-mid: #fdba74; --orange-deep: #ea580c; --orange-dark: #9a3412;
+    --red: #fecaca; --red-deep: #dc2626; --red-dark: #991b1b;
+    --slate: #f1f5f9; --slate-deep: #475569;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    background-image: radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 22px 22px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: var(--ink);
+    padding: 24px;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  /* ===== HERO ===== */
+  .hero { text-align: center; padding: 40px 20px 30px; position: relative; }
+  .hero h1 {
+    font-family: var(--font-hand); font-size: 54px; font-weight: 400;
+    letter-spacing: 4px; color: var(--ink); position: relative; display: inline-block;
+  }
+  .hero h1::after {
+    content: ''; position: absolute; bottom: -2px; left: -12px; right: -12px;
+    height: 6px; background: linear-gradient(90deg, #f9a8d4, #fde68a, #93c5fd, #c4b5fd);
+    border-radius: 4px; transform: rotate(-0.4deg); opacity: 0.8;
+  }
+  .hero .tagline {
+    font-family: var(--font-ui); font-size: 17px; font-weight: 600;
+    color: #666; margin-top: 16px; line-height: 1.5;
+  }
+  .hero .badge-row {
+    display: flex; justify-content: center; gap: 10px; margin-top: 16px;
+    flex-wrap: wrap; padding: 4px 0 8px;
+  }
+  .hero .badge {
+    display: inline-block; padding: 4px 16px; border-radius: 20px;
+    font-size: 14px; font-weight: 700; border: 1.5px solid rgba(0,0,0,0.12);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06); white-space: nowrap;
+  }
+
+  /* ===== NAV ===== */
+  .nav-bar {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+    margin: 10px auto 30px; max-width: 1100px; padding: 4px 0 10px;
+  }
+  .nav-bar a {
+    text-decoration: none; padding: 6px 18px; border: 1.5px solid #d1d5db;
+    border-radius: 14px; font-size: 15px; font-weight: 600; color: var(--ink);
+    background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: all .2s;
+    white-space: nowrap;
+  }
+  .nav-bar a:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.10); border-color: #93c5fd; }
+
+  /* ===== SCENE ===== */
+  .scene {
+    background: #fff; border: 2.5px solid #d1d5db; border-radius: 22px;
+    margin-bottom: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden; position: relative;
+  }
+  .scene-header {
+    padding: 20px 28px 14px; display: flex; align-items: flex-start;
+    gap: 16px; border-bottom: 2px dashed #e5e7eb; flex-wrap: wrap;
+  }
+  .scene-num {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; border: 2.5px solid #fff;
+    box-shadow: 0 3px 10px rgba(238,90,36,0.35); flex-shrink: 0;
+  }
+  .scene-meta { flex: 1; min-width: 0; }
+  .scene-title { font-family: var(--font-hand); font-size: 32px; font-weight: 400; line-height: 1.3; }
+  .scene-subtitle { font-size: 15px; color: #555; font-weight: 600; }
+  .scene-body { padding: 20px 28px 28px; }
+
+  .tape {
+    position: absolute; width: 80px; height: 26px;
+    background: rgba(255,222,89,0.55); border: 1.5px solid rgba(200,170,50,0.35);
+    border-radius: 2px; z-index: 2;
+  }
+  .tape-tr { top: -8px; right: 28px; transform: rotate(-32deg); }
+  .tape-tl { top: -8px; left: 28px; transform: rotate(32deg); }
+
+  /* ===== STORY ===== */
+  .story {
+    padding: 14px 18px; border-radius: 14px; border: 1.5px dashed;
+    margin-bottom: 20px; font-size: 17px; line-height: 1.8;
+  }
+  .story .char { font-size: 36px; float: left; margin-right: 10px; margin-top: -4px; }
+
+  /* ===== API CARD ===== */
+  .api-card {
+    border: 2px solid #e2e8f0; border-radius: 16px; margin-bottom: 20px;
+    overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.05); transition: box-shadow .2s;
+  }
+  .api-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .api-card:last-child { margin-bottom: 0; }
+  .api-bar {
+    display: flex; align-items: flex-start; gap: 10px; padding: 12px 18px;
+    font-size: 17px; font-weight: 600; border-bottom: 1.5px solid #e2e8f0; flex-wrap: wrap;
+  }
+  .method {
+    display: inline-block; padding: 3px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    letter-spacing: 0.5px; border: 1.5px solid; flex-shrink: 0;
+  }
+  .method.get { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .method.post { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .method.put { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+  .method.delete { background: var(--red); color: var(--red-dark); border-color: var(--red-deep); }
+  .method.internal { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .api-path {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 14px;
+    color: var(--ink); word-break: break-all; overflow-wrap: anywhere; flex: 1 1 200px;
+  }
+  .api-desc { margin-left: auto; font-size: 14px; font-weight: 600; color: #666; text-align: right; min-width: 120px; }
+  .api-content { padding: 16px 18px; }
+
+  /* ===== PARAM TABLE ===== */
+  .param-section { margin-bottom: 16px; }
+  .param-label {
+    font-size: 16px; font-weight: bold; padding: 4px 12px; border-radius: 8px;
+    display: inline-block; margin-bottom: 8px; border: 1.5px solid;
+  }
+  .param-label.req { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .param-label.res { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .param-label.path { background: var(--orange); color: var(--orange-dark); border-color: var(--orange-deep); }
+  .param-label.query { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .param-label.header { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+
+  .ptable {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; font-size: 15px;
+  }
+  .ptable th {
+    background: linear-gradient(135deg, #f1f5f9, #e8edf3); color: #475569;
+    padding: 8px 12px; text-align: left; font-size: 13px;
+    font-weight: 600; letter-spacing: 0.3px; border-bottom: 1.5px solid #cbd5e1;
+  }
+  .ptable td { padding: 7px 12px; border-bottom: 1.5px dashed #e2e8f0; vertical-align: top; }
+  .ptable tr:last-child td { border-bottom: none; }
+  .ptable tr:nth-child(even) td { background: #fafafa; }
+  .ptable .fname { font-weight: 600; color: var(--blue-deep); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .ptable .ftype {
+    font-family: monospace; font-size: 13px; color: var(--purple-deep);
+    background: var(--purple); padding: 1px 6px; border-radius: 4px;
+  }
+  .ptable .freq { color: var(--red-deep); font-weight: bold; font-size: 12px; }
+  .ptable .fopt { color: #999; font-size: 12px; }
+  .ptable .fdb {
+    font-size: 12px; color: var(--slate-deep); background: var(--slate);
+    padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 2px;
+  }
+
+  /* JSON */
+  .json-block {
+    background: #f8fafc; color: #334155; border-radius: 12px; padding: 16px;
+    font-family: 'Fira Code', 'Consolas', monospace; font-size: 13px;
+    line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    border: 1.5px solid #e2e8f0; position: relative; margin-top: 8px;
+  }
+  .json-block .jk { color: #2563eb; }
+  .json-block .jv { color: #16a34a; }
+  .json-block .jn { color: #d97706; }
+  .json-block .jc { color: #94a3b8; font-style: italic; }
+  .json-block .jb { color: #c026d3; }
+  .json-label {
+    position: absolute; top: 8px; right: 12px; font-size: 11px;
+    color: #94a3b8; letter-spacing: 0.5px; font-weight: 600;
+  }
+
+  /* DataFlow */
+  .dataflow {
+    margin: 0 0 22px 0; padding: 18px;
+    background: linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%);
+    border: 1.5px solid #e2e8f0; border-radius: 14px;
+  }
+  .dataflow-title { font-size: 18px; font-weight: bold; margin-bottom: 14px; color: #475569; }
+  .df-chain { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 6px 4px; }
+  .df-node {
+    flex: 0 0 auto; width: 128px; border-radius: 12px; padding: 10px 8px;
+    text-align: center; border: 1.5px solid; display: flex;
+    flex-direction: column; align-items: center; gap: 4px;
+  }
+  .df-node .df-icon { font-size: 24px; }
+  .df-node .df-label { font-size: 13px; font-weight: bold; line-height: 1.3; }
+  .df-node .df-detail { font-size: 11px; color: #64748b; line-height: 1.4; }
+  .df-node.user { background: #dbeafe; border-color: #93c5fd; }
+  .df-node.gateway { background: #fef3c7; border-color: #fde047; }
+  .df-node.service { background: #dcfce7; border-color: #86efac; }
+  .df-node.crypto { background: #fce7f3; border-color: #f9a8d4; }
+  .df-node.db { background: #e0e7ff; border-color: #a5b4fc; }
+  .df-node.mq { background: #f3e8ff; border-color: #c4b5fd; }
+  .df-node.ext { background: #ffedd5; border-color: #fdba74; }
+  .df-node.check { background: #ccfbf1; border-color: #5eead4; }
+  .df-arrow { display: flex; align-items: center; justify-content: center; width: 40px; flex-shrink: 0; position: relative; }
+  .df-arrow::before { content: ''; width: 24px; height: 2px; background: #94a3b8; }
+  .df-arrow::after {
+    content: ''; width: 0; height: 0;
+    border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+    border-left: 8px solid #94a3b8;
+  }
+  .df-arrow .df-alabel {
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: #94a3b8; white-space: nowrap;
+  }
+
+  /* tip */
+  .tip {
+    padding: 10px 16px; border-radius: 12px; font-size: 15px;
+    margin-top: 12px; border: 1.5px solid; border-left-width: 4px;
+  }
+  .tip.warn { background: #fef3c7; border-color: #d97706; color: #92400e; }
+  .tip.info { background: #dbeafe; border-color: #2563eb; color: #1e3a5f; }
+  .tip.ok { background: #dcfce7; border-color: #16a34a; color: #166534; }
+  .tip.danger { background: #fecaca; border-color: #dc2626; color: #991b1b; }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:900px){
+    .duo { grid-template-columns: 1fr; }
+    .scene-title { white-space: normal; }
+  }
+
+  .enum-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .enum-item {
+    background: #fff; border: 1.5px solid #d1d5db; border-radius: 8px;
+    padding: 2px 10px; font-size: 13px; color: #475569;
+  }
+
+  .footer { text-align: center; margin-top: 40px; padding: 20px; color: #aaa; font-size: 15px; }
+
+  .scene.bg-blue { background: linear-gradient(135deg, #f0f7ff 0%, #fff 60%); }
+  .scene.bg-green { background: linear-gradient(135deg, #f0fdf4 0%, #fff 60%); }
+  .scene.bg-yellow { background: linear-gradient(135deg, #fefce8 0%, #fff 60%); }
+  .scene.bg-purple { background: linear-gradient(135deg, #faf5ff 0%, #fff 60%); }
+  .scene.bg-pink { background: linear-gradient(135deg, #fdf2f8 0%, #fff 60%); }
+  .scene.bg-orange { background: linear-gradient(135deg, #fff7ed 0%, #fff 60%); }
+  .scene.bg-red { background: linear-gradient(135deg, #fef2f2 0%, #fff 60%); }
+
+  .scene-tag {
+    display: inline-block; font-size: 12px; font-weight: bold;
+    padding: 2px 10px; border-radius: 6px; margin-left: 8px; vertical-align: middle;
+  }
+  .scene-tag.ops { background: var(--blue); color: var(--blue-deep); border: 1px solid var(--blue-mid); }
+  .scene-tag.sys { background: var(--green); color: var(--green-deep); border: 1px solid var(--green-mid); }
+  .scene-tag.risk { background: var(--red); color: var(--red-deep); border: 1px solid #f87171; }
+  .scene-tag.admin { background: var(--pink); color: var(--pink-deep); border: 1px solid var(--pink-mid); }
+
+  .divider-doodle {
+    text-align: center; padding: 20px 0; font-size: 16px; color: #d1d5db;
+    border-top: 1.5px dashed #e5e7eb; margin-top: 10px;
+  }
+
+  /* Print */
+  @page { size: A4 portrait; margin: 10mm 11mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body { background: #fff !important; background-image: none !important; font-size: 9.5pt; padding: 0 !important; }
+    .container { max-width: 100% !important; padding: 0 !important; }
+    .tape { display: none !important; }
+    .hero { padding: 4mm 0 !important; page-break-after: avoid; }
+    .hero h1 { font-size: 20pt !important; }
+    .hero .tagline { font-size: 9pt !important; }
+    .nav-bar a { padding: 4px 12px !important; font-size: 9pt !important; }
+    .scene { page-break-inside: avoid; box-shadow: none !important; margin-bottom: 6mm !important; border-width: 1.5px !important; }
+    .scene-header { padding: 10px 14px !important; }
+    .scene-body { padding: 12px 14px 16px !important; }
+    .scene-title { font-size: 13pt !important; }
+    .scene-subtitle { font-size: 9pt !important; }
+    .api-card { box-shadow: none !important; }
+    .api-bar { padding: 8px 12px !important; font-size: 10pt !important; }
+    .api-path { font-size: 9pt !important; }
+    .ptable { font-size: 9pt !important; }
+    .ptable th, .ptable td { padding: 5px 8px !important; }
+    .json-block { font-size: 7.5pt !important; line-height: 1.45 !important; white-space: pre-wrap; word-break: break-all; }
+    .dataflow { padding: 10px !important; page-break-inside: avoid; }
+    .df-node { width: 108px !important; padding: 6px 4px !important; }
+    .df-node .df-label { font-size: 11px !important; }
+    .df-node .df-detail { font-size: 9px !important; }
+    .story { font-size: 10pt !important; }
+    .duo { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .footer { margin-top: 6mm; font-size: 9pt; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ============================================================ -->
+<!--                         HERO                                 -->
+<!-- ============================================================ -->
+<div class="hero">
+  <h1>🕒 时间配置 API 接口设计</h1>
+  <div class="tagline">Trading Time Configuration Service Interface Design &mdash; Scene-based Comic Documentation</div>
+  <div class="badge-row">
+    <span class="badge" style="background:var(--blue);">30 APIs</span>
+    <span class="badge" style="background:var(--green);">10 DB Tables</span>
+    <span class="badge" style="background:var(--yellow);">7 Scenes</span>
+    <span class="badge" style="background:var(--purple);">DST Auto</span>
+    <span class="badge" style="background:var(--pink);">PHASED Resume</span>
+    <span class="badge" style="background:var(--orange);">MiFID II Ready</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav-bar">
+  <a href="#s1">S1 平台时段</a>
+  <a href="#s2">S2 品种时段 & DST</a>
+  <a href="#s3">S3 特殊日期</a>
+  <a href="#s4">S4 交易所日历</a>
+  <a href="#s5">S5 DST 调度</a>
+  <a href="#s6">S6 快照 & 运行时</a>
+  <a href="#s7">S7 实时覆盖</a>
+  <a href="#admin">Admin 管理</a>
+</div>
+
+<!-- ============================================================ -->
+<!--               SCENE 1: PLATFORM SESSIONS                     -->
+<!-- ============================================================ -->
+<div class="scene bg-blue" id="s1">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S1</div>
+    <div class="scene-meta">
+      <div class="scene-title">🏛️ 平台每周交易时段 <span class="scene-tag ops">运营</span></div>
+      <div class="scene-subtitle">Platform Weekly Sessions &mdash; "全平台的开闭市基线由我把守"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--blue); border-color:var(--blue-deep);">
+      <div class="char">👩‍💼</div>
+      <strong>剧情：</strong>运营同学维护平台周一到周日的开闭市基线。所有品种时段必须落在此范围内。
+      改动需双人审批（影响全市场），写入后异步推送缓存失效与下一轮预计算。
+      <code>session_type</code> 仅允许静态时段类型（<code>OPEN / PRE_OPEN / PRE_CLOSE / CLOSE_ONLY / AUCTION / POST_CLOSE</code>），
+      运行时状态（HALT / MAINTENANCE）由 S7 覆盖表表达。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">👩‍💼</div>
+          <div class="df-label">运营录入</div>
+          <div class="df-detail">运营后台<br>双人审批触发</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">HTTPS</span></div>
+        <div class="df-node gateway">
+          <div class="df-icon">🚪</div>
+          <div class="df-label">权限校验</div>
+          <div class="df-detail"><b>RBAC:</b><br>time.platform.write<br>approver 必填</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">RPC</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">业务校验</div>
+          <div class="df-detail">close_min&gt;open_min<br>close_min≤2880<br>同 weekday 不重叠</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">INSERT/UPDATE</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">写入配置表</div>
+          <div class="df-detail">t_platform_session<br>+ t_config_audit</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">Pub/Sub</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">缓存失效</div>
+          <div class="df-detail">L1+L2 失效<br>触发增量重算</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 1.1 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/platform/sessions</span>
+        <span class="api-desc">查询平台周时段</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">week_day</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>过滤星期几 (1-7)</td></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1=启用 0=禁用 不传=全部</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: [
+    {
+      <span class="jk">"id"</span>: <span class="jn">1</span>,
+      <span class="jk">"week_day"</span>: <span class="jn">1</span>,         <span class="jc">// 周一</span>
+      <span class="jk">"seq_no"</span>: <span class="jn">1</span>,
+      <span class="jk">"session_type"</span>: <span class="jv">"OPEN"</span>,
+      <span class="jk">"open_min"</span>: <span class="jn">810</span>,       <span class="jc">// UTC 13:30</span>
+      <span class="jk">"close_min"</span>: <span class="jn">1200</span>,    <span class="jc">// UTC 20:00</span>
+      <span class="jk">"fix_session_id"</span>: <span class="jv">"NYSE_REG"</span>,
+      <span class="jk">"description"</span>: <span class="jv">"US Stocks Regular"</span>,
+      <span class="jk">"status"</span>: <span class="jn">1</span>
+    }
+  ]
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 1.2 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/platform/sessions</span>
+        <span class="api-desc">创建平台时段（需审批）</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label header">📮 Header</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">X-Operator-Id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>操作人ID</td></tr>
+            <tr><td class="fname">X-Approver-Id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>审批人ID (平台级强制双人)</td></tr>
+            <tr><td class="fname">X-Request-Id</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>请求追踪ID</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">week_day</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1=周一 7=周日 <span class="fdb">platform_session.week_day</span></td></tr>
+            <tr><td class="fname">seq_no</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>时段序号 <span class="fdb">platform_session.seq_no</span></td></tr>
+            <tr><td class="fname">session_type</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>静态时段类型枚举 <span class="fdb">platform_session.session_type</span></td></tr>
+            <tr><td class="fname">open_min</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>开市分钟数 [0,1440] <span class="fdb">platform_session.open_min</span></td></tr>
+            <tr><td class="fname">close_min</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>闭市分钟数 (open_min,2880] <span class="fdb">platform_session.close_min</span></td></tr>
+            <tr><td class="fname">fix_session_id</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>FIX 网关对接ID <span class="fdb">platform_session.fix_session_id</span></td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>变更原因 (审计字段)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="enum-list">
+            <span class="enum-item">PRE_OPEN</span>
+            <span class="enum-item">OPEN</span>
+            <span class="enum-item">PRE_CLOSE</span>
+            <span class="enum-item">CLOSE_ONLY</span>
+            <span class="enum-item">AUCTION</span>
+            <span class="enum-item">POST_CLOSE</span>
+          </div>
+          <div class="tip warn">⚠️ <strong>session_type</strong> 禁止填 HALT / MAINTENANCE / QUOTE_ONLY（运行时状态由覆盖表表达）</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 1.3 1.4 1.5 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/time/platform/sessions/{id}</span>
+        <span class="api-desc">更新平台时段（需审批）</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label path">🔗 Path</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>时段记录ID</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <div class="tip info">与 POST 字段一致，所有传入字段均做差异审计记录。<code>open_min/close_min</code> 任意变更触发受影响品种快照重算。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method delete">DELETE</span>
+        <span class="api-path">/api/v1/time/platform/sessions/{id}</span>
+        <span class="api-desc">禁用平台时段（软删）</span>
+      </div>
+      <div class="api-content">
+        <div class="tip danger">⚠️ 仅置 <code>status=0</code>，不物理删除。禁用后将导致该 weekday 该 seq_no 不再生效，关联品种次日预计算后失去对应时段。</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                SCENE 2: SYMBOL SESSIONS & DST                -->
+<!-- ============================================================ -->
+<div class="scene bg-green" id="s2">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S2</div>
+    <div class="scene-meta">
+      <div class="scene-title">📈 品种每周时段 & DST Profile <span class="scene-tag ops">运营</span></div>
+      <div class="scene-subtitle">Symbol Sessions &mdash; "每个品种的自己的开闭市规则，DST 切换由系统接管"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--green); border-color:var(--green-deep);">
+      <div class="char">🧑‍💻</div>
+      <strong>剧情：</strong>运营为每个品种配置周一到周日的时段。<code>dst_profile</code> 标记为 <code>USA / EUROPE / AUSTRALIA</code> 等
+      后，系统在每年 12 月自动生成春令时 / 冬令时切换版本，运营无需为上万品种手工维护两次切换。
+      跨日时段单行表达（<code>close_min ∈ (open_min, 2880]</code>），如周日 22:00→周一 05:00 一行搞定。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">👩‍💼</div>
+          <div class="df-label">运营录入</div>
+          <div class="df-detail">单条/批量<br>带 dst_profile</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node service">
+          <div class="df-icon">🛡️</div>
+          <div class="df-label">约束校验</div>
+          <div class="df-detail">不超出平台时段<br>同symbol不重叠<br>跨日合法性</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">写入</div>
+          <div class="df-detail">t_symbol_session<br>version+=1</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node ext">
+          <div class="df-icon">📅</div>
+          <div class="df-label">DST 任务标记</div>
+          <div class="df-detail">下次 DST 版本<br>自动生成范围</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">预计算触发</div>
+          <div class="df-detail">影响未来快照<br>异步重算</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/symbol/{symbolId}/sessions</span>
+        <span class="api-desc">查询品种全部时段</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">effective_on</td><td><span class="ftype">Date</span></td><td class="fopt">N</td><td>查询某日生效的版本; 不传=全部版本</td></tr>
+            <tr><td class="fname">include_dst_auto</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>是否包含 DST_AUTO 自动版本，默认 true</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: [
+    {
+      <span class="jk">"id"</span>: <span class="jn">10001</span>,
+      <span class="jk">"symbol_id"</span>: <span class="jn">12345</span>,
+      <span class="jk">"week_day"</span>: <span class="jn">1</span>,
+      <span class="jk">"seq_no"</span>: <span class="jn">1</span>,
+      <span class="jk">"session_type"</span>: <span class="jv">"OPEN"</span>,
+      <span class="jk">"open_min"</span>: <span class="jn">870</span>,    <span class="jc">// UTC 14:30 = ET 09:30 (EST)</span>
+      <span class="jk">"close_min"</span>: <span class="jn">1200</span>,
+      <span class="jk">"dst_profile"</span>: <span class="jv">"USA"</span>,
+      <span class="jk">"effective_from"</span>: <span class="jv">"2026-11-01"</span>,
+      <span class="jk">"effective_to"</span>: <span class="jv">"2027-03-14"</span>,
+      <span class="jk">"version"</span>: <span class="jn">3</span>,
+      <span class="jk">"source"</span>: <span class="jv">"DST_AUTO"</span>
+    }
+  ]
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/symbol/{symbolId}/sessions</span>
+        <span class="api-desc">新增品种时段</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">week_day</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-7</td></tr>
+            <tr><td class="fname">seq_no</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>时段序号</td></tr>
+            <tr><td class="fname">session_type</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>静态时段类型</td></tr>
+            <tr><td class="fname">open_min</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>[0,1440]</td></tr>
+            <tr><td class="fname">close_min</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>(open_min,2880]</td></tr>
+            <tr><td class="fname">dst_profile</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>NONE/USA/EUROPE/AUSTRALIA/CHILE/NZ 默认 NONE</td></tr>
+            <tr><td class="fname">effective_from</td><td><span class="ftype">Date</span></td><td class="fopt">N</td><td>默认 1970-01-01</td></tr>
+            <tr><td class="fname">effective_to</td><td><span class="ftype">Date</span></td><td class="fopt">N</td><td>默认 NULL=永久</td></tr>
+          </table>
+        </div>
+        <div class="tip info">💡 写入后自动校验：①不超出 <code>t_platform_session</code> 范围；②同 <code>(symbol_id,week_day)</code> 不重叠。违反则返回 422 + 具体冲突字段。</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/symbol/sessions/batch</span>
+        <span class="api-desc">批量导入品种时段</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"items"</span>: [
+    { <span class="jk">"symbol_id"</span>: <span class="jn">12345</span>, <span class="jk">"week_day"</span>: <span class="jn">1</span>, <span class="jk">"seq_no"</span>: <span class="jn">1</span>,
+      <span class="jk">"session_type"</span>: <span class="jv">"OPEN"</span>, <span class="jk">"open_min"</span>: <span class="jn">870</span>, <span class="jk">"close_min"</span>: <span class="jn">1200</span>,
+      <span class="jk">"dst_profile"</span>: <span class="jv">"USA"</span> },
+    <span class="jc">// ... 最多 1000 行</span>
+  ],
+  <span class="jk">"dry_run"</span>: <span class="jb">false</span>          <span class="jc">// true=仅校验不写入</span>
+}</div>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">1000</span>,
+    <span class="jk">"succeeded"</span>: <span class="jn">996</span>,
+    <span class="jk">"failed"</span>: <span class="jn">4</span>,
+    <span class="jk">"errors"</span>: [
+      { <span class="jk">"row"</span>: <span class="jn">23</span>, <span class="jk">"reason"</span>: <span class="jv">"close_min exceeds platform session"</span> },
+      { <span class="jk">"row"</span>: <span class="jn">157</span>, <span class="jk">"reason"</span>: <span class="jv">"overlap with seq_no=2"</span> }
+    ]
+  }
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/time/symbol/{symbolId}/dst-profile</span>
+        <span class="api-desc">变更品种 DST profile</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">dst_profile</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>NONE/USA/EUROPE/AUSTRALIA/CHILE/NZ</td></tr>
+            <tr><td class="fname">apply_to_existing</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>是否更新所有 effective_to=NULL 的版本，默认 true</td></tr>
+          </table>
+        </div>
+        <div class="tip ok">✅ 变更后自动触发 DST 版本生成器，为下一年的切换日提前预生成版本。</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method delete">DELETE</span>
+        <span class="api-path">/api/v1/time/symbol/sessions/{id}</span>
+        <span class="api-desc">禁用品种时段</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--               SCENE 3: SPECIAL DATES                          -->
+<!-- ============================================================ -->
+<div class="scene bg-yellow" id="s3">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S3</div>
+    <div class="scene-meta">
+      <div class="scene-title">📅 特殊日期规则 & 实例 <span class="scene-tag ops">运营</span></div>
+      <div class="scene-subtitle">Special Sessions &mdash; "假期、半天交易、临时调整, 一处定义自动递推"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--yellow); border-color:var(--yellow-deep);">
+      <div class="char">📜</div>
+      <strong>剧情：</strong>规则一次定义、每年自动递推生成实例。99% 场景使用 <code>OVERRIDE</code>，少数需要"基于原时段加减"才用 <code>INTERSECT/UNION</code>。
+      支持 9 种递推类型：<code>FIXED / WEEKDAY_OBSERVED / NTH_WEEKDAY / LAST_WEEKDAY / LUNAR / ISLAMIC / JEWISH / EXPRESSION / MANUAL</code>。
+      运营可 <strong>dry-run</strong> 预览规则未来 5 年生成的实例。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📜</div>
+          <div class="df-label">规则定义</div>
+          <div class="df-detail">recur_type<br>+ path_pattern<br>+ stack_policy</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node service">
+          <div class="df-icon">🧠</div>
+          <div class="df-label">规则引擎</div>
+          <div class="df-detail">年度递推<br>支持公历/农历<br>伊斯兰/希伯来</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node db">
+          <div class="df-icon">📅</div>
+          <div class="df-label">生成实例</div>
+          <div class="df-detail">t_special_session<br>未来 1-2 年</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node check">
+          <div class="df-icon">🔍</div>
+          <div class="df-label">dry-run 预览</div>
+          <div class="df-detail">运营确认<br>前置验证</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/special-rules</span>
+        <span class="api-desc">查询特殊日期规则</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">recur_type</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>过滤递推类型</td></tr>
+            <tr><td class="fname">path_pattern</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>路径过滤，如 Stocks/US/**</td></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>启用/禁用</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/special-rules</span>
+        <span class="api-desc">创建特殊日期规则</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body (FIXED 示例)</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"name"</span>: <span class="jv">"New Year's Day"</span>,
+  <span class="jk">"code"</span>: <span class="jv">"NEW_YEAR"</span>,
+  <span class="jk">"path_pattern"</span>: <span class="jv">"**"</span>,         <span class="jc">// 全部品种</span>
+  <span class="jk">"priority"</span>: <span class="jn">100</span>,
+  <span class="jk">"is_tradable"</span>: <span class="jn">0</span>,
+  <span class="jk">"time_mode"</span>: <span class="jv">"ABSOLUTE"</span>,
+  <span class="jk">"open_min"</span>: <span class="jn">0</span>,
+  <span class="jk">"close_min"</span>: <span class="jn">1440</span>,
+  <span class="jk">"recur_type"</span>: <span class="jv">"FIXED"</span>,
+  <span class="jk">"month"</span>: <span class="jn">1</span>,
+  <span class="jk">"day"</span>: <span class="jn">1</span>,
+  <span class="jk">"duration_days"</span>: <span class="jn">1</span>,
+  <span class="jk">"stack_policy"</span>: <span class="jv">"OVERRIDE"</span>,
+  <span class="jk">"description"</span>: <span class="jv">"全平台元旦休市"</span>,
+  <span class="jk">"effective_from"</span>: <span class="jn">2026</span>
+}</div>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body (NTH_WEEKDAY 感恩节示例)</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"name"</span>: <span class="jv">"Thanksgiving Early Close"</span>,
+  <span class="jk">"code"</span>: <span class="jv">"THANKSGIVING_EARLY"</span>,
+  <span class="jk">"path_pattern"</span>: <span class="jv">"Stocks/US/**"</span>,
+  <span class="jk">"priority"</span>: <span class="jn">100</span>,
+  <span class="jk">"is_tradable"</span>: <span class="jn">1</span>,
+  <span class="jk">"time_mode"</span>: <span class="jv">"ABSOLUTE"</span>,
+  <span class="jk">"open_min"</span>: <span class="jn">870</span>,
+  <span class="jk">"close_min"</span>: <span class="jn">1080</span>,        <span class="jc">// 提前到 UTC 18:00</span>
+  <span class="jk">"recur_type"</span>: <span class="jv">"NTH_WEEKDAY"</span>,
+  <span class="jk">"month"</span>: <span class="jn">11</span>,
+  <span class="jk">"nth_week"</span>: <span class="jn">4</span>,
+  <span class="jk">"weekday"</span>: <span class="jn">4</span>,         <span class="jc">// 4 = 周四</span>
+  <span class="jk">"stack_policy"</span>: <span class="jv">"OVERRIDE"</span>,
+  <span class="jk">"excluded_years"</span>: [<span class="jn">2030</span>] <span class="jc">// 跳过某年</span>
+}</div>
+        </div>
+        <div class="param-section">
+          <div class="enum-list">
+            <span class="enum-item">FIXED</span>
+            <span class="enum-item">WEEKDAY_OBSERVED</span>
+            <span class="enum-item">NTH_WEEKDAY</span>
+            <span class="enum-item">LAST_WEEKDAY</span>
+            <span class="enum-item">LUNAR</span>
+            <span class="enum-item">ISLAMIC</span>
+            <span class="enum-item">JEWISH</span>
+            <span class="enum-item">EXPRESSION</span>
+            <span class="enum-item">MANUAL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/special-rules/{id}/dry-run</span>
+        <span class="api-desc">规则未来生成预览</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">years</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>预览未来年数 1-5，默认 3</td></tr>
+            <tr><td class="fname">sample_symbol_ids</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>逗号分隔的品种ID，用于路径匹配验证</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"generated_dates"</span>: [<span class="jv">"2026-11-26"</span>, <span class="jv">"2027-11-25"</span>, <span class="jv">"2028-11-23"</span>],
+    <span class="jk">"matched_symbol_count"</span>: <span class="jn">523</span>,
+    <span class="jk">"sample_resolution"</span>: [
+      {
+        <span class="jk">"symbol_id"</span>: <span class="jn">12345</span>,
+        <span class="jk">"date"</span>: <span class="jv">"2026-11-26"</span>,
+        <span class="jk">"base_session"</span>: <span class="jv">"[870, 1200]"</span>,
+        <span class="jk">"after_pipeline"</span>: <span class="jv">"[870, 1080]"</span>
+      }
+    ]
+  }
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/special-rules/{id}/generate</span>
+        <span class="api-desc">手动触发递推生成实例</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">years</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>生成未来年数，默认 2</td></tr>
+            <tr><td class="fname">overwrite_existing</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>是否覆盖已有实例，默认 false</td></tr>
+          </table>
+        </div>
+        <div class="tip warn">⚠️ 规则修改后，已存在的人工实例 (<code>rule_id=NULL</code>) 不受影响。系统生成的实例 (<code>source=RULE_AUTO</code>) 会被替换。</div>
+      </div>
+    </div>
+
+    <div class="duo">
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--green);">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/time/special-sessions</span>
+          <span class="api-desc">实例列表</span>
+        </div>
+        <div class="api-content">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">date_from</td><td><span class="ftype">Date</span></td><td>起始日期</td></tr>
+            <tr><td class="fname">date_to</td><td><span class="ftype">Date</span></td><td>截止日期</td></tr>
+            <tr><td class="fname">path_pattern</td><td><span class="ftype">String</span></td><td>路径匹配</td></tr>
+            <tr><td class="fname">source</td><td><span class="ftype">String</span></td><td>MANUAL/RULE_AUTO/EXCHANGE_SYNC</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--blue);">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/time/special-sessions</span>
+          <span class="api-desc">人工录入临时实例</span>
+        </div>
+        <div class="api-content">
+          <div class="tip info">💡 临时休市、突发事件无法用递推规则表达时使用。<code>rule_id=NULL</code>，<code>source=MANUAL</code>。</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--             SCENE 4: EXCHANGE HOLIDAY SYNC                    -->
+<!-- ============================================================ -->
+<div class="scene bg-purple" id="s4">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S4</div>
+    <div class="scene-meta">
+      <div class="scene-title">🌐 交易所日历数据同步 <span class="scene-tag sys">系统</span><span class="scene-tag ops">运营</span></div>
+      <div class="scene-subtitle">Exchange Holiday Sync &mdash; "多数据源接入，冲突由 confidence 仲裁"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--purple); border-color:var(--purple-deep);">
+      <div class="char">📡</div>
+      <strong>剧情：</strong>系统定期从 JPX / HKEX / EODHD / pandas_market_calendars 等外部源同步假日数据。
+      同 <code>(exchange_code, date)</code> 不同源数据共存，冲突时按 <code>confidence DESC, synced_at DESC</code> 仲裁，仍冲突则告警等待运营手动裁定。
+      裁定结果可一键转化为 <code>t_special_session</code> 实例。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node ext">
+          <div class="df-icon">🌐</div>
+          <div class="df-label">外部数据源</div>
+          <div class="df-detail">JPX/HKEX<br>EODHD/Pandas MC<br>Bloomberg/Refinitiv</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node service">
+          <div class="df-icon">🔄</div>
+          <div class="df-label">同步任务</div>
+          <div class="df-detail">每日/每周<br>记录 confidence</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node db">
+          <div class="df-icon">📅</div>
+          <div class="df-label">假日表</div>
+          <div class="df-detail">t_exchange_holiday<br>多源共存</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node crypto">
+          <div class="df-icon">⚖️</div>
+          <div class="df-label">冲突仲裁</div>
+          <div class="df-detail">运营裁定<br>superseded_by</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node check">
+          <div class="df-icon">📋</div>
+          <div class="df-label">转特殊日期</div>
+          <div class="df-detail">导入实例<br>source=EXCHANGE_SYNC</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/exchange-holidays</span>
+        <span class="api-desc">查询交易所假日</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">exchange_code</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>MIC 码 XNYS/XNAS/XHKG/...</td></tr>
+            <tr><td class="fname">year</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>查询年份</td></tr>
+            <tr><td class="fname">date</td><td><span class="ftype">Date</span></td><td class="fopt">N</td><td>精确日期</td></tr>
+            <tr><td class="fname">source</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>来源过滤</td></tr>
+            <tr><td class="fname">only_active</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>仅查 status=1 默认 true</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/exchange-holidays/sync</span>
+        <span class="api-desc">手动触发同步</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">source</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>EODHD/JPX_API/PANDAS_MC/...</td></tr>
+            <tr><td class="fname">exchange_codes</td><td><span class="ftype">Array</span></td><td class="fopt">N</td><td>指定交易所; 不传=全部支持</td></tr>
+            <tr><td class="fname">year_from</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 当年</td></tr>
+            <tr><td class="fname">year_to</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 当年+2</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/exchange-holidays/conflicts</span>
+        <span class="api-desc">数据冲突列表</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: [
+    {
+      <span class="jk">"exchange_code"</span>: <span class="jv">"XNYS"</span>,
+      <span class="jk">"date"</span>: <span class="jv">"2026-07-04"</span>,
+      <span class="jk">"versions"</span>: [
+        { <span class="jk">"id"</span>: <span class="jn">101</span>, <span class="jk">"source"</span>: <span class="jv">"EODHD"</span>, <span class="jk">"day_session_type"</span>: <span class="jv">"EARLY_CLOSE"</span>, <span class="jk">"close_min"</span>: <span class="jn">1050</span>, <span class="jk">"confidence"</span>: <span class="jv">"HIGH"</span> },
+        { <span class="jk">"id"</span>: <span class="jn">102</span>, <span class="jk">"source"</span>: <span class="jv">"PANDAS_MC"</span>, <span class="jk">"day_session_type"</span>: <span class="jv">"CLOSED"</span>, <span class="jk">"confidence"</span>: <span class="jv">"MEDIUM"</span> }
+      ]
+    }
+  ]
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/time/exchange-holidays/conflicts/{date}/resolve</span>
+        <span class="api-desc">仲裁冲突</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">exchange_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>MIC</td></tr>
+            <tr><td class="fname">accepted_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>采纳的 t_exchange_holiday.id</td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>仲裁理由</td></tr>
+          </table>
+        </div>
+        <div class="tip ok">✅ 其它版本置 <code>status=0</code> 并写入 <code>superseded_by=accepted_id</code>，主版本保留可追溯。</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/exchange-holidays/import-to-special</span>
+        <span class="api-desc">批量导入为特殊日期实例</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">exchange_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>MIC</td></tr>
+            <tr><td class="fname">year</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>年份</td></tr>
+            <tr><td class="fname">path_pattern</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>映射到的品种路径，如 Stocks/US/**</td></tr>
+            <tr><td class="fname">stack_policy</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>默认 OVERRIDE</td></tr>
+            <tr><td class="fname">priority</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 100</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--               SCENE 5: DST SCHEDULE                          -->
+<!-- ============================================================ -->
+<div class="scene bg-pink" id="s5">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S5</div>
+    <div class="scene-meta">
+      <div class="scene-title">🌅 DST 半自动调度 <span class="scene-tag sys">系统</span></div>
+      <div class="scene-subtitle">DST Schedule &mdash; "每年 12 月自动生成上万品种的春秋切换版本"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--pink); border-color:var(--pink-deep);">
+      <div class="char">🤖</div>
+      <strong>剧情：</strong><code>t_dst_schedule</code> 表预生成未来 5 年的春进/秋退日期。每年 12 月由调度器扫描所有
+      <code>dst_profile != 'NONE'</code> 的品种时段，自动生成下一年的春令时与冬令时版本（<code>source=DST_AUTO</code>）。运营无需手动维护。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 DST 自动化流程</div>
+      <div class="df-chain">
+        <div class="df-node ext">
+          <div class="df-icon">🗓️</div>
+          <div class="df-label">DST 日历</div>
+          <div class="df-detail">t_dst_schedule<br>预生成5年</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node service">
+          <div class="df-icon">🤖</div>
+          <div class="df-label">版本生成器</div>
+          <div class="df-detail">12月触发<br>扫描所有profile</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node db">
+          <div class="df-icon">📈</div>
+          <div class="df-label">写入版本</div>
+          <div class="df-detail">两条新版本<br>effective_to衔接</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">通知运营</div>
+          <div class="df-detail">生成报告<br>异常告警</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="duo">
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--green);">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/time/dst/schedule</span>
+          <span class="api-desc">查询 DST 切换日历</span>
+        </div>
+        <div class="api-content">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">dst_profile</td><td><span class="ftype">String</span></td><td>过滤 USA/EUROPE/...</td></tr>
+            <tr><td class="fname">year_from</td><td><span class="ftype">Integer</span></td><td>起始年</td></tr>
+            <tr><td class="fname">year_to</td><td><span class="ftype">Integer</span></td><td>结束年</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--blue);">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/time/dst/schedule/generate</span>
+          <span class="api-desc">预生成未来年份</span>
+        </div>
+        <div class="api-content">
+          <div class="param-label req">📥 Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">years_ahead</td><td><span class="ftype">Integer</span></td><td>默认 5</td></tr>
+            <tr><td class="fname">profiles</td><td><span class="ftype">Array</span></td><td>不传=全部 profile</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/dst/version-gen</span>
+        <span class="api-desc">触发 DST 版本自动生成</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">target_year</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>为哪一年生成切换版本</td></tr>
+            <tr><td class="fname">profiles</td><td><span class="ftype">Array</span></td><td class="fopt">N</td><td>不传=全部非 NONE profile</td></tr>
+            <tr><td class="fname">dry_run</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>true=仅返回生成预览，默认 false</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"target_year"</span>: <span class="jn">2027</span>,
+    <span class="jk">"affected_symbols"</span>: <span class="jn">8234</span>,
+    <span class="jk">"created_versions"</span>: <span class="jn">16468</span>,    <span class="jc">// 每品种 2 条（春进+秋退）</span>
+    <span class="jk">"profile_breakdown"</span>: {
+      <span class="jk">"USA"</span>: <span class="jn">6200</span>,
+      <span class="jk">"EUROPE"</span>: <span class="jn">1800</span>,
+      <span class="jk">"AUSTRALIA"</span>: <span class="jn">234</span>
+    }
+  }
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/dst/affected-symbols</span>
+        <span class="api-desc">受 DST 影响的品种统计</span>
+      </div>
+      <div class="api-content">
+        <div class="tip info">💡 用于 DST 切换前的影响面评估，按 profile 分组返回品种数量与样例品种 ID。</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--               SCENE 6: DAILY SESSION & RUNTIME               -->
+<!-- ============================================================ -->
+<div class="scene bg-orange" id="s6">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S6</div>
+    <div class="scene-meta">
+      <div class="scene-title">📊 每日预计算 & 运行时查询 <span class="scene-tag sys">系统</span><span class="scene-tag admin">引擎</span></div>
+      <div class="scene-subtitle">Snapshot &amp; Runtime &mdash; "微秒级查询的底座，每日 00:00 UTC 重新构建"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--orange); border-color:var(--orange-deep);">
+      <div class="char">⚡</div>
+      <strong>剧情：</strong>每日 00:00 UTC 调度任务运行，把"平台 ∩ 品种 ∩ 特殊日期"三层合并后通过三阶段管道
+      (INTERSECT → UNION → OVERRIDE) 算出当日实际时段，写入 <code>t_daily_session</code>。交易引擎只查这张快照表，
+      运行时延迟 P99 < 1ms。<code>runtime_state</code> 字段与 S7 覆盖联动。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 预计算调度</div>
+      <div class="df-chain">
+        <div class="df-node gateway">
+          <div class="df-icon">⏰</div>
+          <div class="df-label">00:00 UTC</div>
+          <div class="df-detail">每日调度<br>+ 手动触发</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node service">
+          <div class="df-icon">🧠</div>
+          <div class="df-label">三阶段管道</div>
+          <div class="df-detail">INTERSECT<br>↓ UNION<br>↓ OVERRIDE</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node crypto">
+          <div class="df-icon">🌳</div>
+          <div class="df-label">Trie 路径匹配</div>
+          <div class="df-detail">预编译<br>零运行时开销</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node db">
+          <div class="df-icon">📸</div>
+          <div class="df-label">写入快照</div>
+          <div class="df-detail">t_daily_session<br>按季分区</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node mq">
+          <div class="df-icon">📊</div>
+          <div class="df-label">运行日志</div>
+          <div class="df-detail">t_snapshot_run_log<br>SLA 监控</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/daily-sessions</span>
+        <span class="api-desc">查询每日时段快照</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">symbol_id</td><td><span class="ftype">Long</span></td><td class="fopt">N*</td><td>品种ID (与 trading_date 至少传一)</td></tr>
+            <tr><td class="fname">trading_date</td><td><span class="ftype">Date</span></td><td class="fopt">N*</td><td>交易日</td></tr>
+            <tr><td class="fname">date_from</td><td><span class="ftype">Date</span></td><td class="fopt">N</td><td>区间起 (与 date_to 配对)</td></tr>
+            <tr><td class="fname">date_to</td><td><span class="ftype">Date</span></td><td class="fopt">N</td><td>区间止</td></tr>
+            <tr><td class="fname">runtime_state</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>过滤受覆盖品种 HALT/MAINTENANCE/...</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: [
+    {
+      <span class="jk">"id"</span>: <span class="jn">9001</span>,
+      <span class="jk">"symbol_id"</span>: <span class="jn">12345</span>,
+      <span class="jk">"trading_date"</span>: <span class="jv">"2026-05-20"</span>,
+      <span class="jk">"seq_no"</span>: <span class="jn">1</span>,
+      <span class="jk">"session_type"</span>: <span class="jv">"OPEN"</span>,
+      <span class="jk">"open_min"</span>: <span class="jn">810</span>,
+      <span class="jk">"close_min"</span>: <span class="jn">1200</span>,
+      <span class="jk">"state"</span>: <span class="jv">"SCHEDULED"</span>,
+      <span class="jk">"runtime_state"</span>: <span class="jb">null</span>,
+      <span class="jk">"override_id"</span>: <span class="jb">null</span>,
+      <span class="jk">"source_type"</span>: <span class="jv">"NORMAL"</span>,
+      <span class="jk">"generated_at"</span>: <span class="jv">"2026-05-20T00:08:23.541Z"</span>
+    }
+  ]
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/daily-sessions/today/{symbolId}</span>
+        <span class="api-desc">今日时段快捷查询</span>
+      </div>
+      <div class="api-content">
+        <div class="tip info">💡 等价于查询 trading_date=today，但走 L1+L2 缓存，延迟 < 5ms。</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method internal">INTERNAL</span>
+        <span class="api-path">/internal/v1/time/runtime/can-trade</span>
+        <span class="api-desc">下单时段判断 (引擎专用)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">symbol_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>品种ID</td></tr>
+            <tr><td class="fname">order_intent</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>OPEN_NEW/CLOSE/AMEND/CANCEL</td></tr>
+            <tr><td class="fname">at_time</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>UTC 时间; 默认服务器当前时间</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"can_trade"</span>: <span class="jb">true</span>,
+    <span class="jk">"session_type"</span>: <span class="jv">"OPEN"</span>,
+    <span class="jk">"runtime_state"</span>: <span class="jb">null</span>,
+    <span class="jk">"effective_override_id"</span>: <span class="jb">null</span>,
+    <span class="jk">"reason_code"</span>: <span class="jv">"NORMAL_TRADING"</span>,
+    <span class="jk">"next_session_open"</span>: <span class="jv">"2026-05-21T13:30:00Z"</span>
+  }
+}</div>
+        </div>
+        <div class="tip ok">⚡ SLA: P99 < 1ms, P50 < 200μs (本地缓存命中)</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/snapshot/recompute</span>
+        <span class="api-desc">手动触发预计算重算</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">trading_date</td><td><span class="ftype">Date</span></td><td class="freq">Y</td><td>目标日期</td></tr>
+            <tr><td class="fname">symbol_ids</td><td><span class="ftype">Array</span></td><td class="fopt">N</td><td>指定品种;不传=全部</td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>重算原因(审计)</td></tr>
+          </table>
+        </div>
+        <div class="tip warn">⚠️ 仅管理员可调用。会触发缓存大面积失效，建议非交易时段执行。</div>
+      </div>
+    </div>
+
+    <div class="duo">
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--green);">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/time/snapshot/runs</span>
+          <span class="api-desc">运行日志列表</span>
+        </div>
+        <div class="api-content">
+          <div class="tip info">查询 <code>t_snapshot_run_log</code>，支持按 run_type / status / target_date 过滤。</div>
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--green);">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/time/snapshot/runs/{runId}</span>
+          <span class="api-desc">单次运行详情</span>
+        </div>
+        <div class="api-content">
+          <div class="tip info">返回 symbol_count / session_count / rule_matches / error_message / duration_ms 等。</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                  SCENE 7: SESSION OVERRIDE                    -->
+<!-- ============================================================ -->
+<div class="scene bg-red" id="s7">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S7</div>
+    <div class="scene-meta">
+      <div class="scene-title">🚨 实时覆盖 (暂停/恢复/分阶段) <span class="scene-tag risk">风控</span><span class="scene-tag sys">运维</span><span class="scene-tag admin">监管</span></div>
+      <div class="scene-subtitle">Session Override &mdash; "最高优先级的交易控制，HALT/MAINTENANCE/CLOSE_ONLY/PHASED Resume"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--red); border-color:var(--red-deep);">
+      <div class="char">🛑</div>
+      <strong>剧情：</strong>交易所熔断、风控告警、监管通知、运维计划维护 → 都通过此接口写入覆盖。
+      幂等键 (<code>idempotency_key</code>) 防止重复推送。支持 PHASED 分阶段恢复 (HALT → QUOTE_ONLY → CLOSE_ONLY → OPEN)。
+      高 severity (>=3) 强制 <code>approver</code> 双人审批 + <code>disclosed_at</code> 公开披露。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 覆盖生效流程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">🚨</div>
+          <div class="df-label">触发源</div>
+          <div class="df-detail">交易所/风控<br>运维/监管/系统</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node gateway">
+          <div class="df-icon">🔑</div>
+          <div class="df-label">幂等检查</div>
+          <div class="df-detail">idempotency_key<br>重复返回原记录</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node service">
+          <div class="df-icon">🛡️</div>
+          <div class="df-label">权限校验</div>
+          <div class="df-detail">severity≥3 双人<br>target 唯一性</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node db">
+          <div class="df-icon">📝</div>
+          <div class="df-label">写入覆盖</div>
+          <div class="df-detail">t_session_override<br>状态 ACTIVE</div>
+        </div>
+        <div class="df-arrow"></div>
+        <div class="df-node mq">
+          <div class="df-icon">📡</div>
+          <div class="df-label">广播失效</div>
+          <div class="df-detail">L1+L2 失效<br>FIX 网关推送</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/overrides</span>
+        <span class="api-desc">创建实时覆盖</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label header">📮 Header</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">X-Operator-Id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>操作人ID</td></tr>
+            <tr><td class="fname">X-Approver-Id</td><td><span class="ftype">Long</span></td><td class="fopt">N*</td><td>severity≥3 时必填</td></tr>
+            <tr><td class="fname">Idempotency-Key</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>同 body 的 idempotency_key (双重保险)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">idempotency_key</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>推荐格式 {source}:{source_ref}:{action}</td></tr>
+            <tr><td class="fname">target_kind</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>PLATFORM/EXCHANGE/CATEGORY/PRODUCT</td></tr>
+            <tr><td class="fname">target_value</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>ALL / MIC码 / path_pattern / symbol_id</td></tr>
+            <tr><td class="fname">override_session_type</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>HALT/CLOSE_ONLY/QUOTE_ONLY/PRE_OPEN/AUCTION/MAINTENANCE</td></tr>
+            <tr><td class="fname">severity</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1=低 2=中 3=高 4=紧急</td></tr>
+            <tr><td class="fname">effective_from</td><td><span class="ftype">DateTime</span></td><td class="freq">Y</td><td>生效时间 UTC; 可为未来时间</td></tr>
+            <tr><td class="fname">auto_resume_time</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>NULL=持续到手动解除</td></tr>
+            <tr><td class="fname">source</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>EXCHANGE/RISK/OPS/REGULATOR/SYSTEM</td></tr>
+            <tr><td class="fname">source_ref</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>交易所代码/规则ID/工单号/监管文号</td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>原因描述</td></tr>
+            <tr><td class="fname">resume_phase</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>IMMEDIATE/QUOTE_FIRST/AUCTION_FIRST/PHASED</td></tr>
+            <tr><td class="fname">resume_phases</td><td><span class="ftype">Array</span></td><td class="fopt">N*</td><td>PHASED 时必填; 阶段数组</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Body 示例 - PHASED 平台级暂停</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"idempotency_key"</span>: <span class="jv">"OPS:INCIDENT-20260520-001:PLATFORM-HALT"</span>,
+  <span class="jk">"target_kind"</span>: <span class="jv">"PLATFORM"</span>,
+  <span class="jk">"target_value"</span>: <span class="jv">"ALL"</span>,
+  <span class="jk">"override_session_type"</span>: <span class="jv">"HALT"</span>,
+  <span class="jk">"severity"</span>: <span class="jn">4</span>,
+  <span class="jk">"effective_from"</span>: <span class="jv">"2026-05-20T14:30:00Z"</span>,
+  <span class="jk">"auto_resume_time"</span>: <span class="jb">null</span>,
+  <span class="jk">"source"</span>: <span class="jv">"OPS"</span>,
+  <span class="jk">"source_ref"</span>: <span class="jv">"INC-20260520-CORE"</span>,
+  <span class="jk">"reason"</span>: <span class="jv">"核心交易引擎异常,启动应急流程"</span>,
+  <span class="jk">"resume_phase"</span>: <span class="jv">"PHASED"</span>,
+  <span class="jk">"resume_phases"</span>: [
+    { <span class="jk">"phase"</span>: <span class="jv">"QUOTE_ONLY"</span>, <span class="jk">"duration_min"</span>: <span class="jn">10</span> },
+    { <span class="jk">"phase"</span>: <span class="jv">"PRE_OPEN"</span>,   <span class="jk">"duration_min"</span>: <span class="jn">5</span> },
+    { <span class="jk">"phase"</span>: <span class="jv">"CLOSE_ONLY"</span>, <span class="jk">"duration_min"</span>: <span class="jn">15</span> },
+    { <span class="jk">"phase"</span>: <span class="jv">"OPEN"</span>,       <span class="jk">"duration_min"</span>: <span class="jn">0</span> }
+  ]
+}</div>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"id"</span>: <span class="jn">7001</span>,
+    <span class="jk">"status"</span>: <span class="jv">"ACTIVE"</span>,
+    <span class="jk">"effective_from"</span>: <span class="jv">"2026-05-20T14:30:00Z"</span>,
+    <span class="jk">"affected_symbol_count"</span>: <span class="jn">8234</span>,
+    <span class="jk">"cache_invalidated"</span>: <span class="jb">true</span>,
+    <span class="jk">"disclosure_required"</span>: <span class="jb">true</span>
+  }
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="duo">
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--green);">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/time/overrides</span>
+          <span class="api-desc">覆盖列表</span>
+        </div>
+        <div class="api-content">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">String</span></td><td>PENDING/ACTIVE/LIFTED/EXPIRED/SUPERSEDED/CANCELLED</td></tr>
+            <tr><td class="fname">target_kind</td><td><span class="ftype">String</span></td><td>过滤层级</td></tr>
+            <tr><td class="fname">source</td><td><span class="ftype">String</span></td><td>EXCHANGE/RISK/...</td></tr>
+            <tr><td class="fname">severity_min</td><td><span class="ftype">Integer</span></td><td>过滤严重度</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--green);">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/time/overrides/{id}</span>
+          <span class="api-desc">覆盖详情</span>
+        </div>
+        <div class="api-content">
+          <div class="tip info">返回完整记录 + 替换链 (superseded_by 链路) + PHASED 进度。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/overrides/{id}/lift</span>
+        <span class="api-desc">手动解除覆盖</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">lift_reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>解除原因</td></tr>
+            <tr><td class="fname">force</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>跳过 PHASED 链路直接解除，默认 false</td></tr>
+          </table>
+        </div>
+        <div class="tip ok">✅ 更新 <code>status=LIFTED, lifted_by, lifted_at, lift_reason</code>，保持完整事件链。</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/overrides/{id}/advance-phase</span>
+        <span class="api-desc">PHASED 推进下一阶段</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">force</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>提前推进，跳过当前阶段剩余时长</td></tr>
+          </table>
+        </div>
+        <div class="tip warn">⚠️ 自动按 <code>resume_phases</code> 定义生成新的 override 记录，旧记录置 SUPERSEDED + superseded_by + previous_phase_id 关联。</div>
+      </div>
+    </div>
+
+    <div class="duo">
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--blue);">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/time/overrides/{id}/disclose</span>
+          <span class="api-desc">合规披露</span>
+        </div>
+        <div class="api-content">
+          <div class="param-label req">📥 Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">announcement_id</td><td><span class="ftype">String</span></td><td>客户公告ID</td></tr>
+            <tr><td class="fname">disclosed_at</td><td><span class="ftype">DateTime</span></td><td>披露时间</td></tr>
+          </table>
+          <div class="tip info">💡 MiFID II Article 49 要求暂停决定必须立即公开。</div>
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--red);">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/time/overrides/{id}/cancel</span>
+          <span class="api-desc">取消 PENDING 覆盖</span>
+        </div>
+        <div class="api-content">
+          <div class="tip danger">仅 status=PENDING 可调用，置为 CANCELLED。已 ACTIVE 须用 lift 接口。</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                       ADMIN                                   -->
+<!-- ============================================================ -->
+<div class="scene bg-pink" id="admin">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">A</div>
+    <div class="scene-meta">
+      <div class="scene-title">🛠️ Admin 管理后台 <span class="scene-tag admin">管理员</span></div>
+      <div class="scene-subtitle">Admin Console &mdash; 审计 / 缓存 / 监控</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--pink); border-color:var(--pink-deep);">
+      <div class="char">🔍</div>
+      <strong>剧情：</strong>审计回溯（MiFID II / SEC 17a-4 合规）、缓存强刷（紧急修复）、关键指标监控（SLA 达标率）。
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/admin/audit</span>
+        <span class="api-desc">配置变更审计</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔎 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">table_name</td><td><span class="ftype">String</span></td><td>过滤表 t_platform_session 等</td></tr>
+            <tr><td class="fname">record_id</td><td><span class="ftype">Long</span></td><td>过滤记录ID</td></tr>
+            <tr><td class="fname">operator</td><td><span class="ftype">Long</span></td><td>过滤操作人</td></tr>
+            <tr><td class="fname">request_id</td><td><span class="ftype">String</span></td><td>请求追踪 ID</td></tr>
+            <tr><td class="fname">date_from / date_to</td><td><span class="ftype">Date</span></td><td>时间区间</td></tr>
+            <tr><td class="fname">change_source</td><td><span class="ftype">String</span></td><td>UI/API/SCRIPT/SYSTEM/DST_AUTO</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/time/admin/cache/refresh</span>
+        <span class="api-desc">强制刷新缓存</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">scope</td><td><span class="ftype">String</span></td><td>ALL / L1 / L2 / SYMBOL</td></tr>
+            <tr><td class="fname">symbol_ids</td><td><span class="ftype">Array</span></td><td>scope=SYMBOL 时必填</td></tr>
+          </table>
+        </div>
+        <div class="tip danger">⚠️ ALL 范围会引发瞬时 DB 压力，仅紧急情况使用。</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/time/admin/metrics</span>
+        <span class="api-desc">关键指标</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block"><span class="json-label">JSON</span>{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"snapshot_latest_run"</span>: <span class="jv">"2026-05-20T00:08:23Z"</span>,
+    <span class="jk">"snapshot_p99_duration_ms"</span>: <span class="jn">8500</span>,
+    <span class="jk">"can_trade_p99_us"</span>: <span class="jn">812</span>,        <span class="jc">// 微秒</span>
+    <span class="jk">"cache_l1_hit_rate"</span>: <span class="jn">0.94</span>,
+    <span class="jk">"cache_l2_hit_rate"</span>: <span class="jn">0.97</span>,
+    <span class="jk">"active_overrides"</span>: <span class="jn">23</span>,
+    <span class="jk">"pending_overrides"</span>: <span class="jn">5</span>,
+    <span class="jk">"holiday_conflicts_unresolved"</span>: <span class="jn">2</span>,
+    <span class="jk">"dst_version_gen_last_run"</span>: <span class="jv">"2025-12-15T03:00:00Z"</span>
+  }
+}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider-doodle">✦ ✦ ✦</div>
+
+<!-- ============================================================ -->
+<div class="footer">
+  时间配置系统接口文档 · v2 重构稿 · 30 APIs · 7 Scenes · 全 UTC · DST 半自动 · MiFID II Ready
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,2124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>准入系统 API 接口设计 - 场景式漫画文档</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+    --ink: #1a1a2e;
+    --paper: #fefcf3;
+    --blue: #dbeafe; --blue-mid: #93c5fd; --blue-deep: #2563eb; --blue-dark: #1e3a5f;
+    --green: #dcfce7; --green-mid: #86efac; --green-deep: #16a34a; --green-dark: #166534;
+    --yellow: #fef9c3; --yellow-mid: #fde047; --yellow-deep: #ca8a04; --yellow-dark: #854d0e;
+    --purple: #f3e8ff; --purple-mid: #c4b5fd; --purple-deep: #7c3aed; --purple-dark: #5b21b6;
+    --pink: #fce7f3; --pink-mid: #f9a8d4; --pink-deep: #ec4899; --pink-dark: #9d174d;
+    --orange: #ffedd5; --orange-mid: #fdba74; --orange-deep: #ea580c; --orange-dark: #9a3412;
+    --red: #fecaca; --red-deep: #dc2626; --red-dark: #991b1b;
+    --slate: #f1f5f9; --slate-deep: #475569;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 22px 22px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: var(--ink);
+    padding: 24px;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  /* ===== HEADER ===== */
+  .hero {
+    text-align: center;
+    padding: 40px 20px 30px;
+    position: relative;
+  }
+  .hero h1 {
+    font-family: var(--font-hand);
+    font-size: 54px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    color: var(--ink);
+    position: relative;
+    display: inline-block;
+  }
+  .hero h1::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: -12px; right: -12px;
+    height: 6px;
+    background: linear-gradient(90deg, #f9a8d4, #fde68a, #93c5fd, #c4b5fd);
+    border-radius: 4px;
+    transform: rotate(-0.4deg);
+    opacity: 0.8;
+  }
+  .hero .tagline {
+    font-family: var(--font-ui);
+    font-size: 17px;
+    font-weight: 600;
+    color: #666;
+    margin-top: 16px;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.5;
+  }
+  .hero .badge-row {
+    display: flex; justify-content: center; gap: 10px; margin-top: 16px;
+    flex-wrap: wrap; overflow-x: visible; padding: 4px 0 8px;
+  }
+  .hero .badge {
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-ui);
+    border: 1.5px solid rgba(0,0,0,0.12);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    white-space: nowrap;
+  }
+
+  /* ===== NAV ===== */
+  .nav-bar {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+    margin: 10px auto 30px; max-width: 1100px;
+    overflow-x: visible;
+    padding: 4px 0 10px;
+  }
+  .nav-bar a {
+    text-decoration: none;
+    padding: 6px 18px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .nav-bar a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+    border-color: #93c5fd;
+  }
+
+  /* ===== SCENE ===== */
+  .scene {
+    background: #fff;
+    border: 2.5px solid #d1d5db;
+    border-radius: 22px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+    position: relative;
+  }
+  .scene-header {
+    padding: 20px 28px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    border-bottom: 2px dashed #e5e7eb;
+    flex-wrap: wrap;
+  }
+  .scene-num {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700;
+    border: 2.5px solid #fff;
+    box-shadow: 0 3px 10px rgba(238,90,36,0.35);
+    font-family: var(--font-ui);
+    flex-shrink: 0;
+  }
+  .scene-meta { flex: 1; min-width: 0; }
+  .scene-title {
+    font-family: var(--font-hand); font-size: 32px; font-weight: 400;
+    white-space: normal; line-height: 1.3;
+  }
+  .scene-subtitle { font-size: 15px; color: #555; font-family: var(--font-ui); font-weight: 600; }
+  .scene-body { padding: 20px 28px 28px; }
+
+  /* tape */
+  .tape {
+    position: absolute; width: 80px; height: 26px;
+    background: rgba(255,222,89,0.55);
+    border: 1.5px solid rgba(200,170,50,0.35);
+    border-radius: 2px; z-index: 2;
+  }
+  .tape-tr { top: -8px; right: 28px; transform: rotate(-32deg); }
+  .tape-tl { top: -8px; left: 28px; transform: rotate(32deg); }
+
+  /* story box */
+  .story {
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1.5px dashed;
+    margin-bottom: 20px;
+    font-size: 17px;
+    line-height: 1.8;
+    position: relative;
+  }
+  .story .char {
+    font-size: 36px;
+    float: left;
+    margin-right: 10px;
+    margin-top: -4px;
+  }
+
+  /* ===== API CARD ===== */
+  .api-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    position: relative;
+    transition: box-shadow .2s;
+  }
+  .api-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .api-card:last-child { margin-bottom: 0; }
+  .api-bar {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 18px;
+    font-size: 17px;
+    font-weight: 600;
+    border-bottom: 1.5px solid #e2e8f0;
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .method {
+    display: inline-block;
+    padding: 3px 14px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: 0.5px;
+    border: 1.5px solid;
+    flex-shrink: 0;
+  }
+  .method.get { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .method.post { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .method.put { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+  .method.delete { background: var(--red); color: var(--red-dark); border-color: var(--red-deep); }
+  .method.internal { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .api-path {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 14px; font-weight: 500;
+    color: var(--ink);
+    white-space: normal;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+  .api-desc {
+    margin-left: auto;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    white-space: normal;
+    flex: 0 1 auto;
+    text-align: right;
+    min-width: 120px;
+  }
+  .api-content { padding: 16px 18px; }
+
+  /* param table */
+  .param-section { margin-bottom: 16px; }
+  .param-label {
+    font-size: 16px; font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 8px;
+    display: inline-block;
+    margin-bottom: 8px;
+    border: 1.5px solid;
+  }
+  .param-label.req { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .param-label.res { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .param-label.path { background: var(--orange); color: var(--orange-dark); border-color: var(--orange-deep); }
+  .param-label.query { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .param-label.header { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+  .param-label.cb { background: var(--pink); color: var(--pink-dark); border-color: var(--pink-deep); }
+
+  .ptable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 15px;
+  }
+  .ptable th {
+    background: linear-gradient(135deg, #f1f5f9, #e8edf3);
+    color: #475569;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 13px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border-bottom: 1.5px solid #cbd5e1;
+  }
+  .ptable td {
+    padding: 7px 12px;
+    border-bottom: 1.5px dashed #e2e8f0;
+    vertical-align: top;
+  }
+  .ptable tr:last-child td { border-bottom: none; }
+  .ptable tr:nth-child(even) td { background: #fafafa; }
+  .ptable .fname {
+    font-weight: 600; color: var(--blue-deep);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+  }
+  .ptable .ftype {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--purple-deep);
+    background: var(--purple);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .ptable .freq {
+    color: var(--red-deep); font-weight: bold; font-size: 12px;
+  }
+  .ptable .fopt {
+    color: #999; font-size: 12px;
+  }
+  .ptable .fdb {
+    font-size: 12px;
+    color: var(--slate-deep);
+    background: var(--slate);
+    padding: 1px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 2px;
+  }
+
+  /* JSON block */
+  .json-block {
+    background: #f8fafc;
+    color: #334155;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: visible;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    border: 1.5px solid #e2e8f0;
+    position: relative;
+    margin-top: 8px;
+  }
+  .json-block .jk { color: #2563eb; }
+  .json-block .jv { color: #16a34a; }
+  .json-block .jn { color: #d97706; }
+  .json-block .jc { color: #94a3b8; font-style: italic; }
+  .json-block .jb { color: #c026d3; }
+  .json-label {
+    position: absolute; top: 8px; right: 12px;
+    font-size: 11px; color: #94a3b8;
+    font-family: var(--font-ui);
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  /* flow arrow between scenes */
+  .scene-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    height: auto; min-height: 44px;
+    position: relative;
+    padding: 6px 0 10px;
+  }
+  .scene-arrow .sa-line {
+    width: 3px; flex: 0 0 28px; min-height: 28px;
+    background: repeating-linear-gradient(to bottom, #94a3b8 0px, #94a3b8 5px, transparent 5px, transparent 10px);
+  }
+  .scene-arrow .sa-head {
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid #94a3b8;
+    flex-shrink: 0;
+  }
+  .scene-arrow .sa-label {
+    position: static;
+    margin-top: 8px;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 4px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: #475569;
+    white-space: normal;
+    max-width: 100%;
+    overflow-x: visible;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  /* tip */
+  .tip {
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    margin-top: 12px;
+    border: 1.5px solid;
+    border-left-width: 4px;
+  }
+  .tip.warn { background: #fef3c7; border-color: #d97706; color: #92400e; }
+  .tip.info { background: #dbeafe; border-color: #2563eb; color: #1e3a5f; }
+  .tip.ok { background: #dcfce7; border-color: #16a34a; color: #166534; }
+  .tip.danger { background: #fecaca; border-color: #dc2626; color: #991b1b; }
+
+  /* duo-col layout */
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:900px){
+    .duo { grid-template-columns: 1fr; }
+    .hero .tagline { white-space: normal; }
+    .scene-title { white-space: normal; }
+  }
+
+  /* enum list */
+  .enum-list {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+  }
+  .enum-item {
+    background: #fff;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: 13px;
+    color: #475569;
+  }
+
+  /* mini scene connector */
+  .internal-arrow {
+    text-align: center; padding: 8px 0;
+    font-size: 18px; color: #94a3b8;
+  }
+
+  /* footer */
+  .footer {
+    text-align: center; margin-top: 40px; padding: 20px;
+    color: #aaa; font-size: 15px;
+  }
+
+  /* sticker */
+  .sticker {
+    position: absolute; pointer-events: none; opacity: 0.08; z-index: 0;
+  }
+
+  /* colour tint for scene bg */
+  .scene.bg-blue { background: linear-gradient(135deg, #f0f7ff 0%, #fff 60%); }
+  .scene.bg-green { background: linear-gradient(135deg, #f0fdf4 0%, #fff 60%); }
+  .scene.bg-yellow { background: linear-gradient(135deg, #fefce8 0%, #fff 60%); }
+  .scene.bg-purple { background: linear-gradient(135deg, #faf5ff 0%, #fff 60%); }
+  .scene.bg-pink { background: linear-gradient(135deg, #fdf2f8 0%, #fff 60%); }
+  .scene.bg-orange { background: linear-gradient(135deg, #fff7ed 0%, #fff 60%); }
+
+  .scene-tag {
+    display: inline-block;
+    font-size: 12px; font-weight: bold;
+    padding: 2px 10px;
+    border-radius: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .scene-tag.client { background: var(--blue); color: var(--blue-deep); border: 1px solid var(--blue-mid); }
+  .scene-tag.server { background: var(--green); color: var(--green-deep); border: 1px solid var(--green-mid); }
+  .scene-tag.admin { background: var(--pink); color: var(--pink-deep); border: 1px solid var(--pink-mid); }
+  .scene-tag.system { background: var(--purple); color: var(--purple-deep); border: 1px solid var(--purple-mid); }
+
+  .divider-doodle {
+    text-align: center; padding: 20px 0; font-size: 16px; color: #d1d5db;
+    border-top: 1.5px dashed #e5e7eb; margin-top: 10px;
+  }
+
+  /* ===== DATA FLOW DIAGRAM ===== */
+  .dataflow {
+    margin: 0 0 22px 0;
+    padding: 18px;
+    background: linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%);
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    overflow-x: visible;
+  }
+  .dataflow-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 14px;
+    color: #475569;
+  }
+  .df-chain {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 4px;
+    min-width: 0;
+  }
+  .df-node {
+    flex: 0 0 auto;
+    width: 128px;
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    border: 1.5px solid;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .df-node .df-icon { font-size: 24px; }
+  .df-node .df-label { font-size: 13px; font-weight: bold; line-height: 1.3; }
+  .df-node .df-detail {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.4;
+    font-family: var(--font-ui);
+  }
+  .df-node.user { background: #dbeafe; border-color: #93c5fd; }
+  .df-node.gateway { background: #fef3c7; border-color: #fde047; }
+  .df-node.service { background: #dcfce7; border-color: #86efac; }
+  .df-node.crypto { background: #fce7f3; border-color: #f9a8d4; }
+  .df-node.db { background: #e0e7ff; border-color: #a5b4fc; }
+  .df-node.mq { background: #f3e8ff; border-color: #c4b5fd; }
+  .df-node.ext { background: #ffedd5; border-color: #fdba74; }
+  .df-node.check { background: #ccfbf1; border-color: #5eead4; }
+
+  .df-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .df-arrow::before {
+    content: '';
+    width: 24px; height: 2px;
+    background: #94a3b8;
+  }
+  .df-arrow::after {
+    content: '';
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid #94a3b8;
+  }
+  .df-arrow .df-alabel {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #94a3b8;
+    white-space: nowrap;
+    font-family: var(--font-ui);
+  }
+  /* branch arrow (downward fork) */
+  .df-branch {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-left: 4px;
+    padding: 6px 0;
+    border-left: 2px dashed #cbd5e1;
+    padding-left: 12px;
+  }
+  .df-branch .df-node { width: 120px; }
+
+  /* ---- A4 打印稿 ---- */
+  @page {
+    size: A4 portrait;
+    margin: 10mm 11mm;
+  }
+
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      background-image: none !important;
+      font-size: 9.5pt;
+    }
+    .container {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .tape,
+    .sticker {
+      display: none !important;
+    }
+    .hero { padding: 4mm 0 !important; page-break-after: avoid; }
+    .hero h1 { font-size: 20pt !important; }
+    .hero .tagline { font-size: 9pt !important; }
+    .nav-bar {
+      justify-content: center !important;
+      gap: 6px !important;
+      page-break-inside: avoid;
+    }
+    .nav-bar a {
+      padding: 4px 12px !important;
+      font-size: 9pt !important;
+    }
+    .scene {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      box-shadow: none !important;
+      margin-bottom: 6mm !important;
+      border-width: 1.5px !important;
+    }
+    .scene-header { padding: 10px 14px !important; }
+    .scene-body { padding: 12px 14px 16px !important; }
+    .scene-title { font-size: 13pt !important; }
+    .scene-subtitle { font-size: 9pt !important; }
+    .api-card { box-shadow: none !important; }
+    .api-bar { padding: 8px 12px !important; font-size: 10pt !important; }
+    .api-path { font-size: 9pt !important; }
+    .ptable { font-size: 9pt !important; }
+    .ptable th, .ptable td { padding: 5px 8px !important; }
+    .json-block {
+      font-size: 7.5pt !important;
+      line-height: 1.45 !important;
+      overflow: visible !important;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .dataflow {
+      padding: 10px !important;
+      page-break-inside: avoid;
+    }
+    .df-node {
+      width: 108px !important;
+      padding: 6px 4px !important;
+    }
+    .df-node .df-label { font-size: 11px !important; }
+    .df-node .df-detail { font-size: 9px !important; }
+    .story { font-size: 10pt !important; }
+    .duo { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .footer { margin-top: 6mm; font-size: 9pt; }
+    a { color: inherit !important; text-decoration: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ============================================================ -->
+<!--                         HERO                                 -->
+<!-- ============================================================ -->
+<div class="hero">
+  <h1>📖 准入系统 API 接口设计</h1>
+  <div class="tagline">Onboarding Service Interface Design &mdash; Scene-based Comic Documentation</div>
+  <div class="badge-row">
+    <span class="badge" style="background:var(--blue);">23 APIs</span>
+    <span class="badge" style="background:var(--green);">8 DB Tables</span>
+    <span class="badge" style="background:var(--yellow);">7 Scenes</span>
+    <span class="badge" style="background:var(--purple);">Multi-Tenant</span>
+    <span class="badge" style="background:var(--pink);">RESTful</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav-bar">
+  <a href="#s1">Scene 1 注册</a>
+  <a href="#s2">Scene 2 资料 & KYC判定</a>
+  <a href="#s3">Scene 3 协议签署</a>
+  <a href="#s4">Scene 4 KYC上传 & 提交</a>
+  <a href="#s5">Scene 5 AML/IDV & 规则引擎</a>
+  <a href="#s6">Scene 6 人工审核</a>
+  <a href="#s7">Scene 7 开户 & 通知</a>
+  <a href="#admin">Admin 后台管理</a>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 1: REGISTRATION                      -->
+<!-- ============================================================ -->
+<div class="scene bg-blue" id="s1">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S1</div>
+    <div class="scene-meta">
+      <div class="scene-title">👤 用户注册 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Initial Registration &mdash; "Hello, I want to open an account!"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--blue); border-color:var(--blue-deep);">
+      <div class="char">🧑‍💻</div>
+      <strong>剧情：</strong>用户打开券商 App / 官网，点击"注册"。填写邮箱或手机号 + 密码，系统发送验证码。
+      验证通过后，系统生成一条 <code>t_onboarding_application</code> 记录，初始 <code>status=0</code> (填写中)，<code>account_status=0</code> (未开户)。
+      用户获得 <code>application_no</code>，后续所有操作都围绕这个编号展开。
+    </div>
+
+    <!-- BUSINESS FLOW -->
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📱</div>
+          <div class="df-label">用户打开 App</div>
+          <div class="df-detail">看到注册页面<br>选择邮箱/手机注册<br><b>用户等待 ~3s</b></div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">HTTPS</span></div>
+        <div class="df-node gateway">
+          <div class="df-icon">🚪</div>
+          <div class="df-label">安全网关</div>
+          <div class="df-detail"><b>防刷策略:</b><br>同 IP 60s 限 3 次<br>识别法律实体</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">RPC</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">业务校验</div>
+          <div class="df-detail"><b>核心逻辑:</b><br>验证码比对<br>邮箱/手机查重<br>生成 application_no</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">INSERT</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">创建申请记录</div>
+          <div class="df-detail">application 表<br>status=0 填写中<br>记录注册 IP/渠道</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">异步事件</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">发送验证码</div>
+          <div class="df-detail"><b>渠道:</b> SMS/Email<br>验证码 6 位有效 5 分钟<br>失败自动重试</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 1.1 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/onboarding/register</span>
+        <span class="api-desc">创建开户申请</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label header">📮 Header</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">X-Entity-Id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>法律实体ID (对应牌照主体) <span class="fdb">application.entity_id</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">email</td><td><span class="ftype">String</span></td><td class="fopt">N*</td><td>邮箱 (与手机号二选一) <span class="fdb">application.email</span></td></tr>
+            <tr><td class="fname">phone_country_code</td><td><span class="ftype">String</span></td><td class="fopt">N*</td><td>手机国际区号，如 +86 <span class="fdb">application.phone_country_code</span></td></tr>
+            <tr><td class="fname">phone_number</td><td><span class="ftype">String</span></td><td class="fopt">N*</td><td>手机号码 <span class="fdb">application.phone_number</span></td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>验证码 (邮箱/短信)</td></tr>
+            <tr><td class="fname">register_channel</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>注册渠道: WEB / IOS / ANDROID <span class="fdb">application.register_channel</span></td></tr>
+            <tr><td class="fname">referral_code</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>推荐码 <span class="fdb">application.referral_code</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"application_no"</span>: <span class="jv">"APP-2026-00001"</span>,  <span class="jc">// 开户申请编号</span>
+    <span class="jk">"status"</span>: <span class="jn">0</span>,                       <span class="jc">// 0=填写中</span>
+    <span class="jk">"account_status"</span>: <span class="jn">0</span>,               <span class="jc">// 0=未开户</span>
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-03-29T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 系统自动记录 <code>register_ip</code> 从请求头获取，无需前端传递</div>
+      </div>
+    </div>
+
+    <!-- API 1.2 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/onboarding/application/{applicationNo}</span>
+        <span class="api-desc">查询申请状态</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label path">📍 Path Params</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">applicationNo</td><td><span class="ftype">String</span></td><td>开户申请编号 <span class="fdb">application.application_no</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"application_no"</span>: <span class="jv">"APP-2026-00001"</span>,
+    <span class="jk">"entity_id"</span>: <span class="jn">1001</span>,
+    <span class="jk">"email"</span>: <span class="jv">"user@example.com"</span>,
+    <span class="jk">"user_type"</span>: <span class="jn">1</span>,                   <span class="jc">// 1=个人 2=企业</span>
+    <span class="jk">"status"</span>: <span class="jn">0</span>,                       <span class="jc">// 准入状态 0~5</span>
+    <span class="jk">"account_status"</span>: <span class="jn">0</span>,               <span class="jc">// 开户状态 0~3</span>
+    <span class="jk">"kyc_level_achieved"</span>: <span class="jn">0</span>,           <span class="jc">// 已达KYC等级</span>
+    <span class="jk">"trading_user_uid"</span>: <span class="jb">null</span>,           <span class="jc">// 开户成功后回填</span>
+    <span class="jk">"current_step"</span>: <span class="jv">"REGISTER"</span>,         <span class="jc">// 前端展示当前步骤</span>
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-03-29T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">用户继续完善个人资料 ✍️</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                SCENE 2: PROFILE & KYC DETERMINATION          -->
+<!-- ============================================================ -->
+<div class="scene bg-green" id="s2">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S2</div>
+    <div class="scene-meta">
+      <div class="scene-title">📝 信息完善 & KYC 等级判定 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Profile Completion &mdash; "Tell me about yourself, and I'll decide your KYC level."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--green); border-color:var(--green-deep);">
+      <div class="char">📋</div>
+      <strong>剧情：</strong>用户填写个人详细资料 (姓名、国家、生日、地址、职业、收入、投资经验等)。
+      提交后系统查询 <code>t_onboarding_kyc_rule</code>，按优先级匹配出该用户需要的 KYC 等级、所需文件类型和额外协议列表。
+      前端根据返回动态渲染后续步骤。
+    </div>
+
+    <!-- BUSINESS FLOW -->
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📝</div>
+          <div class="df-label">分步填写表单</div>
+          <div class="df-detail"><b>用户看到:</b><br>4 步表单向导<br>①基本②地址<br>③财务④PEP/税务</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">提交</span></div>
+        <div class="df-node crypto">
+          <div class="df-icon">🔐</div>
+          <div class="df-label">敏感字段处理</div>
+          <div class="df-detail"><b>合规要求:</b><br>TIN → AES加密<br>+ SHA256哈希<br>原文不落库</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">UPDATE</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">保存个人资料</div>
+          <div class="df-detail">application 表<br>含新增: PEP声明<br>税务/雇主/知识评估</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">触发匹配</span></div>
+        <div class="df-node check">
+          <div class="df-icon">🎯</div>
+          <div class="df-label">KYC 规则匹配</div>
+          <div class="df-detail"><b>业务决策:</b><br>国家+类型+收入<br>→ 确定 KYC 等级<br>→ 所需材料清单</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">返回</span></div>
+        <div class="df-node user">
+          <div class="df-icon">📱</div>
+          <div class="df-label">动态渲染页面</div>
+          <div class="df-detail"><b>用户看到:</b><br>证件类型<b>任选一</b><br>文件类型<b>全部传</b><br>协议列表<b>全部签</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 2.1 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/onboarding/application/{applicationNo}/profile</span>
+        <span class="api-desc">提交/更新个人资料</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">user_type</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>主体类型: 1-个人 2-企业 <span class="fdb">application.user_type</span></td></tr>
+            <tr><td class="fname">legal_first_name</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>法定名 <span class="fdb">application.legal_first_name</span></td></tr>
+            <tr><td class="fname">legal_last_name</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>法定姓 <span class="fdb">application.legal_last_name</span></td></tr>
+            <tr><td class="fname">legal_name_native</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>本国文字姓名 <span class="fdb">application.legal_name_native</span></td></tr>
+            <tr><td class="fname">gender</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>性别: 0-未知 1-男 2-女 <span class="fdb">application.gender</span></td></tr>
+            <tr><td class="fname">birth_date</td><td><span class="ftype">Date</span></td><td class="freq">Y</td><td>出生日期 YYYY-MM-DD <span class="fdb">application.birth_date</span></td></tr>
+            <tr><td class="fname">nationality</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>国籍 ISO 3166-1 <span class="fdb">application.nationality</span></td></tr>
+            <tr><td class="fname">country_of_residence</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>居住国 ISO 3166-1 <span class="fdb">application.country_of_residence</span></td></tr>
+            <tr><td class="fname">address_line</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>详细地址 <span class="fdb">application.address_line</span></td></tr>
+            <tr><td class="fname">city</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>城市 <span class="fdb">application.city</span></td></tr>
+            <tr><td class="fname">state_province</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>州/省 <span class="fdb">application.state_province</span></td></tr>
+            <tr><td class="fname">postal_code</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>邮编 <span class="fdb">application.postal_code</span></td></tr>
+            <tr><td class="fname">employment_status</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>就业: 1-在职 2-自雇 3-退休 4-学生 5-无业 <span class="fdb">application.employment_status</span></td></tr>
+            <tr><td class="fname">annual_income_range</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>年收入: 1-&lt;1万 2-1~5万 3-5~10万 4-10~50万 5-&gt;50万 <span class="fdb">application.annual_income_range</span></td></tr>
+            <tr><td class="fname">net_worth_range</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>净资产: 1-&lt;5万 2-5~20万 3-20~50万 4-50~100万 5-&gt;100万 <span class="fdb">application.net_worth_range</span></td></tr>
+            <tr><td class="fname">source_of_funds</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>资金来源 <span class="fdb">application.source_of_funds</span></td></tr>
+            <tr><td class="fname">trading_exp_years</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>交易经验年数 <span class="fdb">application.trading_exp_years</span></td></tr>
+            <tr><td class="fname">risk_tolerance</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>风险承受: 1-保守 2-稳健 3-平衡 4-积极 5-激进 <span class="fdb">application.risk_tolerance</span></td></tr>
+            <tr style="background:#fefce8;"><td colspan="4" style="font-weight:bold; color:#854d0e; font-size:13px; padding:6px 12px;">▼ 以下为国际合规补充字段 (CRS/FATCA/MiFID II/FATF)</td></tr>
+            <tr><td class="fname">tax_residency_country</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>税务居住国 ISO 3166 (可能与居住国不同) <span class="fdb">application.tax_residency_country</span></td></tr>
+            <tr><td class="fname">tax_id</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>税务识别号 TIN (服务端加密存储) <span class="fdb">application.tax_id_enc / tax_id_hash</span></td></tr>
+            <tr><td class="fname">is_pep</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>政治公众人物自报: 0-否 1-本人是 2-家属/关联人 <span class="fdb">application.is_pep</span></td></tr>
+            <tr><td class="fname">pep_detail</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>PEP 详情 (is_pep>0 时填写) <span class="fdb">application.pep_detail</span></td></tr>
+            <tr><td class="fname">employer_name</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>雇主名称 (在职/自雇时) <span class="fdb">application.employer_name</span></td></tr>
+            <tr><td class="fname">employer_industry</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>雇主行业 <span class="fdb">application.employer_industry</span></td></tr>
+            <tr><td class="fname">trading_knowledge_level</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>交易知识: 1-无 2-基础 3-中等 4-丰富 5-专业 <span class="fdb">application.trading_knowledge_level</span></td></tr>
+            <tr><td class="fname">expected_deposit_range</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>预计入金: 1-&lt;1千 2-1千~1万 3-1~10万 4-10~50万 5-&gt;50万 <span class="fdb">application.expected_deposit_range</span></td></tr>
+          </table>
+          <div class="enum-list">
+            <span class="enum-item">source_of_funds: SALARY</span>
+            <span class="enum-item">SAVINGS</span>
+            <span class="enum-item">INVESTMENT</span>
+            <span class="enum-item">BUSINESS</span>
+            <span class="enum-item">INHERITANCE</span>
+          </div>
+          <div class="enum-list">
+            <span class="enum-item">employer_industry: FINANCE</span>
+            <span class="enum-item">TECH</span>
+            <span class="enum-item">GOVERNMENT</span>
+            <span class="enum-item">ENERGY</span>
+            <span class="enum-item">HEALTHCARE</span>
+            <span class="enum-item">LEGAL</span>
+            <span class="enum-item">EDUCATION</span>
+            <span class="enum-item">OTHER</span>
+          </div>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"message"</span>: <span class="jv">"Profile saved"</span>
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="internal-arrow">⬇️ 资料保存成功，调用 KYC 规则匹配 ⬇️</div>
+
+    <!-- API 2.2 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/onboarding/application/{applicationNo}/kyc-requirements</span>
+        <span class="api-desc">获取 KYC 要求 (规则匹配)</span>
+      </div>
+      <div class="api-content">
+        <div class="story" style="background:var(--yellow); border-color:var(--yellow-deep); font-size:15px;">
+          <div class="char">⚙️</div>
+          <strong>内部逻辑：</strong>系统读取 <code>t_onboarding_kyc_rule</code>，按 priority 升序逐条匹配 (country + user_type + income_range)。
+          精确匹配 &gt; 部分匹配 &gt; 兜底规则 (match_country='*')。输出 KYC 等级 + 所需文件 + 额外协议。
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"matched_rule_code"</span>: <span class="jv">"AU_INDIVIDUAL_HIGH"</span>,  <span class="jc">// kyc_rule.rule_code</span>
+    <span class="jk">"required_kyc_level"</span>: <span class="jn">2</span>,                    <span class="jc">// 1=L1 2=L2 3=L3</span>
+    <span class="jk">"required_doc_types"</span>: [                        <span class="jc">// 【全部必须上传】</span>
+      <span class="jv">"ID_FRONT"</span>, <span class="jv">"ID_BACK"</span>, <span class="jv">"PROOF_OF_ADDRESS"</span>
+    ],
+    <span class="jk">"accepted_id_types"</span>: [                          <span class="jc">// 【任选其一】用户选择一种证件提交</span>
+      { <span class="jk">"value"</span>: <span class="jn">1</span>, <span class="jk">"label"</span>: <span class="jv">"身份证"</span> },
+      { <span class="jk">"value"</span>: <span class="jn">2</span>, <span class="jk">"label"</span>: <span class="jv">"护照"</span> },
+      { <span class="jk">"value"</span>: <span class="jn">3</span>, <span class="jk">"label"</span>: <span class="jv">"驾照"</span> }
+    ],
+    <span class="jk">"required_agreements"</span>: [                        <span class="jc">// 【全部必须签署】</span>
+      <span class="jv">"CLIENT_AGREEMENT"</span>,
+      <span class="jv">"RISK_DISCLOSURE"</span>,
+      <span class="jv">"PRIVACY_POLICY"</span>,
+      <span class="jv">"LEVERAGE_WARNING"</span>
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">前端动态渲染协议 + 文件上传页面 📎</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                 SCENE 3: AGREEMENT SIGNING                   -->
+<!-- ============================================================ -->
+<div class="scene bg-yellow" id="s3">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S3</div>
+    <div class="scene-meta">
+      <div class="scene-title">✍️ 协议签署 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Agreement Signing &mdash; "Please read & accept these legal documents."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--yellow); border-color:var(--yellow-deep);">
+      <div class="char">📜</div>
+      <strong>剧情：</strong>用户阅读协议列表（客户协议、风险揭示书、隐私政策...），勾选"我已阅读并同意"后批量签署。
+      系统从 <code>t_onboarding_agreement_template</code> 读取当前版本，写入 <code>t_onboarding_agreement</code> 签署记录。
+    </div>
+
+    <!-- BUSINESS FLOW -->
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📱</div>
+          <div class="df-label">协议阅读页</div>
+          <div class="df-detail"><b>用户看到:</b><br>按国家/语言筛选<br>风险揭示书/隐私<br>协议等法律文件</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">拉取列表</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">协议组装</div>
+          <div class="df-detail"><b>业务逻辑:</b><br>基础必签 + 规则<br>附加协议合并<br>版本号锁定</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">SELECT</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">协议模板库</div>
+          <div class="df-detail">agreement_template<br>过滤: 国家/语言<br>/环境/状态</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">展示</span></div>
+        <div class="df-node user">
+          <div class="df-icon">✍️</div>
+          <div class="df-label">用户签署</div>
+          <div class="df-detail"><b>用户操作:</b><br>逐份阅读 PDF<br>勾选"已阅读并同意"<br>点击"全部签署"</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">批量提交</span></div>
+        <div class="df-node service">
+          <div class="df-icon">📋</div>
+          <div class="df-label">签署凭证</div>
+          <div class="df-detail"><b>法律效力:</b><br>记录签署 IP<br>精确到毫秒时间戳<br>版本号绑定</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">INSERT</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">签署记录落库</div>
+          <div class="df-detail">agreement 表<br>每份协议一条记录<br>不可篡改</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 3.1 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/onboarding/application/{applicationNo}/agreements</span>
+        <span class="api-desc">获取待签署协议列表</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"data"</span>: {
+    <span class="jk">"agreements"</span>: [
+      {
+        <span class="jk">"agreement_code"</span>: <span class="jv">"CLIENT_AGREEMENT"</span>,   <span class="jc">// template.agreement_code</span>
+        <span class="jk">"agreement_name"</span>: <span class="jv">"客户服务协议"</span>,        <span class="jc">// template.agreement_name</span>
+        <span class="jk">"current_version"</span>: <span class="jv">"v2.1"</span>,              <span class="jc">// template.current_version</span>
+        <span class="jk">"content_url"</span>: <span class="jv">"https://oss/agreements/client_v2.1.pdf"</span>,
+        <span class="jk">"content_text"</span>: <span class="jb">null</span>,                   <span class="jc">// 或纯文本内容</span>
+        <span class="jk">"content_locale"</span>: <span class="jv">"zh"</span>,                 <span class="jc">// template.content_locale</span>
+        <span class="jk">"is_required"</span>: <span class="jn">1</span>,                       <span class="jc">// 1=必签</span>
+        <span class="jk">"sort_order"</span>: <span class="jn">1</span>,                        <span class="jc">// 展示排序</span>
+        <span class="jk">"already_signed"</span>: <span class="jb">false</span>                 <span class="jc">// 是否已签署</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 3.2 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/onboarding/application/{applicationNo}/agreements/sign</span>
+        <span class="api-desc">批量签署协议</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">agreements</td><td><span class="ftype">Array</span></td><td class="freq">Y</td><td>签署的协议列表</td></tr>
+            <tr><td class="fname">&nbsp;&nbsp;agreement_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>协议代码 <span class="fdb">agreement.agreement_code</span></td></tr>
+            <tr><td class="fname">&nbsp;&nbsp;agreement_version</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>签署版本号 <span class="fdb">agreement.agreement_version</span></td></tr>
+            <tr><td class="fname">&nbsp;&nbsp;is_accepted</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>是否接受: 1=是 <span class="fdb">agreement.is_accepted</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"signed_count"</span>: <span class="jn">4</span>,
+    <span class="jk">"accepted_at"</span>: <span class="jv">"2026-03-29T10:05:00.000Z"</span>,  <span class="jc">// agreement.accepted_at</span>
+    <span class="jk">"accepted_ip"</span>: <span class="jv">"203.0.113.42"</span>               <span class="jc">// agreement.accepted_ip</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">与文件上传可并行 ⇅</div>
+</div>
+
+<!-- ============================================================ -->
+<!--               SCENE 4: KYC UPLOAD & SUBMIT                   -->
+<!-- ============================================================ -->
+<div class="scene bg-purple" id="s4">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S4</div>
+    <div class="scene-meta">
+      <div class="scene-title">📤 KYC 文件上传 & 提交审核 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">KYC Document Upload &mdash; "Show me your ID, please."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--purple); border-color:var(--purple-deep);">
+      <div class="char">🪪</div>
+      <strong>剧情：</strong>用户按 Scene 2 返回的 <code>required_doc_types</code> 逐一上传证件照片。
+      系统创建 <code>t_onboarding_kyc</code> 主记录 (含证件号加密/哈希)，并为每个文件在 <code>t_onboarding_kyc_document</code> 中创建记录。
+      全部材料上传完成后用户点击"提交审核"，触发后续的 AML/IDV + 规则引擎。
+    </div>
+
+    <!-- BUSINESS FLOW -->
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📷</div>
+          <div class="df-label">拍摄/选择证件</div>
+          <div class="df-detail"><b>用户看到:</b><br>证件类型<b>选一种</b><br>拍正面→拍反面<br>→自拍→地址证明</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">multipart</span></div>
+        <div class="df-node gateway">
+          <div class="df-icon">🚪</div>
+          <div class="df-label">安全网关</div>
+          <div class="df-detail"><b>安全策略:</b><br>≤10MB 白名单格式<br>病毒扫描<br>TLS 传输加密</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">流式传输</span></div>
+        <div class="df-node ext">
+          <div class="df-icon">☁️</div>
+          <div class="df-label">加密云存储</div>
+          <div class="df-detail"><b>合规要求:</b><br>S3 服务端加密<br>私有桶不公开<br>返回 file_path</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">回调</span></div>
+        <div class="df-node crypto">
+          <div class="df-icon">🔐</div>
+          <div class="df-label">证件号加密</div>
+          <div class="df-detail"><b>双重处理:</b><br>SHA256 → hash(查重)<br>AES → enc(可解密)<br>MD5 → 文件防篡改</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">INSERT</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">KYC 记录落库</div>
+          <div class="df-detail">kyc 主记录<br>+ 逐文件 document<br>status=0 待审核</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 4.1 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/onboarding/application/{applicationNo}/kyc</span>
+        <span class="api-desc">创建 KYC 认证记录</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">kyc_level</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>申请的KYC等级: 1-L1 2-L2 3-L3 <span class="fdb">kyc.kyc_level</span></td></tr>
+            <tr><td class="fname">id_type</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>证件类型: 1-身份证 2-护照 3-驾照 <span class="fdb">kyc.id_type</span></td></tr>
+            <tr><td class="fname">id_number</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>证件号码 (服务端加密存储) <span class="fdb">kyc.id_number_enc / id_number_hash</span></td></tr>
+            <tr><td class="fname">id_issuing_country</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>证件签发国 ISO 3166-1 <span class="fdb">kyc.id_issuing_country</span></td></tr>
+            <tr><td class="fname">id_expiry_date</td><td><span class="ftype">Date</span></td><td class="fopt">N</td><td>证件有效期 YYYY-MM-DD <span class="fdb">kyc.id_expiry_date</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"data"</span>: {
+    <span class="jk">"kyc_id"</span>: <span class="jn">10001</span>,              <span class="jc">// kyc.id</span>
+    <span class="jk">"kyc_level"</span>: <span class="jn">2</span>,               <span class="jc">// L2</span>
+    <span class="jk">"status"</span>: <span class="jn">0</span>,                  <span class="jc">// 0=待审核</span>
+    <span class="jk">"required_doc_types"</span>: [<span class="jv">"ID_FRONT"</span>, <span class="jv">"ID_BACK"</span>, <span class="jv">"PROOF_OF_ADDRESS"</span>]
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 服务端对 <code>id_number</code> 执行: SHA256 → 存入 <code>id_number_hash</code> (查重)，AES加密 → 存入 <code>id_number_enc</code>。原文不落库。</div>
+      </div>
+    </div>
+
+    <!-- API 4.2 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/onboarding/kyc/{kycId}/documents</span>
+        <span class="api-desc">上传 KYC 文件</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request (multipart/form-data)</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">doc_type</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>文件类型 <span class="fdb">kyc_document.doc_type</span></td></tr>
+            <tr><td class="fname">file</td><td><span class="ftype">File</span></td><td class="freq">Y</td><td>文件 (JPG/PNG/PDF, 最大10MB)</td></tr>
+          </table>
+          <div class="enum-list">
+            <span class="enum-item">ID_FRONT</span>
+            <span class="enum-item">ID_BACK</span>
+            <span class="enum-item">SELFIE</span>
+            <span class="enum-item">PROOF_OF_ADDRESS</span>
+            <span class="enum-item">BANK_STATEMENT</span>
+          </div>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"data"</span>: {
+    <span class="jk">"document_id"</span>: <span class="jn">50001</span>,                            <span class="jc">// kyc_document.id</span>
+    <span class="jk">"doc_type"</span>: <span class="jv">"ID_FRONT"</span>,
+    <span class="jk">"file_path"</span>: <span class="jv">"oss://kyc/10001/id_front.jpg"</span>,    <span class="jc">// kyc_document.file_path</span>
+    <span class="jk">"file_hash"</span>: <span class="jv">"d41d8cd98f00b204..."</span>,             <span class="jc">// kyc_document.file_hash (MD5)</span>
+    <span class="jk">"review_status"</span>: <span class="jn">0</span>                                <span class="jc">// 0=待审</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="internal-arrow">⬇️ 全部文件上传完成 + 协议已签署 → 提交审核 ⬇️</div>
+
+    <!-- API 4.3 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--orange);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/onboarding/application/{applicationNo}/submit</span>
+        <span class="api-desc">提交审核 (触发 AML/IDV + 规则引擎)</span>
+      </div>
+      <div class="api-content">
+        <div class="story" style="background:var(--orange); border-color:var(--orange-deep); font-size:15px;">
+          <div class="char">🚀</div>
+          <strong>关键操作：</strong>此接口是"提交"按钮的后端。更新 <code>application.status → 1</code> (待KYC审核)，
+          然后异步触发 AML/IDV 第三方检查 + 审核规则引擎。前端轮询申请状态等待结果。
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"status"</span>: <span class="jn">1</span>,                          <span class="jc">// 1=待KYC审核</span>
+    <span class="jk">"message"</span>: <span class="jv">"Application submitted for review"</span>,
+    <span class="jk">"estimated_minutes"</span>: <span class="jn">5</span>                 <span class="jc">// 预估等待时间</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">🔒 提交前校验: 所有 required_doc_types 已上传 + 所有 is_required 协议已签署，否则 400</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">异步: 系统调用第三方 + 规则匹配 ⚡</div>
+</div>
+
+<!-- ============================================================ -->
+<!--         SCENE 5: AML/IDV + REVIEW RULE ENGINE                -->
+<!-- ============================================================ -->
+<div class="scene bg-orange" id="s5">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S5</div>
+    <div class="scene-meta">
+      <div class="scene-title">🔬 AML/IDV 检查 & 审核规则引擎 <span class="scene-tag system">系统内部</span></div>
+      <div class="scene-subtitle">Internal Pipeline &mdash; "Let me check if you're on any watchlists..."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--orange); border-color:var(--orange-deep);">
+      <div class="char">🤖</div>
+      <strong>剧情：</strong>此场景对用户透明，全部是系统内部调用。
+      <strong>Step A</strong>: 调用 IDV 服务 (Sumsub/Onfido) 验证证件真实性 →
+      <strong>Step B</strong>: 调用 AML 服务 (ComplyAdvantage/World-Check) 筛查制裁名单 →
+      <strong>Step C</strong>: 将结果写入 <code>t_onboarding_kyc</code> →
+      <strong>Step D</strong>: 触发 <code>t_onboarding_review_rule</code> 规则引擎做出决策 (自动通过/自动拒绝/转人工)。
+    </div>
+
+    <!-- BUSINESS FLOW -->
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程 (异步执行，用户看到"审核中"等待页)</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">⏳</div>
+          <div class="df-label">用户等待页</div>
+          <div class="df-detail"><b>用户看到:</b><br>"审核中，预计5分钟"<br>前端轮询状态</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">后台异步</span></div>
+        <div class="df-node ext">
+          <div class="df-icon">🪪</div>
+          <div class="df-label">身份真实性验证</div>
+          <div class="df-detail"><b>IDV 检查:</b><br>OCR 识别 vs 填写比对<br>活体检测防伪<br>证件有效期校验</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">串行</span></div>
+        <div class="df-node ext">
+          <div class="df-icon">🛡️</div>
+          <div class="df-label">反洗钱筛查</div>
+          <div class="df-detail"><b>AML 检查:</b><br>制裁/PEP 名单<br>负面新闻匹配<br>结合自报 is_pep 交叉验证</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">结果入库</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">完整证据链</div>
+          <div class="df-detail">AML/IDV 全字段<br>原始 JSON 留存<br><b>合规审计可回溯</b></div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">触发</span></div>
+        <div class="df-node check">
+          <div class="df-icon">⚡</div>
+          <div class="df-label">审核规则引擎</div>
+          <div class="df-detail"><b>业务决策:</b><br>9 条规则按优先级<br>短路命中即停</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">三路分支</span></div>
+        <div class="df-node service">
+          <div class="df-icon">🔀</div>
+          <div class="df-label">结果路由</div>
+          <div class="df-detail">✅ 自动通过→S7<br>❌ 自动拒绝→通知<br>👨‍💼 转人工→S6</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="duo">
+
+      <!-- API 5.1 IDV -->
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--purple);">
+          <span class="method internal">INTERNAL</span>
+          <span class="api-path">/internal/onboarding/kyc/{kycId}/idv-check</span>
+        </div>
+        <div class="api-content">
+          <div style="font-size:16px; font-weight:bold; margin-bottom:8px;">🪪 Step A: 身份验证 (IDV)</div>
+          <div class="param-section">
+            <div class="param-label cb">📡 第三方返回 → 写入 t_onboarding_kyc</div>
+            <table class="ptable">
+              <tr><th>返回字段</th><th>写入字段</th><th>说明</th></tr>
+              <tr><td class="fname">provider</td><td><span class="fdb">kyc.idv_provider</span></td><td>SUMSUB / ONFIDO / JUMIO</td></tr>
+              <tr><td class="fname">check_ref</td><td><span class="fdb">kyc.idv_check_ref</span></td><td>第三方记录ID</td></tr>
+              <tr><td class="fname">match_score</td><td><span class="fdb">kyc.idv_match_score</span></td><td>信息匹配度 0~100</td></tr>
+              <tr><td class="fname">liveness</td><td><span class="fdb">kyc.idv_liveness_result</span></td><td>0-未做 1-通过 2-失败</td></tr>
+              <tr><td class="fname">checked_at</td><td><span class="fdb">kyc.idv_checked_at</span></td><td>验证执行时间</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- API 5.2 AML -->
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--purple);">
+          <span class="method internal">INTERNAL</span>
+          <span class="api-path">/internal/onboarding/kyc/{kycId}/aml-screening</span>
+        </div>
+        <div class="api-content">
+          <div style="font-size:16px; font-weight:bold; margin-bottom:8px;">🛡️ Step B: 反洗钱筛查 (AML)</div>
+          <div class="param-section">
+            <div class="param-label cb">📡 第三方返回 → 写入 t_onboarding_kyc</div>
+            <table class="ptable">
+              <tr><th>返回字段</th><th>写入字段</th><th>说明</th></tr>
+              <tr><td class="fname">provider</td><td><span class="fdb">kyc.aml_provider</span></td><td>COMPLY_ADVANTAGE / WORLD_CHECK</td></tr>
+              <tr><td class="fname">screening_ref</td><td><span class="fdb">kyc.aml_screening_ref</span></td><td>第三方筛查记录ID</td></tr>
+              <tr><td class="fname">risk_score</td><td><span class="fdb">kyc.aml_risk_score</span></td><td>风险评分 0~100</td></tr>
+              <tr><td class="fname">hit_type</td><td><span class="fdb">kyc.aml_hit_type</span></td><td>CLEAN / PEP / SANCTION / ADVERSE_MEDIA / MULTIPLE</td></tr>
+              <tr><td class="fname">screened_at</td><td><span class="fdb">kyc.aml_screened_at</span></td><td>筛查执行时间</td></tr>
+              <tr><td class="fname">raw_response</td><td><span class="fdb">kyc.aml_raw_response</span></td><td>完整原始 JSON (合规审计)</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="internal-arrow">⬇️ AML/IDV 结果已入库 → 触发审核规则引擎 ⬇️</div>
+
+    <!-- API 5.3 Review Engine -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method internal">INTERNAL</span>
+        <span class="api-path">/internal/onboarding/application/{applicationNo}/review-decision</span>
+        <span class="api-desc">审核规则引擎决策</span>
+      </div>
+      <div class="api-content">
+        <div class="story" style="background:#fef3c7; border-color:#d97706; font-size:15px;">
+          <div class="char">⚡</div>
+          <strong>规则引擎逻辑：</strong>读取 <code>t_onboarding_review_rule</code> (status=1)，按 <code>priority</code> ASC 逐条匹配 <code>condition_expression</code>。
+          <strong>短路逻辑</strong>：命中即停止。如果所有规则未命中，执行兜底规则 (ALWAYS_TRUE)。
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 引擎决策结果</div>
+          <div class="json-block">
+            <span class="json-label">Decision Output</span>
+{
+  <span class="jk">"matched_rule_code"</span>: <span class="jv">"DEFAULT_PASS"</span>,      <span class="jc">// review_rule.rule_code</span>
+  <span class="jk">"matched_rule_name"</span>: <span class="jv">"兜底通过"</span>,           <span class="jc">// review_rule.rule_name</span>
+  <span class="jk">"condition_type"</span>: <span class="jv">"DEFAULT"</span>,               <span class="jc">// review_rule.condition_type</span>
+  <span class="jk">"action"</span>: <span class="jn">1</span>,                                <span class="jc">// 1=自动通过 2=自动拒绝 3=转人工</span>
+
+  <span class="jc">// action=2 时:</span>
+  <span class="jk">"auto_reject_reason"</span>: <span class="jb">null</span>,              <span class="jc">// review_rule.auto_reject_reason</span>
+
+  <span class="jc">// action=3 时:</span>
+  <span class="jk">"assign_to_role"</span>: <span class="jb">null</span>,                  <span class="jc">// review_rule.assign_to_role</span>
+  <span class="jk">"sla_hours"</span>: <span class="jb">null</span>,                       <span class="jc">// review_rule.sla_hours</span>
+
+  <span class="jk">"kyc_status_updated_to"</span>: <span class="jn">1</span>,              <span class="jc">// kyc.status → 1(自动通过)</span>
+  <span class="jk">"application_status_updated_to"</span>: <span class="jb">null</span>    <span class="jc">// 仅拒绝时→3</span>
+}
+          </div>
+        </div>
+        <div class="tip info">💡 引擎决策后自动触发: action=1 → Scene 7 开户前检查 | action=2 → 流程结束 | action=3 → Scene 6 人工审核</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">如 action=3 转人工 👨‍💼</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                  SCENE 6: MANUAL REVIEW                      -->
+<!-- ============================================================ -->
+<div class="scene bg-pink" id="s6">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S6</div>
+    <div class="scene-meta">
+      <div class="scene-title">👨‍💼 后台人工审核 <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">Manual Review &mdash; "A compliance officer will take a closer look."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--pink); border-color:var(--pink-deep);">
+      <div class="char">🔎</div>
+      <strong>剧情：</strong>审核员登录后台管理系统，在审核队列中看到待处理的申请。
+      查看用户资料、KYC文件、AML/IDV结果、触发的规则，做出"通过 / 拒绝 / 补充材料"的判定。
+      审核分配逻辑：<code>assign_to_role</code> → Admin服务查在线人员 → 按负载均衡分配 → 写入 <code>kyc.reviewer_id</code>。
+    </div>
+
+    <!-- BUSINESS FLOW -->
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">⏳</div>
+          <div class="df-label">用户等待通知</div>
+          <div class="df-detail"><b>用户看到:</b><br>"您的申请正在人工<br>审核中，请耐心等待"</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">同时</span></div>
+        <div class="df-node ext">
+          <div class="df-icon">👥</div>
+          <div class="df-label">智能派单</div>
+          <div class="df-detail"><b>分配策略:</b><br>按角色→查在线<br>→负载均衡<br>→地区/语言匹配</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">推送</span></div>
+        <div class="df-node user">
+          <div class="df-icon">👨‍💼</div>
+          <div class="df-label">审核员工作台</div>
+          <div class="df-detail"><b>审核员看到:</b><br>全部资料聚合视图<br>AML/IDV 结果标红<br>触发规则原因</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">判定</span></div>
+        <div class="df-node check">
+          <div class="df-icon">⚖️</div>
+          <div class="df-label">人工决策</div>
+          <div class="df-detail"><b>三种结果:</b><br>✅ 通过→S7<br>❌ 拒绝+原因<br>📎 补充材料</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">UPDATE</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">记录审核结果</div>
+          <div class="df-detail">kyc.status 更新<br>reviewer_id 记录<br>逐文件审核标记</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">通知</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">通知用户</div>
+          <div class="df-detail">通过→"恭喜!"<br>拒绝→"原因说明"<br>补材料→"请补充"</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 6.1 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/onboarding/review-queue</span>
+        <span class="api-desc">审核队列列表</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query Params</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td>筛选: 0-待审核 4-需补材料</td></tr>
+            <tr><td class="fname">reviewer_id</td><td><span class="ftype">Long</span></td><td>分配给我的</td></tr>
+            <tr><td class="fname">page / size</td><td><span class="ftype">Integer</span></td><td>分页</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">12</span>,
+    <span class="jk">"items"</span>: [{
+      <span class="jk">"application_no"</span>: <span class="jv">"APP-2026-00001"</span>,
+      <span class="jk">"kyc_id"</span>: <span class="jn">10001</span>,
+      <span class="jk">"legal_name"</span>: <span class="jv">"Zhang San"</span>,
+      <span class="jk">"country_of_residence"</span>: <span class="jv">"AU"</span>,
+      <span class="jk">"kyc_level"</span>: <span class="jn">2</span>,
+      <span class="jk">"aml_hit_type"</span>: <span class="jv">"PEP"</span>,
+      <span class="jk">"aml_risk_score"</span>: <span class="jn">65.5</span>,
+      <span class="jk">"triggered_rule"</span>: <span class="jv">"AML_PEP_HIT"</span>,    <span class="jc">// 触发的审核规则</span>
+      <span class="jk">"sla_deadline"</span>: <span class="jv">"2026-03-30T10:00:00Z"</span>,
+      <span class="jk">"created_at"</span>: <span class="jv">"2026-03-29T10:05:00Z"</span>
+    }]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 6.2 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/onboarding/kyc/{kycId}/review-detail</span>
+        <span class="api-desc">审核详情 (完整信息)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response (完整聚合数据)</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"data"</span>: {
+    <span class="jk">"application"</span>: {
+      <span class="jc">// t_onboarding_application 全部字段</span>
+      <span class="jk">"application_no"</span>: <span class="jv">"APP-2026-00001"</span>,
+      <span class="jk">"email"</span>: <span class="jv">"user@example.com"</span>,
+      <span class="jk">"user_type"</span>: <span class="jn">1</span>, <span class="jk">"legal_first_name"</span>: <span class="jv">"San"</span>, <span class="jk">"legal_last_name"</span>: <span class="jv">"Zhang"</span>,
+      <span class="jk">"nationality"</span>: <span class="jv">"CN"</span>, <span class="jk">"country_of_residence"</span>: <span class="jv">"AU"</span>,
+      <span class="jk">"annual_income_range"</span>: <span class="jn">4</span>, <span class="jk">"risk_tolerance"</span>: <span class="jn">3</span>
+      <span class="jc">// ... 全部个人信息字段</span>
+    },
+    <span class="jk">"kyc"</span>: {
+      <span class="jc">// t_onboarding_kyc AML/IDV结果</span>
+      <span class="jk">"kyc_level"</span>: <span class="jn">2</span>, <span class="jk">"id_type"</span>: <span class="jn">2</span>,
+      <span class="jk">"aml_provider"</span>: <span class="jv">"COMPLY_ADVANTAGE"</span>,
+      <span class="jk">"aml_risk_score"</span>: <span class="jn">65.5</span>,
+      <span class="jk">"aml_hit_type"</span>: <span class="jv">"PEP"</span>,
+      <span class="jk">"idv_provider"</span>: <span class="jv">"SUMSUB"</span>,
+      <span class="jk">"idv_match_score"</span>: <span class="jn">92.3</span>,
+      <span class="jk">"idv_liveness_result"</span>: <span class="jn">1</span>
+    },
+    <span class="jk">"documents"</span>: [
+      { <span class="jk">"doc_type"</span>: <span class="jv">"ID_FRONT"</span>, <span class="jk">"file_path"</span>: <span class="jv">"oss://..."</span>, <span class="jk">"review_status"</span>: <span class="jn">0</span> }
+    ],
+    <span class="jk">"agreements"</span>: [
+      { <span class="jk">"agreement_code"</span>: <span class="jv">"CLIENT_AGREEMENT"</span>, <span class="jk">"agreement_version"</span>: <span class="jv">"v2.1"</span>, <span class="jk">"is_accepted"</span>: <span class="jn">1</span> }
+    ],
+    <span class="jk">"triggered_rule"</span>: {
+      <span class="jk">"rule_code"</span>: <span class="jv">"AML_PEP_HIT"</span>,
+      <span class="jk">"rule_name"</span>: <span class="jv">"政治公众人物命中"</span>,
+      <span class="jk">"condition_type"</span>: <span class="jv">"AML_HIT"</span>,
+      <span class="jk">"priority"</span>: <span class="jn">20</span>
+    }
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 6.3 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/admin/onboarding/kyc/{kycId}/review</span>
+        <span class="api-desc">提交审核决定</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">decision</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>APPROVE / REJECT / REQUEST_SUPPLEMENT</td></tr>
+            <tr><td class="fname">reject_reason</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>拒绝原因 (decision=REJECT时必填) <span class="fdb">kyc.reject_reason</span></td></tr>
+            <tr><td class="fname">supplement_doc_types</td><td><span class="ftype">Array&lt;String&gt;</span></td><td class="fopt">N</td><td>需补充的文件类型 (decision=REQUEST_SUPPLEMENT时)</td></tr>
+            <tr><td class="fname">document_reviews</td><td><span class="ftype">Array</span></td><td class="fopt">N</td><td>逐文件审核结果</td></tr>
+            <tr><td class="fname">&nbsp;&nbsp;document_id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>文件ID <span class="fdb">kyc_document.id</span></td></tr>
+            <tr><td class="fname">&nbsp;&nbsp;review_status</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-合格 2-不合格 <span class="fdb">kyc_document.review_status</span></td></tr>
+            <tr><td class="fname">&nbsp;&nbsp;review_remark</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>审核备注 <span class="fdb">kyc_document.review_remark</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"kyc_status"</span>: <span class="jn">2</span>,                    <span class="jc">// 2=人工通过 | 3=被拒 | 4=需补材料</span>
+    <span class="jk">"reviewer_id"</span>: <span class="jn">8001</span>,               <span class="jc">// kyc.reviewer_id</span>
+    <span class="jk">"reviewed_at"</span>: <span class="jv">"2026-03-29T11:00:00Z"</span>, <span class="jc">// kyc.reviewed_at</span>
+    <span class="jk">"approved_at"</span>: <span class="jv">"2026-03-29T11:00:00Z"</span>, <span class="jc">// kyc.approved_at (仅通过时)</span>
+    <span class="jk">"next_action"</span>: <span class="jv">"ELIGIBILITY_CHECK"</span>   <span class="jc">// 通过→最终检查 | 拒绝→END | 补材料→SUPPLEMENT</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">KYC 通过 → 最终检查 → 开户 🚀</div>
+</div>
+
+<!-- ============================================================ -->
+<!--           SCENE 7: ACCOUNT CREATION & NOTIFICATION           -->
+<!-- ============================================================ -->
+<div class="scene bg-blue" id="s7">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S7</div>
+    <div class="scene-meta">
+      <div class="scene-title">🚀 最终检查 & 开户 & 通知 <span class="scene-tag system">系统内部</span> <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Final Check → Account Creation → Welcome! &mdash; "Congratulations, you can trade now!"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--blue); border-color:var(--blue-deep);">
+      <div class="char">🏦</div>
+      <strong>剧情：</strong>KYC通过 (自动或人工) 后，系统执行最终检查 (KYC + 文件 + 协议)。
+      全部满足则 <code>status → 2</code>，启动交易引擎开户流程 (幂等检查 → 乐观锁标记 → 调API → 同一事务回填 UID)。
+      开户成功后发送通知 + 触发下游事件。
+    </div>
+
+    <!-- BUSINESS FLOW -->
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node check">
+          <div class="df-icon">🔍</div>
+          <div class="df-label">三重最终校验</div>
+          <div class="df-detail"><b>检查清单:</b><br>① KYC 已通过<br>② 全部文件合格<br>③ 必签协议齐全</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">status→2</span></div>
+        <div class="df-node service">
+          <div class="df-icon">🔒</div>
+          <div class="df-label">并发安全控制</div>
+          <div class="df-detail"><b>防重机制:</b><br>幂等性前置检查<br>乐观锁 CAS 更新<br>affected_rows=0则退出</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">HTTP 调用</span></div>
+        <div class="df-node ext">
+          <div class="df-icon">🏦</div>
+          <div class="df-label">交易引擎开户</div>
+          <div class="df-detail"><b>外部 API:</b><br>POST create-user<br>返回 trading_user_uid<br>超时 30s</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">同一事务!</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">原子状态更新</div>
+          <div class="df-detail"><b>关键原则:</b><br>UID+status 同事务<br>成功→2 / 失败→3<br>失败记录 error_msg</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">发布事件</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">事件总线</div>
+          <div class="df-detail">ONBOARDING<br>_COMPLETED<br>失败→定时重试 ≤3次</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">异步消费</span></div>
+        <div class="df-node ext">
+          <div class="df-icon">🎉</div>
+          <div class="df-label">下游触发</div>
+          <div class="df-detail"><b>用户看到:</b><br>"恭喜开户成功!"<br>CRM/欢迎奖励<br>新手引导启动</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 7.1 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method internal">INTERNAL</span>
+        <span class="api-path">/internal/onboarding/application/{applicationNo}/eligibility-check</span>
+        <span class="api-desc">开户条件最终检查</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 检查结果</div>
+          <div class="json-block">
+            <span class="json-label">Eligibility Check</span>
+{
+  <span class="jk">"eligible"</span>: <span class="jb">true</span>,
+  <span class="jk">"checks"</span>: {
+    <span class="jk">"kyc_status"</span>:     { <span class="jk">"pass"</span>: <span class="jb">true</span>, <span class="jk">"value"</span>: <span class="jn">1</span>, <span class="jk">"required"</span>: <span class="jv">"IN(1,2)"</span> },
+    <span class="jk">"documents"</span>:       { <span class="jk">"pass"</span>: <span class="jb">true</span>, <span class="jk">"total"</span>: <span class="jn">3</span>, <span class="jk">"approved"</span>: <span class="jn">3</span> },
+    <span class="jk">"agreements"</span>:      { <span class="jk">"pass"</span>: <span class="jb">true</span>, <span class="jk">"required"</span>: <span class="jn">4</span>, <span class="jk">"signed"</span>: <span class="jn">4</span> }
+  },
+  <span class="jk">"application_status_updated_to"</span>: <span class="jn">2</span>    <span class="jc">// status → 2 (KYC已通过)</span>
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="internal-arrow">⬇️ 准入通过 → 幂等性前置检查 → 调用交易引擎 ⬇️</div>
+
+    <!-- API 7.2 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method internal">INTERNAL</span>
+        <span class="api-path">/internal/onboarding/application/{applicationNo}/create-account</span>
+        <span class="api-desc">调用交易引擎开户</span>
+      </div>
+      <div class="api-content">
+        <div class="story" style="background:#fecaca; border-color:#dc2626; font-size:14px;">
+          <div class="char">⚠️</div>
+          <strong>关键事务原则：</strong>拿到 <code>trading_user_uid</code> 后，必须在<strong>同一事务</strong>内更新 <code>account_status</code> 和 <code>trading_user_uid</code>。
+          绝不能先改状态再调接口，也不能分两次事务更新。
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Step 9.1~9.3 内部流程</div>
+          <table class="ptable">
+            <tr><th>步骤</th><th>操作</th><th>涉及字段</th></tr>
+            <tr><td class="fname">9.1 幂等检查</td><td>status=2 & account_status=0 才允许</td><td><span class="fdb">application.status</span> <span class="fdb">application.account_status</span></td></tr>
+            <tr><td class="fname">9.2 乐观锁标记</td><td>account_status → 1 WHERE account_status=0</td><td><span class="fdb">application.account_status</span></td></tr>
+            <tr><td class="fname">9.3 调API</td><td>POST /api/trading/create-user</td><td>发送 application_no, entity_id, email, legal_name...</td></tr>
+            <tr><td class="fname">9.4a 成功</td><td>account_status→2, 回填UID, 记录时间</td><td><span class="fdb">application.account_status</span> <span class="fdb">application.trading_user_uid</span> <span class="fdb">application.account_created_at</span></td></tr>
+            <tr><td class="fname">9.4b 失败</td><td>account_status→3, 记录错误, retry+1</td><td><span class="fdb">application.account_error_msg</span> <span class="fdb">application.account_retry_count</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">Success / Failure</span>
+<span class="jc">// 成功:</span>
+{
+  <span class="jk">"account_status"</span>: <span class="jn">2</span>,
+  <span class="jk">"trading_user_uid"</span>: <span class="jv">"TU-20260329-ABCDEF"</span>,    <span class="jc">// application.trading_user_uid</span>
+  <span class="jk">"account_created_at"</span>: <span class="jv">"2026-03-29T11:05:00Z"</span>  <span class="jc">// application.account_created_at</span>
+}
+<span class="jc">// 失败:</span>
+{
+  <span class="jk">"account_status"</span>: <span class="jn">3</span>,
+  <span class="jk">"account_error_msg"</span>: <span class="jv">"Connection timeout"</span>,    <span class="jc">// application.account_error_msg</span>
+  <span class="jk">"account_retry_count"</span>: <span class="jn">1</span>                       <span class="jc">// 最大重试3次，超过转人工</span>
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="internal-arrow">⬇️ account_status=2 开户成功 → 发送通知 ⬇️</div>
+
+    <!-- API 7.3 Notification Callback -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method internal">INTERNAL</span>
+        <span class="api-path">/internal/onboarding/application/{applicationNo}/notify-completion</span>
+        <span class="api-desc">开户完成通知 + 下游事件</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label cb">📡 触发的下游事件</div>
+          <div class="json-block">
+            <span class="json-label">Event Payload</span>
+{
+  <span class="jk">"event"</span>: <span class="jv">"ONBOARDING_COMPLETED"</span>,
+  <span class="jk">"application_no"</span>: <span class="jv">"APP-2026-00001"</span>,
+  <span class="jk">"entity_id"</span>: <span class="jn">1001</span>,
+  <span class="jk">"trading_user_uid"</span>: <span class="jv">"TU-20260329-ABCDEF"</span>,
+  <span class="jk">"email"</span>: <span class="jv">"user@example.com"</span>,
+  <span class="jk">"referral_code"</span>: <span class="jv">"REF123"</span>,               <span class="jc">// 传给CRM</span>
+  <span class="jk">"notifications"</span>: [<span class="jv">"EMAIL"</span>, <span class="jv">"SMS"</span>, <span class="jv">"PUSH"</span>],
+  <span class="jk">"downstream"</span>: [<span class="jv">"CRM_SYNC"</span>, <span class="jv">"WELCOME_BONUS"</span>, <span class="jv">"ONBOARDING_GUIDE"</span>]
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+</div>
+
+<!-- ============================================================ -->
+<!--                    ADMIN: RULE & TEMPLATE MGMT               -->
+<!-- ============================================================ -->
+<div class="scene bg-pink" id="admin">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num" style="background:#7c3aed;">A</div>
+    <div class="scene-meta">
+      <div class="scene-title">🛠️ 后台管理接口 <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">Admin Panel &mdash; KYC Rules / Review Rules / Agreement Templates / Audit Logs</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--pink); border-color:var(--pink-deep);">
+      <div class="char">👩‍💼</div>
+      <strong>剧情：</strong>券商合规管理员通过后台管理 KYC 准入规则、审核路由规则、协议模板。
+      所有配置变更自动写入 <code>t_onboarding_config_change_log</code> (只追加不修改不删除)，支持合规审计回溯。
+    </div>
+
+    <div style="font-size:22px; font-weight:bold; margin: 20px 0 12px; padding-left: 12px; border-left: 4px solid var(--purple-mid);">
+      ⚙️ KYC 准入规则管理 (t_onboarding_kyc_rule)
+    </div>
+
+    <div class="duo">
+      <!-- API A.1 -->
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--green);">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/admin/onboarding/kyc-rules</span>
+        </div>
+        <div class="api-content">
+          <div style="font-size:15px; color:#666;">列表查询，支持 status / match_country 筛选和分页。返回所有 kyc_rule 字段。</div>
+        </div>
+      </div>
+
+      <!-- API A.2 -->
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--blue);">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/admin/onboarding/kyc-rules</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📥 Request Body</div>
+            <table class="ptable">
+              <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+              <tr><td class="fname">rule_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>规则编码 <span class="fdb">kyc_rule.rule_code</span></td></tr>
+              <tr><td class="fname">match_country</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>匹配国家 (*=全部) <span class="fdb">kyc_rule.match_country</span></td></tr>
+              <tr><td class="fname">match_user_type</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-个人 2-企业 <span class="fdb">kyc_rule.match_user_type</span></td></tr>
+              <tr><td class="fname">match_nationality</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>匹配国籍 <span class="fdb">kyc_rule.match_nationality</span></td></tr>
+              <tr><td class="fname">match_income_range_min</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>最低收入范围 <span class="fdb">kyc_rule.match_income_range_min</span></td></tr>
+              <tr><td class="fname">match_income_range_max</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>最高收入范围 <span class="fdb">kyc_rule.match_income_range_max</span></td></tr>
+              <tr><td class="fname">required_kyc_level</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>要求KYC等级 <span class="fdb">kyc_rule.required_kyc_level</span></td></tr>
+              <tr><td class="fname">required_doc_types</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>所需文件类型 <span class="fdb">kyc_rule.required_doc_types</span></td></tr>
+              <tr><td class="fname">required_id_types</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>接受证件类型 <span class="fdb">kyc_rule.required_id_types</span></td></tr>
+              <tr><td class="fname">required_agreements</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>额外协议 <span class="fdb">kyc_rule.required_agreements</span></td></tr>
+              <tr><td class="fname">priority</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>优先级 <span class="fdb">kyc_rule.priority</span></td></tr>
+              <tr><td class="fname">effective_from</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>生效时间 <span class="fdb">kyc_rule.effective_from</span></td></tr>
+              <tr><td class="fname">effective_to</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>失效时间 <span class="fdb">kyc_rule.effective_to</span></td></tr>
+              <tr><td class="fname">remark</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>规则说明 <span class="fdb">kyc_rule.remark</span></td></tr>
+            </table>
+          </div>
+          <div class="tip info">💡 创建后自动写入 <code>t_onboarding_config_change_log</code> (change_action=CREATE)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUT KYC Rule -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/admin/onboarding/kyc-rules/{id}</span>
+        <span class="api-desc">更新 KYC 规则 (字段同 POST，变更写审计日志)</span>
+      </div>
+      <div class="api-content">
+        <div class="tip warn">⚠️ 每个变更字段分别写入 config_change_log: field_name + old_value + new_value，同时记录 created_by / updated_by / change_reason</div>
+      </div>
+    </div>
+
+    <div class="divider-doodle">- - - - - - - - - ✂️ - - - - - - - - -</div>
+
+    <div style="font-size:22px; font-weight:bold; margin: 20px 0 12px; padding-left: 12px; border-left: 4px solid var(--orange-mid);">
+      ⚡ 审核路由规则管理 (t_onboarding_review_rule)
+    </div>
+
+    <div class="duo">
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--green);">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/admin/onboarding/review-rules</span>
+        </div>
+        <div class="api-content"><div style="font-size:15px; color:#666;">列表查询，支持 condition_type / status 筛选和分页。按 priority ASC 排序。</div></div>
+      </div>
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--blue);">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/admin/onboarding/review-rules</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📥 Request Body</div>
+            <table class="ptable">
+              <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+              <tr><td class="fname">rule_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td><span class="fdb">review_rule.rule_code</span></td></tr>
+              <tr><td class="fname">rule_name</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td><span class="fdb">review_rule.rule_name</span></td></tr>
+              <tr><td class="fname">condition_type</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>AML_HIT / AML_SCORE / COUNTRY / DOC_QUALITY / DUPLICATE / AMOUNT / COMPOSITE / DEFAULT <span class="fdb">review_rule.condition_type</span></td></tr>
+              <tr><td class="fname">condition_expression</td><td><span class="ftype">JSON</span></td><td class="freq">Y</td><td>条件表达式 <span class="fdb">review_rule.condition_expression</span></td></tr>
+              <tr><td class="fname">action</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>1-自动通过 2-自动拒绝 3-转人工 <span class="fdb">review_rule.action</span></td></tr>
+              <tr><td class="fname">assign_to_role</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>COMPLIANCE_OFFICER / SENIOR_COMPLIANCE / MANAGER <span class="fdb">review_rule.assign_to_role</span></td></tr>
+              <tr><td class="fname">auto_reject_reason</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>自动拒绝原因 <span class="fdb">review_rule.auto_reject_reason</span></td></tr>
+              <tr><td class="fname">sla_hours</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>SLA时限(小时) <span class="fdb">review_rule.sla_hours</span></td></tr>
+              <tr><td class="fname">priority</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>执行优先级 <span class="fdb">review_rule.priority</span></td></tr>
+              <tr><td class="fname">effective_from</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td><span class="fdb">review_rule.effective_from</span></td></tr>
+              <tr><td class="fname">effective_to</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td><span class="fdb">review_rule.effective_to</span></td></tr>
+              <tr><td class="fname">remark</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td><span class="fdb">review_rule.remark</span></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/admin/onboarding/review-rules/{id}</span>
+        <span class="api-desc">更新审核规则 (字段同 POST，变更写审计日志)</span>
+      </div>
+      <div class="api-content"><div style="font-size:15px; color:#666;">支持更新 condition_expression / action / priority / status 等，每个变更字段逐一写入审计日志。</div></div>
+    </div>
+
+    <div class="divider-doodle">- - - - - - - - - ✂️ - - - - - - - - -</div>
+
+    <div style="font-size:22px; font-weight:bold; margin: 20px 0 12px; padding-left: 12px; border-left: 4px solid var(--blue-mid);">
+      📜 协议模板管理 (t_onboarding_agreement_template)
+    </div>
+
+    <div class="duo">
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--green);">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/admin/onboarding/agreement-templates</span>
+        </div>
+        <div class="api-content"><div style="font-size:15px; color:#666;">列表查询，支持 status / content_locale / applicable_countries 筛选。</div></div>
+      </div>
+      <div class="api-card">
+        <div class="api-bar" style="background:var(--blue);">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/admin/onboarding/agreement-templates</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📥 Request Body</div>
+            <table class="ptable">
+              <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+              <tr><td class="fname">agreement_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td><span class="fdb">template.agreement_code</span></td></tr>
+              <tr><td class="fname">agreement_name</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td><span class="fdb">template.agreement_name</span></td></tr>
+              <tr><td class="fname">current_version</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td><span class="fdb">template.current_version</span></td></tr>
+              <tr><td class="fname">content_url</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>文件地址 <span class="fdb">template.content_url</span></td></tr>
+              <tr><td class="fname">content_text</td><td><span class="ftype">Text</span></td><td class="fopt">N</td><td>纯文本内容 <span class="fdb">template.content_text</span></td></tr>
+              <tr><td class="fname">content_locale</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>语言 ISO 639-1 <span class="fdb">template.content_locale</span></td></tr>
+              <tr><td class="fname">is_required</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>0-可选 1-必签 <span class="fdb">template.is_required</span></td></tr>
+              <tr><td class="fname">force_resign</td><td><span class="ftype">Integer</span></td><td class="freq">Y</td><td>0-不要求 1-强制重签 <span class="fdb">template.force_resign</span></td></tr>
+              <tr><td class="fname">applicable_countries</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>适用国家 <span class="fdb">template.applicable_countries</span></td></tr>
+              <tr><td class="fname">applicable_environment</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-真实 2-模拟 <span class="fdb">template.applicable_environment</span></td></tr>
+              <tr><td class="fname">sort_order</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>排序 <span class="fdb">template.sort_order</span></td></tr>
+              <tr><td class="fname">effective_at</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>生效时间 <span class="fdb">template.effective_at</span></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/admin/onboarding/agreement-templates/{id}</span>
+        <span class="api-desc">更新协议模板 (版本升级/强制重签/废弃 均走此接口)</span>
+      </div>
+      <div class="api-content">
+        <div class="tip warn">⚠️ 版本升级时写入 change_action=VERSION_UPGRADE + 逐字段 old/new + 整体 snapshot。开启重签写 change_action=FORCE_RESIGN。废弃写 change_action=DISABLE。</div>
+      </div>
+    </div>
+
+    <div class="divider-doodle">- - - - - - - - - ✂️ - - - - - - - - -</div>
+
+    <div style="font-size:22px; font-weight:bold; margin: 20px 0 12px; padding-left: 12px; border-left: 4px solid var(--yellow-mid);">
+      📋 配置变更审计日志 (t_onboarding_config_change_log)
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/onboarding/audit-logs</span>
+        <span class="api-desc">查询审计日志</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query Params</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">config_table</td><td><span class="ftype">String</span></td><td>筛选配置表 <span class="fdb">log.config_table</span></td></tr>
+            <tr><td class="fname">config_code</td><td><span class="ftype">String</span></td><td>筛选业务编码 <span class="fdb">log.config_code</span></td></tr>
+            <tr><td class="fname">change_action</td><td><span class="ftype">String</span></td><td>筛选变更类型 <span class="fdb">log.change_action</span></td></tr>
+            <tr><td class="fname">changed_by</td><td><span class="ftype">String</span></td><td>筛选操作人 <span class="fdb">log.changed_by</span></td></tr>
+            <tr><td class="fname">start_date / end_date</td><td><span class="ftype">DateTime</span></td><td>时间范围 <span class="fdb">log.created_at</span></td></tr>
+            <tr><td class="fname">page / size</td><td><span class="ftype">Integer</span></td><td>分页</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">156</span>,
+    <span class="jk">"items"</span>: [{
+      <span class="jk">"id"</span>: <span class="jn">1001</span>,
+      <span class="jk">"config_table"</span>: <span class="jv">"onboarding_agreement_template"</span>,  <span class="jc">// log.config_table</span>
+      <span class="jk">"config_id"</span>: <span class="jn">2</span>,                                    <span class="jc">// log.config_id</span>
+      <span class="jk">"config_code"</span>: <span class="jv">"RISK_DISCLOSURE"</span>,                  <span class="jc">// log.config_code</span>
+      <span class="jk">"change_action"</span>: <span class="jv">"VERSION_UPGRADE"</span>,                <span class="jc">// log.change_action</span>
+      <span class="jk">"field_name"</span>: <span class="jv">"current_version"</span>,                   <span class="jc">// log.field_name</span>
+      <span class="jk">"old_value"</span>: <span class="jv">"v2.0"</span>,                               <span class="jc">// log.old_value</span>
+      <span class="jk">"new_value"</span>: <span class="jv">"v3.0"</span>,                               <span class="jc">// log.new_value</span>
+      <span class="jk">"snapshot_before"</span>: { <span class="jc">/* ... */</span> },                   <span class="jc">// log.snapshot_before</span>
+      <span class="jk">"snapshot_after"</span>: { <span class="jc">/* ... */</span> },                    <span class="jc">// log.snapshot_after</span>
+      <span class="jk">"changed_by"</span>: <span class="jv">"legal_lisi"</span>,                        <span class="jc">// log.changed_by</span>
+      <span class="jk">"changed_by_name"</span>: <span class="jv">"李四"</span>,                         <span class="jc">// log.changed_by_name</span>
+      <span class="jk">"changed_by_role"</span>: <span class="jv">"LEGAL"</span>,                        <span class="jc">// log.changed_by_role</span>
+      <span class="jk">"change_reason"</span>: <span class="jv">"ASIC RG227 2024年修订"</span>,           <span class="jc">// log.change_reason</span>
+      <span class="jk">"approval_ref"</span>: <span class="jv">"LEGAL-2024-089"</span>,                  <span class="jc">// log.approval_ref</span>
+      <span class="jk">"change_ip"</span>: <span class="jv">"10.0.1.55"</span>,                          <span class="jc">// log.change_ip</span>
+      <span class="jk">"created_at"</span>: <span class="jv">"2026-03-28T14:30:00Z"</span>               <span class="jc">// log.created_at</span>
+    }]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                         FOOTER                               -->
+<!-- ============================================================ -->
+<div class="footer">
+  <div style="font-size:36px; margin-bottom:8px;">📖 🎨 🏗️ ✅</div>
+  <div style="font-size:20px;">准入系统 (Onboarding Service) API 接口设计</div>
+  <div style="margin-top:4px;">23 APIs &middot; 7 Scenes &middot; 8 DB Tables &middot; Full Field Coverage</div>
+  <div style="margin-top:8px;">
+    <span style="display:inline-block; width:14px; height:14px; background:var(--blue); border:1.5px solid #cbd5e1; border-radius:4px; vertical-align:middle;"></span> C端接口
+    <span style="display:inline-block; width:14px; height:14px; background:var(--purple); border:1.5px solid #cbd5e1; border-radius:4px; vertical-align:middle; margin-left:16px;"></span> 系统内部
+    <span style="display:inline-block; width:14px; height:14px; background:var(--pink); border:1.5px solid #cbd5e1; border-radius:4px; vertical-align:middle; margin-left:16px;"></span> Admin后台
+    <span style="display:inline-block; width:14px; height:14px; background:var(--green); border:1.5px solid #cbd5e1; border-radius:4px; vertical-align:middle; margin-left:16px;"></span> GET
+    <span style="display:inline-block; width:14px; height:14px; background:var(--blue); border:1.5px solid #cbd5e1; border-radius:4px; vertical-align:middle; margin-left:16px;"></span> POST
+    <span style="display:inline-block; width:14px; height:14px; background:var(--yellow); border:1.5px solid #cbd5e1; border-radius:4px; vertical-align:middle; margin-left:16px;"></span> PUT
+  </div>
+  <div style="margin-top:10px; font-size:13px; color:#ccc;">Generated on 2026-03-29 &middot; Onboarding Service v1.0</div>
+</div>
+
+</div>
+</body>
+</html>

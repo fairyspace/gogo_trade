@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>用户体系 API 接口设计 - 场景式漫画文档</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+    --ink: #1a1a2e;
+    --paper: #fefcf3;
+    --blue: #dbeafe; --blue-mid: #93c5fd; --blue-deep: #2563eb; --blue-dark: #1e3a5f;
+    --green: #dcfce7; --green-mid: #86efac; --green-deep: #16a34a; --green-dark: #166534;
+    --yellow: #fef9c3; --yellow-mid: #fde047; --yellow-deep: #ca8a04; --yellow-dark: #854d0e;
+    --purple: #f3e8ff; --purple-mid: #c4b5fd; --purple-deep: #7c3aed; --purple-dark: #5b21b6;
+    --pink: #fce7f3; --pink-mid: #f9a8d4; --pink-deep: #ec4899; --pink-dark: #9d174d;
+    --orange: #ffedd5; --orange-mid: #fdba74; --orange-deep: #ea580c; --orange-dark: #9a3412;
+    --red: #fecaca; --red-deep: #dc2626; --red-dark: #991b1b;
+    --slate: #f1f5f9; --slate-deep: #475569;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    background-image: radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 22px 22px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: var(--ink);
+    padding: 24px;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  .hero {
+    text-align: center;
+    padding: 40px 20px 30px;
+    position: relative;
+  }
+  .hero h1 {
+    font-family: var(--font-hand);
+    font-size: 54px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    color: var(--ink);
+    position: relative;
+    display: inline-block;
+  }
+  .hero h1::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: -12px; right: -12px;
+    height: 6px;
+    background: linear-gradient(90deg, #f9a8d4, #fde68a, #93c5fd, #c4b5fd);
+    border-radius: 4px;
+    transform: rotate(-0.4deg);
+    opacity: 0.8;
+  }
+  .hero .tagline {
+    font-family: var(--font-ui);
+    font-size: 17px;
+    font-weight: 600;
+    color: #666;
+    margin-top: 16px;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.5;
+  }
+  .hero .badge-row {
+    display: flex; justify-content: center; gap: 10px; margin-top: 16px;
+    flex-wrap: wrap; overflow-x: visible; padding: 4px 0 8px;
+  }
+  .hero .badge {
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-ui);
+    border: 1.5px solid rgba(0,0,0,0.12);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    white-space: nowrap;
+  }
+
+  .nav-bar {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+    margin: 10px auto 30px; max-width: 1300px;
+    overflow-x: visible;
+    padding: 4px 0 10px;
+  }
+  .nav-bar a {
+    text-decoration: none;
+    padding: 6px 18px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .nav-bar a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+    border-color: #93c5fd;
+  }
+
+  .scene {
+    background: #fff;
+    border: 2.5px solid #d1d5db;
+    border-radius: 22px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+    position: relative;
+  }
+  .scene-header {
+    padding: 20px 28px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    border-bottom: 2px dashed #e5e7eb;
+    flex-wrap: wrap;
+  }
+  .scene-num {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700;
+    border: 2.5px solid #fff;
+    box-shadow: 0 3px 10px rgba(238,90,36,0.35);
+    font-family: var(--font-ui);
+    flex-shrink: 0;
+  }
+  .scene-meta { flex: 1; min-width: 0; }
+  .scene-title {
+    font-family: var(--font-hand); font-size: 32px; font-weight: 400;
+    white-space: normal; line-height: 1.3;
+  }
+  .scene-subtitle { font-size: 15px; color: #555; font-family: var(--font-ui); font-weight: 600; }
+  .scene-body { padding: 20px 28px 28px; }
+
+  .tape {
+    position: absolute; width: 80px; height: 26px;
+    background: rgba(255,222,89,0.55);
+    border: 1.5px solid rgba(200,170,50,0.35);
+    border-radius: 2px; z-index: 2;
+  }
+  .tape-tr { top: -8px; right: 28px; transform: rotate(-32deg); }
+  .tape-tl { top: -8px; left: 28px; transform: rotate(32deg); }
+
+  .story {
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1.5px dashed;
+    margin-bottom: 20px;
+    font-size: 17px;
+    line-height: 1.8;
+    position: relative;
+  }
+  .story .char {
+    font-size: 36px;
+    float: left;
+    margin-right: 10px;
+    margin-top: -4px;
+  }
+
+  .api-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    position: relative;
+    transition: box-shadow .2s;
+  }
+  .api-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .api-card:last-child { margin-bottom: 0; }
+  .api-bar {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 18px;
+    font-size: 17px;
+    font-weight: 600;
+    border-bottom: 1.5px solid #e2e8f0;
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .method {
+    display: inline-block;
+    padding: 3px 14px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: 0.5px;
+    border: 1.5px solid;
+    flex-shrink: 0;
+  }
+  .method.get { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .method.post { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .method.put { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+  .method.delete { background: var(--red); color: var(--red-dark); border-color: var(--red-deep); }
+  .method.internal { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .api-path {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 14px; font-weight: 500;
+    color: var(--ink);
+    white-space: normal;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+  .api-desc {
+    margin-left: auto;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    white-space: normal;
+    flex: 0 1 auto;
+    text-align: right;
+    min-width: 120px;
+  }
+  .api-content { padding: 16px 18px; }
+
+  .param-section { margin-bottom: 16px; }
+  .param-label {
+    font-size: 16px; font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 8px;
+    display: inline-block;
+    margin-bottom: 8px;
+    border: 1.5px solid;
+  }
+  .param-label.req { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .param-label.res { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .param-label.path { background: var(--orange); color: var(--orange-dark); border-color: var(--orange-deep); }
+  .param-label.query { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .param-label.header { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+  .param-label.cb { background: var(--pink); color: var(--pink-dark); border-color: var(--pink-deep); }
+
+  .ptable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 15px;
+  }
+  .ptable th {
+    background: linear-gradient(135deg, #f1f5f9, #e8edf3);
+    color: #475569;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 13px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border-bottom: 1.5px solid #cbd5e1;
+  }
+  .ptable td {
+    padding: 7px 12px;
+    border-bottom: 1.5px dashed #e2e8f0;
+    vertical-align: top;
+  }
+  .ptable tr:last-child td { border-bottom: none; }
+  .ptable tr:nth-child(even) td { background: #fafafa; }
+  .ptable .fname {
+    font-weight: 600; color: var(--blue-deep);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+  }
+  .ptable .ftype {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--purple-deep);
+    background: var(--purple);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .ptable .freq { color: var(--red-deep); font-weight: bold; font-size: 12px; }
+  .ptable .fopt { color: #999; font-size: 12px; }
+  .ptable .fdb {
+    font-size: 12px;
+    color: var(--slate-deep);
+    background: var(--slate);
+    padding: 1px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 2px;
+  }
+
+  .json-block {
+    background: #f8fafc;
+    color: #334155;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: visible;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    border: 1.5px solid #e2e8f0;
+    position: relative;
+    margin-top: 8px;
+  }
+  .json-block .jk { color: #2563eb; }
+  .json-block .jv { color: #16a34a; }
+  .json-block .jn { color: #d97706; }
+  .json-block .jc { color: #94a3b8; font-style: italic; }
+  .json-block .jb { color: #c026d3; }
+  .json-label {
+    position: absolute; top: 8px; right: 12px;
+    font-size: 11px; color: #94a3b8;
+    font-family: var(--font-ui);
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  .scene-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    height: auto; min-height: 44px;
+    position: relative;
+    padding: 6px 0 10px;
+  }
+  .scene-arrow .sa-line {
+    width: 3px; flex: 0 0 28px; min-height: 28px;
+    background: repeating-linear-gradient(to bottom, #94a3b8 0px, #94a3b8 5px, transparent 5px, transparent 10px);
+  }
+  .scene-arrow .sa-head {
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid #94a3b8;
+    flex-shrink: 0;
+  }
+  .scene-arrow .sa-label {
+    position: static;
+    margin-top: 8px;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 4px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: #475569;
+    white-space: normal;
+    max-width: 100%;
+    overflow-x: visible;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .tip {
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    margin-top: 12px;
+    border: 1.5px solid;
+    border-left-width: 4px;
+  }
+  .tip.warn { background: #fef3c7; border-color: #d97706; color: #92400e; }
+  .tip.info { background: #dbeafe; border-color: #2563eb; color: #1e3a5f; }
+  .tip.ok { background: #dcfce7; border-color: #16a34a; color: #166534; }
+  .tip.danger { background: #fecaca; border-color: #dc2626; color: #991b1b; }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:900px){
+    .duo { grid-template-columns: 1fr; }
+    .hero .tagline { white-space: normal; }
+    .scene-title { white-space: normal; }
+  }
+
+  .enum-list {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+  }
+  .enum-item {
+    background: #fff;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: 13px;
+    color: #475569;
+  }
+
+  .internal-arrow {
+    text-align: center; padding: 8px 0;
+    font-size: 18px; color: #94a3b8;
+  }
+
+  .footer {
+    text-align: center; margin-top: 40px; padding: 20px;
+    color: #aaa; font-size: 15px;
+  }
+
+  .scene-tag {
+    display: inline-block;
+    font-size: 12px; font-weight: bold;
+    padding: 2px 10px;
+    border-radius: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .scene-tag.client { background: var(--blue); color: var(--blue-deep); border: 1px solid var(--blue-mid); }
+  .scene-tag.server { background: var(--green); color: var(--green-deep); border: 1px solid var(--green-mid); }
+  .scene-tag.admin { background: var(--pink); color: var(--pink-deep); border: 1px solid var(--pink-mid); }
+  .scene-tag.system { background: var(--purple); color: var(--purple-deep); border: 1px solid var(--purple-mid); }
+
+  .divider-doodle {
+    text-align: center; padding: 20px 0; font-size: 16px; color: #d1d5db;
+    border-top: 1.5px dashed #e5e7eb; margin-top: 10px;
+  }
+
+  .dataflow {
+    margin: 0 0 22px 0;
+    padding: 18px;
+    background: linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%);
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    overflow-x: visible;
+  }
+  .dataflow-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 14px;
+    color: #475569;
+  }
+  .df-chain {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 4px;
+    min-width: 0;
+  }
+  .df-node {
+    flex: 0 0 auto;
+    width: 128px;
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    border: 1.5px solid;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .df-node .df-icon { font-size: 24px; }
+  .df-node .df-label { font-size: 13px; font-weight: bold; line-height: 1.3; }
+  .df-node .df-detail {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.4;
+    font-family: var(--font-ui);
+  }
+  .df-node.user { background: #dbeafe; border-color: #93c5fd; }
+  .df-node.gateway { background: #fef3c7; border-color: #fde047; }
+  .df-node.service { background: #dcfce7; border-color: #86efac; }
+  .df-node.crypto { background: #fce7f3; border-color: #f9a8d4; }
+  .df-node.db { background: #e0e7ff; border-color: #a5b4fc; }
+  .df-node.mq { background: #f3e8ff; border-color: #c4b5fd; }
+  .df-node.ext { background: #ffedd5; border-color: #fdba74; }
+  .df-node.check { background: #ccfbf1; border-color: #5eead4; }
+  .df-node.admin { background: #fce7f3; border-color: #f9a8d4; }
+  .df-node.cache { background: #fef3c7; border-color: #fbbf24; }
+
+  .df-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .df-arrow::before {
+    content: '';
+    width: 24px; height: 2px;
+    background: #94a3b8;
+  }
+  .df-arrow::after {
+    content: '';
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid #94a3b8;
+  }
+  .df-arrow .df-alabel {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #94a3b8;
+    white-space: nowrap;
+    font-family: var(--font-ui);
+  }
+
+  @page { size: A4 portrait; margin: 10mm 11mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body {
+      width: 100% !important; max-width: 100% !important;
+      margin: 0 !important; padding: 0 !important;
+      background: #fff !important; background-image: none !important;
+      font-size: 9.5pt;
+    }
+    .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+    .tape { display: none !important; }
+    .hero { padding: 4mm 0 !important; page-break-after: avoid; }
+    .hero h1 { font-size: 20pt !important; }
+    .hero .tagline { font-size: 9pt !important; }
+    .nav-bar { justify-content: center !important; gap: 6px !important; page-break-inside: avoid; }
+    .nav-bar a { padding: 4px 12px !important; font-size: 9pt !important; }
+    .scene { page-break-inside: avoid; break-inside: avoid; box-shadow: none !important; margin-bottom: 6mm !important; border-width: 1.5px !important; }
+    .scene-header { padding: 10px 14px !important; }
+    .scene-body { padding: 12px 14px 16px !important; }
+    .scene-title { font-size: 13pt !important; }
+    .scene-subtitle { font-size: 9pt !important; }
+    .api-card { box-shadow: none !important; }
+    .api-bar { padding: 8px 12px !important; font-size: 10pt !important; }
+    .api-path { font-size: 9pt !important; }
+    .ptable { font-size: 9pt !important; }
+    .ptable th, .ptable td { padding: 5px 8px !important; }
+    .json-block { font-size: 7.5pt !important; line-height: 1.45 !important; overflow: visible !important; white-space: pre-wrap; word-break: break-all; }
+    .dataflow { padding: 10px !important; page-break-inside: avoid; }
+    .df-node { width: 108px !important; padding: 6px 4px !important; }
+    .df-node .df-label { font-size: 11px !important; }
+    .df-node .df-detail { font-size: 9px !important; }
+    .story { font-size: 10pt !important; }
+    .duo { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .footer { margin-top: 6mm; font-size: 9pt; }
+    a { color: inherit !important; text-decoration: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <h1>🪪 用户体系 API 接口设计</h1>
+  <div class="tagline">User Service Interface Design &mdash; Scene-based Comic Documentation</div>
+  <div class="badge-row">
+    <span class="badge" style="background:var(--blue);">30+ APIs</span>
+    <span class="badge" style="background:var(--green);">9 DB Tables</span>
+    <span class="badge" style="background:var(--yellow);">9 Scenes</span>
+    <span class="badge" style="background:var(--purple);">Multi-Entity</span>
+    <span class="badge" style="background:var(--pink);">MQ 事件驱动</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav-bar">
+  <a href="#s1">S1 注册与生命周期</a>
+  <a href="#s2">S2 凭证管理</a>
+  <a href="#s3">S3 登录鉴权</a>
+  <a href="#s4">S4 OAuth 授权</a>
+  <a href="#s5">S5 API Key</a>
+  <a href="#s6">S6 设备管理</a>
+  <a href="#s7">S7 偏好 & 适当性</a>
+  <a href="#s8">S8 标签分群</a>
+  <a href="#s9">S9 审计日志</a>
+  <a href="#admin">Admin</a>
+  <a href="#mq">MQ 事件</a>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 1: 注册与生命周期                     -->
+<!-- ============================================================ -->
+<div class="scene bg-blue" id="s1">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S1</div>
+    <div class="scene-meta">
+      <div class="scene-title">👤 用户注册 & 生命周期 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Registration & Lifecycle &mdash; "Hello world, I'm new here."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--blue); border-color:var(--blue-deep);">
+      <div class="char">🧑‍💻</div>
+      <strong>剧情：</strong>用户通过邮箱/手机注册,网关按品牌/域名/App 标识确定 <code>entity_id</code>(多监管实体隔离)。
+      系统创建 <code>t_user</code>(初始 <code>status=0</code> 未激活)和 <code>t_user_preference</code> 记录。
+      激活后状态进入 <code>1-正常</code>;后续的<strong>冻结/解冻/注销冷静期/已注销</strong>构成完整生命周期。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 业务流转过程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📱</div>
+          <div class="df-label">用户注册</div>
+          <div class="df-detail">邮箱/手机<br>选择品牌域名<br><b>用户等待 ~3s</b></div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">HTTPS</span></div>
+        <div class="df-node gateway">
+          <div class="df-icon">🚪</div>
+          <div class="df-label">安全网关</div>
+          <div class="df-detail"><b>防刷策略:</b><br>同 IP 60s 限 3 次<br>识别 entity_id</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">RPC</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">业务校验</div>
+          <div class="df-detail"><b>核心逻辑:</b><br>邮箱/手机查重<br>雪花生成 user_uid<br>初始化 preference</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">INSERT</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">创建用户</div>
+          <div class="df-detail">t_user<br>status=0 未激活<br>记录 IP/渠道</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">异步</span></div>
+        <div class="df-node mq">
+          <div class="df-icon">📨</div>
+          <div class="df-label">发送激活</div>
+          <div class="df-detail">激活链接 / SMS<br>6 位有效 5 分钟<br>失败自动重试</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 1.1: 注册 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/users/register</span>
+        <span class="api-desc">注册新用户</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label header">📮 Header</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">X-Entity-Id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>法律实体ID (对应牌照主体) <span class="fdb">user.entity_id</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">email</td><td><span class="ftype">String</span></td><td class="fopt">N*</td><td>邮箱(与手机号二选一) <span class="fdb">user.email</span></td></tr>
+            <tr><td class="fname">phone_country_code</td><td><span class="ftype">String</span></td><td class="fopt">N*</td><td>国际区号,如 +86 <span class="fdb">user.phone_country_code</span></td></tr>
+            <tr><td class="fname">phone_number</td><td><span class="ftype">String</span></td><td class="fopt">N*</td><td>手机号码 <span class="fdb">user.phone_number</span></td></tr>
+            <tr><td class="fname">password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>明文密码(服务端 bcrypt 加密)</td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>邮箱/短信验证码</td></tr>
+            <tr><td class="fname">user_type</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-个人(默认) 2-企业 <span class="fdb">user.user_type</span></td></tr>
+            <tr><td class="fname">register_channel</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>WEB / IOS / ANDROID / API / ADMIN / OAUTH <span class="fdb">user.register_channel</span></td></tr>
+            <tr><td class="fname">introducing_broker_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>IB 邀请码(冗余快照) <span class="fdb">user.introducing_broker_id</span></td></tr>
+            <tr><td class="fname">referral_code</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>通用推荐码</td></tr>
+          </table>
+          <div class="enum-list">
+            <span class="enum-item">register_channel: WEB</span>
+            <span class="enum-item">IOS</span>
+            <span class="enum-item">ANDROID</span>
+            <span class="enum-item">API</span>
+            <span class="enum-item">ADMIN</span>
+            <span class="enum-item">OAUTH</span>
+          </div>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+    <span class="jk">"user_uid"</span>: <span class="jv">"u_a1b2c3d4e5f6"</span>,     <span class="jc">// 雪花算法生成的对外ID</span>
+    <span class="jk">"entity_id"</span>: <span class="jn">1001</span>,
+    <span class="jk">"status"</span>: <span class="jn">0</span>,                       <span class="jc">// 0-未激活 1-正常 2-冻结 3-注销冷静期 4-已注销</span>
+    <span class="jk">"mfa_enabled"</span>: <span class="jn">0</span>,
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-06-26T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 系统自动记录 <code>register_ip</code>(从 X-Forwarded-For 取)与 <code>register_channel</code>;同一时刻仅创建用户,不创建 <code>credential</code>,激活时由前端选择密码/TOTP/Passkey 初始化</div>
+      </div>
+    </div>
+
+    <!-- API 1.2: 查询用户 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}</span>
+        <span class="api-desc">查询用户详情</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label path">📍 Path Params</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">userId</td><td><span class="ftype">Long</span></td><td>系统内部主键 ID (或 <code>user_uid</code>) <span class="fdb">user.id / user.user_uid</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+    <span class="jk">"user_uid"</span>: <span class="jv">"u_a1b2c3d4e5f6"</span>,
+    <span class="jk">"entity_id"</span>: <span class="jn">1001</span>,
+    <span class="jk">"email"</span>: <span class="jv">"user@example.com"</span>,
+    <span class="jk">"phone_country_code"</span>: <span class="jv">"+86"</span>,
+    <span class="jk">"phone_number"</span>: <span class="jv">"138****8000"</span>,      <span class="jc">// 返回脱敏</span>
+    <span class="jk">"user_type"</span>: <span class="jn">1</span>,                       <span class="jc">// 1-个人 2-企业</span>
+    <span class="jk">"status"</span>: <span class="jn">1</span>,                           <span class="jc">// 全局状态</span>
+    <span class="jk">"kyc_level"</span>: <span class="jn">2</span>,                         <span class="jc">// 0-未认证 1-L1 2-L2 3-L3</span>
+    <span class="jk">"mfa_enabled"</span>: <span class="jn">1</span>,
+    <span class="jk">"introducing_broker_id"</span>: <span class="jn">5001</span>,
+    <span class="jk">"register_channel"</span>: <span class="jv">"WEB"</span>,
+    <span class="jk">"last_login_at"</span>: <span class="jv">"2026-06-26T08:30:00.000Z"</span>,
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-06-20T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 返回 <code>email</code> 是否脱敏视调用方决定;C 端仅返回末四位,Admin 端可看全量;包含 <code>security_stamp</code> 字段仅供内部服务使用,不暴露给 C 端</div>
+      </div>
+    </div>
+
+    <!-- API 1.3: 注销冷静期 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--orange);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/users/{userId}/deactivate</span>
+        <span class="api-desc">申请注销(进入冷静期)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>注销原因,审计用</td></tr>
+            <tr><td class="fname">password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>二次确认密码(防误操作)</td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证码</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"status"</span>: <span class="jn">3</span>,                            <span class="jc">// 进入注销冷静期</span>
+    <span class="jk">"cooldown_until"</span>: <span class="jv">"2026-07-11T10:00:00.000Z"</span>,  <span class="jc">// 默认 15 天后定稿</span>
+    <span class="jk">"can_cancel"</span>: <span class="jn">true</span>,                     <span class="jc">// 冷静期内可撤回</span>
+    <span class="jk">"cancel_url"</span>: <span class="jv">"https://example.com/withdraw"</span>  <span class="jc">// 邮件/短信中的撤回链接</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 同时会:① 刷 <code>security_stamp</code>(所有 Token 失效) ② 清空 <code>t_user_device</code> ③ MQ 发 <code>UserDeactivateRequestedEvent</code></div>
+      </div>
+    </div>
+
+    <!-- API 1.4: 撤回注销 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/users/{userId}/cancel-deactivation</span>
+        <span class="api-desc">撤回注销申请</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">cancel_token</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>邮件/SMS 中的撤回令牌</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"status"</span>: <span class="jn">1</span>,                          <span class="jc">// 恢复 1-正常</span>
+    <span class="jk">"restored_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip ok">✅ 静默期内 <code>status=3</code> 恢复 <code>status=1</code>;刷 <code>security_stamp</code>;触发 <code>UserReactivatedEvent</code></div>
+      </div>
+    </div>
+
+    <!-- API 1.5: 冻结 / 解冻 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/users/{userId}/status</span>
+        <span class="api-desc">冻结 / 解冻用户</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">action</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>FREEZE / UNFREEZE</td></tr>
+            <tr><td class="fname">reason</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>原因:AML_HIT / REGULATORY / RISK_ESCALATION / COMPLAINT</td></tr>
+            <tr><td class="fname">operator_id</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>操作员工号(审计用)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+    <span class="jk">"status"</span>: <span class="jn">2</span>,                          <span class="jc">// 2-全局冻结 / 1-正常</span>
+    <span class="jk">"new_security_stamp"</span>: <span class="jv">"v_2026_06_27_a1b2c3"</span>,
+    <span class="jk">"frozen_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 该接口仅 Admin / 内部 RPC 调用;C 端不解冻只能查看状态;冻结会刷 <code>security_stamp</code> 让所有历史 Token 失效</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">注册后开始凭证管理 + 登录 🔐</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 2: 凭证管理                           -->
+<!-- ============================================================ -->
+<div class="scene bg-green" id="s2">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S2</div>
+    <div class="scene-meta">
+      <div class="scene-title">🔐 凭证管理(多态) <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Credential Management &mdash; "Passwords, TOTP, API Keys, Passkeys."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--green); border-color:var(--green-deep);">
+      <div class="char">🔑</div>
+      <strong>剧情：</strong>密码 / TOTP / API Key / Passkey 全部抽象为统一 <code>t_user_credential</code> 表,<code>cred_identifier</code> 用与用户绑定的<strong>全局唯一值</strong>。
+      PASSWORD = <code>user_uid</code>、API_KEY = <code>AccessKey</code>、TOTP/PASSKEY = <code>credential_id</code>。
+      支持同一用户多种凭证并存(如密码 + TOTP + 1 个 API Key)。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 凭证初始化流程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📱</div>
+          <div class="df-label">选择凭证类型</div>
+          <div class="df-detail">PASSWORD / TOTP<br>/ PASSKEY /<br>API_KEY</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">提交</span></div>
+        <div class="df-node crypto">
+          <div class="df-icon">🔐</div>
+          <div class="df-label">敏感字段加密</div>
+          <div class="df-detail">PASSWORD=bcrypt<br>TOTP/API=AES<br>原文不落库</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">UNIQUE</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">凭证表</div>
+          <div class="df-detail">t_user_credential<br>(cred_type, identifier)<br>UNIQUE 索引</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">仅一次</span></div>
+        <div class="df-node user">
+          <div class="df-icon">📲</div>
+          <div class="df-label">展示密钥</div>
+          <div class="df-detail">API: Access/Secret<br>TOTP: 二维码+备用码<br>Passkey: 注册提示</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 2.1: 创建凭证 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/users/{userId}/credentials</span>
+        <span class="api-desc">创建凭证(密码/TOTP/Passkey)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">cred_type</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>PASSWORD / TOTP / PASSKEY <span class="fdb">credential.cred_type</span></td></tr>
+            <tr><td class="fname">password</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>PASSWORD 时必填(明文,服务端 bcrypt) <span class="fdb">credential.cred_secret</span></td></tr>
+            <tr><td class="fname">totp_secret</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>TOTP 时必填(Base32 种子,AES 加密)</td></tr>
+            <tr><td class="fname">passkey_credential_id</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>PASSKEY 时必填(WebAuthn credentialId)</td></tr>
+            <tr><td class="fname">passkey_public_key</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>公钥(注册时由客户端生成)</td></tr>
+            <tr><td class="fname">device_name</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>设备备注名(如 iPhone 15 Pro)</td></tr>
+          </table>
+          <div class="enum-list">
+            <span class="enum-item">cred_type: PASSWORD</span>
+            <span class="enum-item">TOTP</span>
+            <span class="enum-item">PASSKEY</span>
+            <span class="enum-item">API_KEY(见 S5)</span>
+          </div>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"credential_id"</span>: <span class="jn">88</span>,
+    <span class="jk">"cred_type"</span>: <span class="jv">"TOTP"</span>,
+    <span class="jk">"cred_identifier"</span>: <span class="jv">"u_a1b2c3d4e5f6#TOTP#1"</span>,
+    <span class="jk">"is_active"</span>: <span class="jn">1</span>,
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>,
+    <span class="jk">"backup_codes"</span>: [                       <span class="jc">// TOTP 一次性展示</span>
+      <span class="jv">"ABCD-1234"</span>, <span class="jv">"EFGH-5678"</span>, <span class="jv">"IJKL-9012"</span>
+    ]
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ <code>cred_secret</code> 一律不返回;若 cred_type=TOTP,首次返回 <code>backup_codes</code>(10 个一次性备用码),用户必须保存</div>
+      </div>
+    </div>
+
+    <!-- API 2.2: 修改密码 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/users/{userId}/credentials/password</span>
+        <span class="api-desc">修改密码(刷 security_stamp)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">old_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>旧密码(明文)</td></tr>
+            <tr><td class="fname">new_password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>新密码(明文,服务端 bcrypt)</td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="fopt">N*</td><td>已开启 2FA 时必填</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"new_security_stamp"</span>: <span class="jv">"v_2026_06_27_x9y8z7"</span>,
+    <span class="jk">"password_updated_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>,
+    <span class="jk">"tokens_invalidated"</span>: <span class="jn">true</span>      <span class="jc">// 所有历史 Token 失效</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 改密必须:① 校验旧密码 ② <code>security_stamp</code> 刷新 ③ 写 <code>t_user_login_log(event_type=PASSWORD_CHANGED)</code></div>
+      </div>
+    </div>
+
+    <!-- API 2.3: 查询凭证列表 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/credentials</span>
+        <span class="api-desc">查询用户凭证列表</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"credentials"</span>: [
+      {
+        <span class="jk">"credential_id"</span>: <span class="jn">88</span>,
+        <span class="jk">"cred_type"</span>: <span class="jv">"PASSWORD"</span>,
+        <span class="jk">"is_active"</span>: <span class="jn">1</span>,
+        <span class="jk">"last_used_at"</span>: <span class="jv">"2026-06-27T08:00:00.000Z"</span>,
+        <span class="jk">"password_updated_at"</span>: <span class="jv">"2026-06-20T10:00:00.000Z"</span>
+      },
+      {
+        <span class="jk">"credential_id"</span>: <span class="jn">89</span>,
+        <span class="jk">"cred_type"</span>: <span class="jv">"TOTP"</span>,
+        <span class="jk">"is_active"</span>: <span class="jn">1</span>,
+        <span class="jk">"last_used_at"</span>: <span class="jv">"2026-06-27T09:30:00.000Z"</span>
+      },
+      {
+        <span class="jk">"credential_id"</span>: <span class="jn">90</span>,
+        <span class="jk">"cred_type"</span>: <span class="jv">"API_KEY"</span>,
+        <span class="jk">"api_label"</span>: <span class="jv">"量化主 Key"</span>,
+        <span class="jk">"api_permissions"</span>: <span class="jv">"READ,TRADE"</span>,
+        <span class="jk">"api_ip_whitelist"</span>: <span class="jv">"1.2.3.4,5.6.7.8"</span>,
+        <span class="jk">"expired_at"</span>: <span class="jb">null</span>           <span class="jc">// 永不过期</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 C 端列表脱敏(<code>cred_identifier</code> 末四位),<code>cred_secret</code> 永不返回;Admin 端可看完整 identifier</div>
+      </div>
+    </div>
+
+    <!-- API 2.4: 删除凭证 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method delete">DELETE</span>
+        <span class="api-path">/api/v1/users/{userId}/credentials/{credentialId}</span>
+        <span class="api-desc">删除凭证</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label path">📍 Path Params</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">credentialId</td><td><span class="ftype">Long</span></td><td>凭证 ID <span class="fdb">credential.id</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱验证码(高危操作二次验证)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"credential_id"</span>: <span class="jn">89</span>,
+    <span class="jk">"cred_type"</span>: <span class="jv">"TOTP"</span>,
+    <span class="jk">"new_security_stamp"</span>: <span class="jv">"v_2026_06_27_q1w2e3"</span>,
+    <span class="jk">"remaining_credential_count"</span>: <span class="jn">1</span>     <span class="jc">// 至少保留 1 种</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 删除前校验:① 至少保留 1 种可登录凭证 ② <code>security_stamp</code> 刷新 ③ 写 <code>operation_log(module=CREDENTIAL, action=DELETE)</code></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">凭证就绪 → 进入登录鉴权场景 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 3: 登录鉴权                          -->
+<!-- ============================================================ -->
+<div class="scene bg-yellow" id="s3">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S3</div>
+    <div class="scene-meta">
+      <div class="scene-title">🔓 登录鉴权链路 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Authentication &mdash; "Prove you are you."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--yellow); border-color:var(--yellow-deep);">
+      <div class="char">🚪</div>
+      <strong>剧情：</strong>用户通过邮箱/手机 + 密码登录。网关按 <code>entity_id</code> 隔离查 <code>t_user</code>;按 <code>user_id</code> 加载 PASSWORD 凭证校验;
+      设备未受信或 mfa_enabled=1 时进入 2FA。签发的 Token 内嵌 <code>security_stamp</code>,每次请求校验时比对 Redis 缓存中的最新 stamp。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 登录鉴权数据流</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📱</div>
+          <div class="df-label">提交登录</div>
+          <div class="df-detail">email/password<br>device_fingerprint<br><b>~800ms</b></div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">RPC</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">凭证校验</div>
+          <div class="df-detail">bcrypt 比对<br>fail_count 自增<br>5次锁定 30min</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">查</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_user + 凭证</div>
+          <div class="df-detail">解析 user_id<br>校验 PASSWORD</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">查</span></div>
+        <div class="df-node check">
+          <div class="df-icon">📱</div>
+          <div class="df-label">设备校验</div>
+          <div class="df-detail">t_user_device<br>is_trusted?<br>expire_at?</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">2FA?</span></div>
+        <div class="df-node crypto">
+          <div class="df-icon">🛡️</div>
+          <div class="df-label">二次验证</div>
+          <div class="df-detail">TOTP/Passkey<br>或短信验证码</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">签发</span></div>
+        <div class="df-node cache">
+          <div class="df-icon">🔴</div>
+          <div class="df-label">Redis</div>
+          <div class="df-detail">stamp → user_id<br>token 黑名单</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 3.1: 登录 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/auth/login</span>
+        <span class="api-desc">账号密码 / 手机验证码登录</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label header">📮 Header</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">X-Entity-Id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>法律实体ID(多牌照隔离)</td></tr>
+            <tr><td class="fname">X-Device-Fingerprint</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>客户端设备指纹 SDK 生成</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">login_type</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>PASSWORD / PHONE_CODE</td></tr>
+            <tr><td class="fname">email</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>login_type=PASSWORD 时(与 phone 二选一)</td></tr>
+            <tr><td class="fname">phone_country_code</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>国际区号</td></tr>
+            <tr><td class="fname">phone_number</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>手机号</td></tr>
+            <tr><td class="fname">password</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>login_type=PASSWORD 时必填</td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>login_type=PHONE_CODE 时必填</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+    <span class="jk">"user_uid"</span>: <span class="jv">"u_a1b2c3d4e5f6"</span>,
+    <span class="jk">"entity_id"</span>: <span class="jn">1001</span>,
+    <span class="jk">"status"</span>: <span class="jn">1</span>,
+    <span class="jk">"access_token"</span>: <span class="jv">"eyJhbGciOiJIUzI1..."</span>,
+    <span class="jk">"refresh_token"</span>: <span class="jv">"rt_v1_8x9y0z..."</span>,
+    <span class="jk">"expires_in"</span>: <span class="jn">3600</span>,
+    <span class="jk">"security_stamp"</span>: <span class="jv">"v_2026_06_27_a1b2c3"</span>,  <span class="jc">// 嵌入 Token 后续校验</span>
+    <span class="jk">"requires_2fa"</span>: <span class="jn">false</span>,
+    <span class="jk">"device_trusted"</span>: <span class="jn">false</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 当 <code>requires_2fa=true</code> 时返回 <code>temp_token</code>(短时效,仅用于 2FA 校验),不会下发 access_token</div>
+      </div>
+    </div>
+
+    <!-- API 3.2: 2FA 验证 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/auth/verify-2fa</span>
+        <span class="api-desc">二次验证(TOTP/Passkey/短信)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">temp_token</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>登录接口下发的短时效 token(5 min)</td></tr>
+            <tr><td class="fname">factor_type</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>TOTP / PASSKEY / SMS_CODE</td></tr>
+            <tr><td class="fname">code</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>TOTP: 6 位;SMS_CODE: 6 位</td></tr>
+            <tr><td class="fname">assertion</td><td><span class="ftype">String</span></td><td class="fopt">C*</td><td>PASSKEY: WebAuthn assertion(JSON)</td></tr>
+            <tr><td class="fname">trust_this_device</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>是否信任此设备(默认 false)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"access_token"</span>: <span class="jv">"eyJhbGciOiJIUzI1..."</span>,
+    <span class="jk">"refresh_token"</span>: <span class="jv">"rt_v1_q1w2e3..."</span>,
+    <span class="jk">"expires_in"</span>: <span class="jn">3600</span>,
+    <span class="jk">"device_id"</span>: <span class="jn">77</span>,
+    <span class="jk">"device_trusted_until"</span>: <span class="jv">"2026-09-25T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip ok">✅ 校验成功后异步:① 更新 <code>t_user_device.last_active_at</code> ② <code>trust_this_device=true</code> 时设 <code>is_trusted=1, expire_at=NOW+90d</code> ③ 写 <code>login_log(event_type=LOGIN, result=1)</code></div>
+      </div>
+    </div>
+
+    <!-- API 3.3: 退出所有设备 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/auth/logout-all</span>
+        <span class="api-desc">踢出所有设备(刷 stamp)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">password</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>二次确认密码</td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱验证码</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"new_security_stamp"</span>: <span class="jv">"v_2026_06_27_z9y8x7"</span>,
+    <span class="jk">"tokens_invalidated_count"</span>: <span class="jn">5</span>,
+    <span class="jk">"devices_removed_count"</span>: <span class="jn">3</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 该接口等价于"反向心跳":① 刷 <code>security_stamp</code> ② 清空 <code>t_user_device</code> ③ 写 <code>login_log</code> + <code>operation_log</code>。所有设备需要重新登录</div>
+      </div>
+    </div>
+
+    <!-- API 3.4: 令牌校验(内部) -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method internal">INTERNAL</span>
+        <span class="api-path">/internal/v1/auth/validate-token</span>
+        <span class="api-desc">令牌校验(网关调用)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">access_token</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>待校验的 JWT</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"valid"</span>: <span class="jn">true</span>,
+    <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+    <span class="jk">"user_uid"</span>: <span class="jv">"u_a1b2c3d4e5f6"</span>,
+    <span class="jk">"entity_id"</span>: <span class="jn">1001</span>,
+    <span class="jk">"status"</span>: <span class="jn">1</span>,
+    <span class="jk">"stamp_match"</span>: <span class="jn">true</span>,
+    <span class="jk">"expires_at"</span>: <span class="jv">"2026-06-27T11:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="danger-box" style="background:#fecaca; border:2px solid #dc2626; border-radius:12px; padding:12px; font-size:14px; color:#991b1b; margin-top:10px;">
+          ⛔ <strong>三道拦截</strong>:① JWT 签名失败 → 401 ② Redis 中 stamp 不匹配 → <code>TOKEN_STALE</code> ③ <code>status ∈ {2,4}</code> → <code>USER_DISABLED</code>。<strong>任何状态码非 0 都不下发业务数据</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">或走第三方授权 / API Key 登录 ↘</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 4: OAuth 授权                        -->
+<!-- ============================================================ -->
+<div class="scene bg-purple" id="s4">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S4</div>
+    <div class="scene-meta">
+      <div class="scene-title">🔵 第三方 OAuth 授权 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">OAuth Integration &mdash; "Login with Google / Apple / WeChat."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--purple); border-color:var(--purple-deep);">
+      <div class="char">🌐</div>
+      <strong>剧情：</strong>客户端拉起 Google/Apple/微信 SDK 拿到 <code>open_id</code>。查 <code>t_user_oauth (entity_id, provider, open_id)</code>:<strong>命中</strong>即登录成功;
+      <strong>未命中</strong>则创建 <code>t_user</code>(status=0, register_channel=OAUTH)并插入绑定记录,引导补充手机/邮箱后激活。
+      <code>t_user_oauth</code> 按 <code>entity_id</code> 隔离唯一;解绑走物理删除。
+    </div>
+
+    <div class="dataflow">
+      <div class="dataflow-title">🔀 OAuth 登录 + 绑定流程</div>
+      <div class="df-chain">
+        <div class="df-node user">
+          <div class="df-icon">📱</div>
+          <div class="df-label">客户端 SDK</div>
+          <div class="df-detail">Google/Apple<br>/微信 拉起<br>拿 open_id</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">RPC</span></div>
+        <div class="df-node service">
+          <div class="df-icon">⚙️</div>
+          <div class="df-label">OAuth 登录</div>
+          <div class="df-detail">查 (entity, provider, openid)<br>命中→登录<br>未命中→注册</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">SELECT</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🗄️</div>
+          <div class="df-label">t_user_oauth</div>
+          <div class="df-detail">UNIQUE (entity_id,<br>provider, open_id)<br>已绑则 user_id 直接</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">未命中</span></div>
+        <div class="df-node db">
+          <div class="df-icon">🆕</div>
+          <div class="df-label">创建用户</div>
+          <div class="df-detail">t_user + t_user_oauth<br>status=0 待补充<br>资料/手机/邮箱</div>
+        </div>
+        <div class="df-arrow"><span class="df-alabel">激活</span></div>
+        <div class="df-node user">
+          <div class="df-icon">📝</div>
+          <div class="df-label">补充资料</div>
+          <div class="df-detail">合规要求<br>补手机+邮箱<br>→ status=1</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 4.1: OAuth 登录 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/auth/oauth/login</span>
+        <span class="api-desc">OAuth 第三方登录</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label header">📮 Header</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">X-Entity-Id</td><td><span class="ftype">Long</span></td><td class="freq">Y</td><td>法律实体ID</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">provider</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>GOOGLE / APPLE / FACEBOOK / WECHAT / LINE <span class="fdb">oauth.provider</span></td></tr>
+            <tr><td class="fname">open_id</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>第三方 OpenID / UnionID <span class="fdb">oauth.open_id</span></td></tr>
+            <tr><td class="fname">union_id</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>联合ID(微信跨应用识别) <span class="fdb">oauth.union_id</span></td></tr>
+            <tr><td class="fname">nickname</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>首次拉取的昵称 <span class="fdb">oauth.nickname</span></td></tr>
+            <tr><td class="fname">avatar_url</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>头像URL <span class="fdb">oauth.avatar_url</span></td></tr>
+            <tr><td class="fname">id_token</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>Apple/Google 验签用(只验不存)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK (已绑定)</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"scenario"</span>: <span class="jv">"BINDING_EXISTS"</span>,
+    <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+    <span class="jk">"access_token"</span>: <span class="jv">"eyJhbGciOiJIUzI1..."</span>,
+    <span class="jk">"refresh_token"</span>: <span class="jv">"rt_v1_w1x2y3..."</span>,
+    <span class="jk">"expires_in"</span>: <span class="jn">3600</span>
+  }
+}
+          </div>
+          <div class="json-block">
+            <span class="json-label">200 OK (首次注册)</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"scenario"</span>: <span class="jv">"NEW_USER_NEEDS_COMPLETION"</span>,
+    <span class="jk">"user_id"</span>: <span class="jn">20088</span>,
+    <span class="jk">"status"</span>: <span class="jn">0</span>,
+    <span class="jk">"temp_token"</span>: <span class="jv">"tt_v1_new_user_a1b2"</span>,   <span class="jc">// 短时效(15 min),仅用于补全资料</span>
+    <span class="jk">"missing_fields"</span>: [<span class="jv">"phone_number"</span>, <span class="jv">"email"</span>]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 4.2: 解绑 OAuth -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method delete">DELETE</span>
+        <span class="api-path">/api/v1/users/{userId}/oauth/{oauthId}</span>
+        <span class="api-desc">解绑第三方授权(物理删除)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label path">📍 Path Params</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            <tr><td class="fname">oauthId</td><td><span class="ftype">Long</span></td><td>OAuth 绑定 ID <span class="fdb">oauth.id</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"oauth_id"</span>: <span class="jn">33</span>,
+    <span class="jk">"provider"</span>: <span class="jv">"GOOGLE"</span>,
+    <span class="jk">"remaining_login_methods"</span>: [<span class="jv">"PASSWORD"</span>],   <span class="jc">// 至少保留 1 种</span>
+    <span class="jk">"operation_log_id"</span>: <span class="jn">998877</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ 解绑前校验:① 用户至少保留 1 种可登录凭证(PASSWORD/TOTP/PASSKEY/其他 OAuth) ② 写 <code>operation_log(module=OAUTH, action=UNBIND)</code> 留痕 ③ 物理删除释放 <code>(entity_id, provider, open_id)</code> UNIQUE 槽位</div>
+      </div>
+    </div>
+
+    <!-- API 4.3: 查询 OAuth 绑定列表 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/oauth</span>
+        <span class="api-desc">查询已绑定的第三方账号</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"bindings"</span>: [
+      {
+        <span class="jk">"oauth_id"</span>: <span class="jn">33</span>,
+        <span class="jk">"provider"</span>: <span class="jv">"GOOGLE"</span>,
+        <span class="jk">"nickname"</span>: <span class="jv">"Alice Chen"</span>,
+        <span class="jk">"avatar_url"</span>: <span class="jv">"https://lh3.googleusercontent.com/..."</span>,
+        <span class="jk">"open_id_masked"</span>: <span class="jv">"10***42"</span>,      <span class="jc">// 脱敏</span>
+        <span class="jk">"created_at"</span>: <span class="jv">"2026-06-20T10:00:00.000Z"</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 <code>open_id</code> 一律脱敏展示;返回的 <code>created_at</code> 即首次绑定时间</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">程序化交易走 API Key ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 5: API Key 管理                       -->
+<!-- ============================================================ -->
+<div class="scene bg-pink" id="s5">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S5</div>
+    <div class="scene-meta">
+      <div class="scene-title">🤖 API Key 程序化交易凭证 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">API Key Management &mdash; "For the quants."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--pink); border-color:var(--pink-deep);">
+      <div class="char">📈</div>
+      <strong>剧情：</strong>量化客户在用户中心创建 API Key,系统返回 <strong>AccessKey + SecretKey 仅一次</strong>(后续不可查询,只能重置)。
+      撮合网关用 <code>api_ip_whitelist</code> + <code>api_permissions</code>(READ / TRADE / WITHDRAW) 做权限控制。
+    </div>
+
+    <!-- API 5.1 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/users/{userId}/api-keys</span>
+        <span class="api-desc">创建 API Key(返回密钥仅一次)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">api_label</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>备注名,如"量化主 Key" <span class="fdb">credential.api_label</span></td></tr>
+            <tr><td class="fname">api_permissions</td><td><span class="ftype">Array</span></td><td class="freq">Y</td><td>["READ","TRADE","WITHDRAW"] 任意子集 <span class="fdb">credential.api_permissions</span></td></tr>
+            <tr><td class="fname">api_ip_whitelist</td><td><span class="ftype">Array</span></td><td class="fopt">N</td><td>["1.2.3.4","5.6.7.8"];空=不限 <span class="fdb">credential.api_ip_whitelist</span></td></tr>
+            <tr><td class="fname">expired_at</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>过期时间;NULL=永不过期 <span class="fdb">credential.expired_at</span></td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"credential_id"</span>: <span class="jn">90</span>,
+    <span class="jk">"api_label"</span>: <span class="jv">"量化主 Key"</span>,
+    <span class="jk">"access_key"</span>: <span class="jv">"AK_LIVE_a1b2c3d4e5f6g7h8"</span>,   <span class="jc">// ⏰ 仅返回一次</span>
+    <span class="jk">"secret_key"</span>: <span class="jv">"sk_ZmRzZ..."</span>,          <span class="jc">// ⏰ 仅返回一次</span>
+    <span class="jk">"api_permissions"</span>: [<span class="jv">"READ"</span>,<span class="jv">"TRADE"</span>],
+    <span class="jk">"api_ip_whitelist"</span>: [<span class="jv">"1.2.3.4"</span>],
+    <span class="jk">"expired_at"</span>: <span class="jb">null</span>,
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip danger">⛔ <code>access_key</code>/<code>secret_key</code> <strong>仅返回一次</strong>!服务端仅存 AES 加密密文,丢则需"重置"流程。务必提示用户妥善保存</div>
+      </div>
+    </div>
+
+    <!-- API 5.2: 重置 SecretKey -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/users/{userId}/api-keys/{credentialId}/reset-secret</span>
+        <span class="api-desc">重置 SecretKey</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>短信/邮箱二次验证</td></tr>
+            <tr><td class="fname">confirm</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>必须等于 "RESET_SECRET" 字符串(防误操作)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"credential_id"</span>: <span class="jn">90</span>,
+    <span class="jk">"access_key"</span>: <span class="jv">"AK_LIVE_a1b2c3d4e5f6g7h8"</span>,     <span class="jc">// 不变</span>
+    <span class="jk">"new_secret_key"</span>: <span class="jv">"sk_NEWz8y9x..."</span>,        <span class="jc">// ⏰ 仅返回一次</span>
+    <span class="jk">"rotated_at"</span>: <span class="jv">"2026-06-27T11:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 重置会刷 <code>security_stamp</code> + 写 <code>login_log(event_type=API_KEY_CREATED)</code>;原 SecretKey 立即失效,撮合网关需使用新 SecretKey 重新签名</div>
+      </div>
+    </div>
+
+    <!-- API 5.3: 撤销 API Key -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method delete">DELETE</span>
+        <span class="api-path">/api/v1/users/{userId}/api-keys/{credentialId}</span>
+        <span class="api-desc">撤销 API Key(软禁用)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"credential_id"</span>: <span class="jn">90</span>,
+    <span class="jk">"is_active"</span>: <span class="jn">0</span>,
+    <span class="jk">"revoked_at"</span>: <span class="jv">"2026-06-27T11:30:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 撤销 = 软禁用 <code>is_active=0</code>;AccessKey 仍存在便于审计;业务系统需定期清理已撤销超过 90 天的记录</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">登录后,设备管理 + 偏好 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 6: 设备管理                          -->
+<!-- ============================================================ -->
+<div class="scene bg-orange" id="s6">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S6</div>
+    <div class="scene-meta">
+      <div class="scene-title">📱 受信设备管理 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Device Management &mdash; "Trust this device?"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--orange); border-color:var(--orange-deep);">
+      <div class="char">📲</div>
+      <strong>剧情：</strong>每次登录自动 upsert <code>t_user_device</code>;<strong>未受信设备</strong>登录需 2FA;授信设备有 <code>expire_at</code>(默认 90 天),过期需重新验证。
+      长期不活跃(<code>last_active_at &gt; 180 天</code>)的设备可被自动清理。"踢出所有设备" = 删 <code>t_user_device</code> + 刷 <code>security_stamp</code>。
+    </div>
+
+    <!-- API 6.1: 设备列表 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/devices</span>
+        <span class="api-desc">查询用户设备列表</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-已移除 1-活跃;默认 1</td></tr>
+            <tr><td class="fname">page</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>页码,默认 1</td></tr>
+            <tr><td class="fname">size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>每页条数,默认 20</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">3</span>,
+    <span class="jk">"devices"</span>: [
+      {
+        <span class="jk">"device_id"</span>: <span class="jn">77</span>,
+        <span class="jk">"device_name"</span>: <span class="jv">"iPhone 15 Pro"</span>,
+        <span class="jk">"device_type"</span>: <span class="jv">"IOS"</span>,
+        <span class="jk">"client_ip_masked"</span>: <span class="jv">"203.0.***.42"</span>,
+        <span class="jk">"is_trusted"</span>: <span class="jn">1</span>,
+        <span class="jk">"trusted_at"</span>: <span class="jv">"2026-06-27T09:00:00.000Z"</span>,
+        <span class="jk">"last_active_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>,
+        <span class="jk">"expire_at"</span>: <span class="jv">"2026-09-25T09:00:00.000Z"</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 6.2: 信任设备 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/users/{userId}/devices/{deviceId}/trust</span>
+        <span class="api-desc">授信设备(标记为受信)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">trust_period_days</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>授信有效期,默认 90 <span class="fdb">device.expire_at</span></td></tr>
+            <tr><td class="fname">verification_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>二次验证(用户主动操作)</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"device_id"</span>: <span class="jn">78</span>,
+    <span class="jk">"is_trusted"</span>: <span class="jn">1</span>,
+    <span class="jk">"trusted_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>,
+    <span class="jk">"expire_at"</span>: <span class="jv">"2026-09-25T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 6.3: 移除设备 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--red);">
+        <span class="method delete">DELETE</span>
+        <span class="api-path">/api/v1/users/{userId}/devices/{deviceId}</span>
+        <span class="api-desc">移除单个设备(踢出该设备)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"device_id"</span>: <span class="jn">78</span>,
+    <span class="jk">"status"</span>: <span class="jn">0</span>,                          <span class="jc">// 0-已移除</span>
+    <span class="jk">"token_invalidated"</span>: <span class="jn">true</span>            <span class="jc">// 该设备 Token 立即失效</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 移除设备是软删(<code>status=0</code>),保留数据用于审计;同时将该设备的 Refresh Token 加入黑名单(若实现 Refresh Token 机制)</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">交易期间:偏好生效 + 适当性快照同步 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--               SCENE 7: 偏好 & 适当性                          -->
+<!-- ============================================================ -->
+<div class="scene bg-blue" id="s7">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S7</div>
+    <div class="scene-meta">
+      <div class="scene-title">⚙️ 交易偏好 & 适当性快照 <span class="scene-tag client">C端</span></div>
+      <div class="scene-subtitle">Preferences & Suitability Snapshot &mdash; "How do you want to trade?"</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--blue); border-color:var(--blue-deep);">
+      <div class="char">🎚️</div>
+      <strong>剧情：</strong>用户在 <code>t_user_preference</code> 维护交易交互偏好与软风控;<code>t_user_profile_snapshot</code> 由 Onboarding 系统通过 <code>UserApprovedEvent</code> 单向同步(<code>source_version</code> 防乱序),供硬风控直接查询。
+    </div>
+
+    <!-- API 7.1: 查询/更新偏好 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/preference</span>
+        <span class="api-desc">查询交易偏好</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+    <span class="jk">"default_leverage"</span>: <span class="jn">100</span>,
+    <span class="jk">"default_volume"</span>: <span class="jn">0.1</span>,
+    <span class="jk">"confirm_order"</span>: <span class="jn">1</span>,                    <span class="jc">// 下单前二次确认</span>
+    <span class="jk">"one_click_trading"</span>: <span class="jn">0</span>,                <span class="jc">// 一键交易</span>
+    <span class="jk">"daily_loss_limit"</span>: <span class="jn">1000.00</span>,            <span class="jc">// 软风控</span>
+    <span class="jk">"locale"</span>: <span class="jv">"zh"</span>,
+    <span class="jk">"timezone"</span>: <span class="jv">"Asia/Shanghai"</span>,
+    <span class="jk">"chart_theme"</span>: <span class="jv">"dark"</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--yellow);">
+        <span class="method put">PUT</span>
+        <span class="api-path">/api/v1/users/{userId}/preference</span>
+        <span class="api-desc">更新交易偏好</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body(全量替换)</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">default_leverage</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认杠杆 1-500 <span class="fdb">preference.default_leverage</span></td></tr>
+            <tr><td class="fname">default_volume</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>默认手数 <span class="fdb">preference.default_volume</span></td></tr>
+            <tr><td class="fname">confirm_order</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-否 1-是</td></tr>
+            <tr><td class="fname">one_click_trading</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0-否 1-是</td></tr>
+            <tr><td class="fname">daily_loss_limit</td><td><span class="ftype">Decimal</span></td><td class="fopt">N</td><td>单日最大亏损(结算币种) <span class="fdb">同步至风控 Redis</span></td></tr>
+            <tr><td class="fname">locale</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>en/zh/ar 等</td></tr>
+            <tr><td class="fname">timezone</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>如 Asia/Shanghai</td></tr>
+            <tr><td class="fname">chart_theme</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>dark / light</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"message"</span>: <span class="jv">"Preference updated"</span>
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ <code>daily_loss_limit</code> 变更会同步推送给风控引擎(Redis),网关本地校验</div>
+      </div>
+    </div>
+
+    <!-- API 7.2: 适当性快照(只读) -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/profile-snapshot</span>
+        <span class="api-desc">查询适当性快照(只读)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+    <span class="jk">"source_application_id"</span>: <span class="jn">2026001</span>,
+    <span class="jk">"source_version"</span>: <span class="jn">3</span>,
+    <span class="jk">"is_pro_client"</span>: <span class="jn">0</span>,                    <span class="jc">// 0-零售 1-专业</span>
+    <span class="jk">"risk_tolerance"</span>: <span class="jn">3</span>,                    <span class="jc">// 1-保守 ~ 5-激进</span>
+    <span class="jk">"risk_score"</span>: <span class="jn">42.50</span>,
+    <span class="jk">"trading_exp_years"</span>: <span class="jn">5</span>,
+    <span class="jk">"nationality"</span>: <span class="jv">"AU"</span>,
+    <span class="jk">"country_of_residence"</span>: <span class="jv">"AU"</span>,
+    <span class="jk">"tax_residency_country"</span>: <span class="jv">"AU"</span>,
+    <span class="jk">"kyc_expired_at"</span>: <span class="jv">"2027-06-26T00:00:00.000Z"</span>,
+    <span class="jk">"synced_at"</span>: <span class="jv">"2026-06-20T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 该接口是<strong>只读</strong>;<strong>严禁 C 端修改</strong>。<code>source_version</code> 由 Onboarding 事件携带,服务端仅当 version 更大时覆盖,防 MQ 乱序</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">运营分群:打标 + 反向查询 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 8: 标签分群                          -->
+<!-- ============================================================ -->
+<div class="scene bg-green" id="s8">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">S8</div>
+    <div class="scene-meta">
+      <div class="scene-title">🏷️ 运营打标 & 分群 <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">User Tagging &mdash; "Mark them, segment them."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--green); border-color:var(--green-deep);">
+      <div class="char">🏷️</div>
+      <strong>剧情：</strong>运营 / 系统通过 <code>t_user_tag_relation</code> 给用户打标签,支撑精细化运营(精准营销 / 风控分群 / 客服快速识别)。
+      标签支持过期(<code>expire_at</code>),可追溯打标来源。
+    </div>
+
+    <!-- API 8.1: 打标 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--blue);">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/v1/users/{userId}/tags</span>
+        <span class="api-desc">给用户打标</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label req">📥 Request Body</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">tag_code</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>VIP1 / HIGH_FREQ / HIGH_RISK / IB_CLIENT / INTERNAL_TEST <span class="fdb">tag.tag_code</span></td></tr>
+            <tr><td class="fname">expire_at</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>过期时间;NULL=永久 <span class="fdb">tag.expire_at</span></td></tr>
+            <tr><td class="fname">assigned_by</td><td><span class="ftype">String</span></td><td class="freq">Y</td><td>SYSTEM / 操作员ID <span class="fdb">tag.assigned_by</span></td></tr>
+            <tr><td class="fname">remark</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>打标备注 <span class="fdb">tag.remark</span></td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"id"</span>: <span class="jn">555</span>,
+    <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+    <span class="jk">"tag_code"</span>: <span class="jv">"VIP1"</span>,
+    <span class="jk">"assigned_by"</span>: <span class="jv">"op_2024"</span>,
+    <span class="jk">"created_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 <code>UNIQUE (user_id, tag_code)</code> 防重复打标;重复调用会返回 200 OK 但不创建新记录(幂等)</div>
+      </div>
+    </div>
+
+    <!-- API 8.2: 查询用户标签 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/tags</span>
+        <span class="api-desc">查询用户全部标签</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"tags"</span>: [
+      { <span class="jk">"tag_code"</span>: <span class="jv">"VIP1"</span>, <span class="jk">"expire_at"</span>: <span class="jb">null</span>, <span class="jk">"assigned_by"</span>: <span class="jv">"op_2024"</span> },
+      { <span class="jk">"tag_code"</span>: <span class="jv">"HIGH_FREQ"</span>, <span class="jk">"expire_at"</span>: <span class="jv">"2026-12-31T23:59:59Z"</span>, <span class="jk">"assigned_by"</span>: <span class="jv">"SYSTEM"</span> }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 8.3: 反向查询 - 按标签查用户 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/tags/{tagCode}/users</span>
+        <span class="api-desc">按标签反向查询用户列表</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">include_expired</td><td><span class="ftype">Boolean</span></td><td class="fopt">N</td><td>是否包含已过期,默认 false</td></tr>
+            <tr><td class="fname">page</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>页码,默认 1</td></tr>
+            <tr><td class="fname">size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>每页条数,默认 100</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"tag_code"</span>: <span class="jv">"VIP1"</span>,
+    <span class="jk">"total"</span>: <span class="jn">1280</span>,
+    <span class="jk">"user_ids"</span>: [<span class="jn">10086</span>, <span class="jn">10088</span>, <span class="jn">10102</span>, <span class="jv">"..."</span>]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">所有操作留痕:审计日志 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   SCENE 9: 审计日志                          -->
+<!-- ============================================================ -->
+<div class="scene bg-yellow" id="s9">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">S9</div>
+    <div class="scene-meta">
+      <div class="scene-title">📝 审计日志查询 <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">Audit Logs &mdash; "Who did what, when, where."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--yellow); border-color:var(--yellow-deep);">
+      <div class="char">🔍</div>
+      <strong>剧情：</strong>登录与操作日志<strong>只 INSERT 不 UPDATE/DELETE</strong>(合规要求),按季度分区滚动。
+      客诉、合规、风控、审计通过查询接口回溯。日志保留期默认 2 年,定时任务 DROP 旧分区。
+    </div>
+
+    <!-- API 9.1: 登录日志 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/login-logs</span>
+        <span class="api-desc">查询登录与安全事件日志</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">event_type</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>LOGIN / LOGOUT / PASSWORD_CHANGED / TOTP_ENABLED / API_KEY_CREATED / DEVICE_TRUSTED</td></tr>
+            <tr><td class="fname">event_result</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>1-成功 0-失败</td></tr>
+            <tr><td class="fname">begin_time</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>开始时间</td></tr>
+            <tr><td class="fname">end_time</td><td><span class="ftype">DateTime</span></td><td class="fopt">N</td><td>结束时间</td></tr>
+            <tr><td class="fname">page</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 1</td></tr>
+            <tr><td class="fname">size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 50,最大 200</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">128</span>,
+    <span class="jk">"logs"</span>: [
+      {
+        <span class="jk">"event_type"</span>: <span class="jv">"LOGIN"</span>,
+        <span class="jk">"event_result"</span>: <span class="jn">1</span>,
+        <span class="jk">"client_ip"</span>: <span class="jv">"203.0.113.42"</span>,
+        <span class="jk">"ip_country"</span>: <span class="jv">"AU"</span>,
+        <span class="jk">"device_fingerprint"</span>: <span class="jv">"df_a1b2c3d4"</span>,
+        <span class="jk">"client_type"</span>: <span class="jv">"IOS"</span>,
+        <span class="jk">"user_agent"</span>: <span class="jv">"MyApp/2.3.1 (iOS 17.4)"</span>,
+        <span class="jk">"created_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>
+      },
+      {
+        <span class="jk">"event_type"</span>: <span class="jv">"LOGIN"</span>,
+        <span class="jk">"event_result"</span>: <span class="jn">0</span>,
+        <span class="jk">"fail_reason"</span>: <span class="jv">"WRONG_PASSWORD"</span>,
+        <span class="jk">"client_ip"</span>: <span class="jv">"198.51.100.7"</span>,
+        <span class="jk">"created_at"</span>: <span class="jv">"2026-06-27T09:55:00.000Z"</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 9.2: 操作日志 -->
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/users/{userId}/operation-logs</span>
+        <span class="api-desc">查询业务操作审计日志</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"logs"</span>: [
+      {
+        <span class="jk">"id"</span>: <span class="jn">998877</span>,
+        <span class="jk">"module"</span>: <span class="jv">"OAUTH"</span>,
+        <span class="jk">"action"</span>: <span class="jv">"UNBIND"</span>,
+        <span class="jk">"target_type"</span>: <span class="jv">"OAUTH_BINDING"</span>,
+        <span class="jk">"target_id"</span>: <span class="jn">33</span>,
+        <span class="jk">"change_summary"</span>: <span class="jv">"{\"provider\":\"GOOGLE\",\"open_id\":\"10***42\"}"</span>,
+        <span class="jk">"client_ip"</span>: <span class="jv">"203.0.113.42"</span>,
+        <span class="jk">"client_type"</span>: <span class="jv">"WEB"</span>,
+        <span class="jk">"created_at"</span>: <span class="jv">"2026-06-27T10:00:00.000Z"</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 模块枚举:PROFILE / PREFERENCE / PAYMENT_METHOD / API_KEY / DEVICE / OAUTH;C 端仅能查自己,Admin 端可全局查</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   ADMIN 后台                                 -->
+<!-- ============================================================ -->
+<div class="scene bg-pink" id="admin">
+  <div class="tape tape-tl"></div>
+  <div class="scene-header">
+    <div class="scene-num">A</div>
+    <div class="scene-meta">
+      <div class="scene-title">🛠️ Admin 后台管理 API <span class="scene-tag admin">Admin</span></div>
+      <div class="scene-subtitle">Admin Backstage &mdash; "Internal staff only."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--pink); border-color:var(--pink-deep);">
+      <div class="char">👮</div>
+      <strong>剧情：</strong>内部后台 / 客服 / 风控 / 运营使用的 RPC 接口;全部走 <code>X-Admin-Token</code> 鉴权 + 操作员 ID 审计。
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--green);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/users</span>
+        <span class="api-desc">后台分页查询用户</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label query">🔍 Query</div>
+          <table class="ptable">
+            <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td class="fname">entity_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>按法律实体过滤</td></tr>
+            <tr><td class="fname">email</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>邮箱精确匹配</td></tr>
+            <tr><td class="fname">user_uid</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>雪花 UID 精确匹配</td></tr>
+            <tr><td class="fname">status</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0/1/2/3/4</td></tr>
+            <tr><td class="fname">kyc_level</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>0/1/2/3</td></tr>
+            <tr><td class="fname">tag_code</td><td><span class="ftype">String</span></td><td class="fopt">N</td><td>按标签过滤</td></tr>
+            <tr><td class="fname">introducing_broker_id</td><td><span class="ftype">Long</span></td><td class="fopt">N</td><td>按 IB 过滤</td></tr>
+            <tr><td class="fname">page</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 1</td></tr>
+            <tr><td class="fname">size</td><td><span class="ftype">Integer</span></td><td class="fopt">N</td><td>默认 20,最大 100</td></tr>
+          </table>
+        </div>
+        <div class="param-section">
+          <div class="param-label res">📤 Response</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"total"</span>: <span class="jn">8421</span>,
+    <span class="jk">"page"</span>: <span class="jn">1</span>,
+    <span class="jk">"size"</span>: <span class="jn">20</span>,
+    <span class="jk">"users"</span>: [
+      {
+        <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+        <span class="jk">"user_uid"</span>: <span class="jv">"u_a1b2c3d4e5f6"</span>,
+        <span class="jk">"email"</span>: <span class="jv">"user@example.com"</span>,           <span class="jc">// 后台可看全量</span>
+        <span class="jk">"phone_number"</span>: <span class="jv">"13812348000"</span>,
+        <span class="jk">"status"</span>: <span class="jn">1</span>,
+        <span class="jk">"kyc_level"</span>: <span class="jn">2</span>,
+        <span class="jk">"introducing_broker_id"</span>: <span class="jn">5001</span>,
+        <span class="jk">"last_login_at"</span>: <span class="jv">"2026-06-27T09:00:00.000Z"</span>
+      }
+    ]
+  }
+}
+          </div>
+        </div>
+        <div class="tip warn">⚠️ 全部 Admin 接口要求 <code>X-Admin-Token</code> 头部鉴权 + 操作员 <code>X-Operator-Id</code> 写审计;查询范围受 RBAC 限制(如某客服仅能查自己队列的用户)</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-bar" style="background:var(--purple);">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/v1/admin/users/{userId}/full-profile</span>
+        <span class="api-desc">后台查询用户完整档案(9 表 JOIN)</span>
+      </div>
+      <div class="api-content">
+        <div class="param-section">
+          <div class="param-label res">📤 Response(简略)</div>
+          <div class="json-block">
+            <span class="json-label">200 OK</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"user"</span>: { <span class="jc">/* t_user 全部字段 */</span> },
+    <span class="jk">"profile_snapshot"</span>: { <span class="jc">/* 适当性 */</span> },
+    <span class="jk">"preference"</span>: { <span class="jc">/* 偏好 */</span> },
+    <span class="jk">"credentials"</span>: [{ <span class="jc">/* 凭证列表(脱敏) */</span> }],
+    <span class="jk">"oauth_bindings"</span>: [{ <span class="jc">/* OAuth */</span> }],
+    <span class="jk">"devices"</span>: [{ <span class="jc">/* 设备 */</span> }],
+    <span class="jk">"tags"</span>: [{ <span class="jc">/* 标签 */</span> }],
+    <span class="jk">"recent_login_logs"</span>: [{ <span class="jc">/* 最近 10 条 */</span> }],
+    <span class="jk">"recent_operation_logs"</span>: [{ <span class="jc">/* 最近 10 条 */</span> }]
+  }
+}
+          </div>
+        </div>
+        <div class="tip info">💡 一次性返回 9 张表的核心字段,客服 / 风控 / 合规"一屏看完"</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="scene-arrow">
+  <div class="sa-line"></div>
+  <div class="sa-head"></div>
+  <div class="sa-label">事件驱动:与下游系统解耦 ⬇</div>
+</div>
+
+<!-- ============================================================ -->
+<!--                   MQ 事件契约                                -->
+<!-- ============================================================ -->
+<div class="scene bg-purple" id="mq">
+  <div class="tape tape-tr"></div>
+  <div class="scene-header">
+    <div class="scene-num">M</div>
+    <div class="scene-meta">
+      <div class="scene-title">📨 MQ 事件契约(发布/消费) <span class="scene-tag system">系统</span></div>
+      <div class="scene-subtitle">Event-driven Integration &mdash; "Asynchronous decoupling."</div>
+    </div>
+  </div>
+  <div class="scene-body">
+
+    <div class="story" style="background:var(--purple); border-color:var(--purple-deep);">
+      <div class="char">📨</div>
+      <strong>剧情：</strong>用户体系通过 MQ 与 Onboarding / 账户 / 风控 / 通知 / IB 系统解耦。<strong>只发不收</strong>(除消费 Onboarding 的 <code>UserApprovedEvent</code>)。
+      消费侧必须<strong>幂等</strong>(<code>event_id</code> 去重),必须<strong>支持乱序</strong>(<code>source_version</code>)。
+    </div>
+
+    <div class="duo">
+      <!-- 发布事件 -->
+      <div class="api-card" style="background: linear-gradient(135deg, #faf5ff 0%, #fff 60%);">
+        <div class="api-bar" style="background: var(--purple);">
+          <span class="method internal">PUBLISH</span>
+          <span class="api-path">topic: user.events</span>
+          <span class="api-desc">本服务发布的事件</span>
+        </div>
+        <div class="api-content">
+          <table class="ptable">
+            <tr><th>事件类型</th><th>触发时机</th><th>下游消费者</th></tr>
+            <tr><td class="fname">UserCreatedEvent</td><td>注册成功</td><td>CRM / 营销</td></tr>
+            <tr><td class="fname">UserActivatedEvent</td><td>激活(status: 0→1)</td><td>账户 / IB</td></tr>
+            <tr><td class="fname">UserFrozenEvent</td><td>冻结(status: 1→2)</td><td>账户 / 风控 / 通知</td></tr>
+            <tr><td class="fname">UserDeactivateRequestedEvent</td><td>申请注销</td><td>账户 / 通知 / 营销</td></tr>
+            <tr><td class="fname">UserDeactivatedEvent</td><td>冷静期结束(status: 3→4)</td><td>账户 / IB / CRM</td></tr>
+            <tr><td class="fname">UserLoggedInEvent</td><td>登录成功</td><td>风控 / 行为分析</td></tr>
+            <tr><td class="fname">UserPasswordChangedEvent</td><td>改密</td><td>风控 / 通知</td></tr>
+            <tr><td class="fname">UserApiKeyCreatedEvent</td><td>API Key 创建/重置</td><td>风控 / 通知</td></tr>
+            <tr><td class="fname">UserTagAddedEvent</td><td>打标</td><td>CRM / 营销</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- 消费事件 -->
+      <div class="api-card" style="background: linear-gradient(135deg, #f0fdf4 0%, #fff 60%);">
+        <div class="api-bar" style="background: var(--green);">
+          <span class="method internal">SUBSCRIBE</span>
+          <span class="api-path">topic: onboarding.events</span>
+          <span class="api-desc">本服务消费的事件</span>
+        </div>
+        <div class="api-content">
+          <div class="story" style="background: var(--green); border-color: var(--green-deep); font-size: 15px; padding: 12px;">
+            <div class="char">⬇️</div>
+            <strong>UserApprovedEvent</strong>(来自 Onboarding)<br>
+            触发:Onboarding KYC 通过 → 同步适当性
+          </div>
+          <div class="json-block" style="margin-top: 10px;">
+            <span class="json-label">Event Payload</span>
+{
+  <span class="jk">"event_id"</span>: <span class="jv">"evt_a1b2c3"</span>,
+  <span class="jk">"event_type"</span>: <span class="jv">"UserApprovedEvent"</span>,
+  <span class="jk">"event_time"</span>: <span class="jv">"2026-06-20T10:00:00.000Z"</span>,
+  <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+  <span class="jk">"source_application_id"</span>: <span class="jn">2026001</span>,
+  <span class="jk">"source_version"</span>: <span class="jn">3</span>,                <span class="jc">// ⭐ 乱序防护</span>
+  <span class="jk">"snapshot"</span>: {
+    <span class="jk">"is_pro_client"</span>: <span class="jn">0</span>,
+    <span class="jk">"risk_tolerance"</span>: <span class="jn">3</span>,
+    <span class="jk">"risk_score"</span>: <span class="jn">42.50</span>,
+    <span class="jk">"trading_exp_years"</span>: <span class="jn">5</span>,
+    <span class="jk">"nationality"</span>: <span class="jv">"AU"</span>,
+    <span class="jk">"country_of_residence"</span>: <span class="jv">"AU"</span>,
+    <span class="jk">"tax_residency_country"</span>: <span class="jv">"AU"</span>,
+    <span class="jk">"kyc_expired_at"</span>: <span class="jv">"2027-06-26T00:00:00Z"</span>
+  }
+}
+          </div>
+          <div class="tip info">💡 消费逻辑:① 校验 <code>user_id</code> 存在 ② 当 <code>source_version &gt; 当前 snapshot.source_version</code> 才覆盖 ③ 写 <code>profile_snapshot</code>;MQ 失败重试 3 次后入死信队列</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 事件通用结构 -->
+    <div class="api-card" style="margin-top: 20px;">
+      <div class="api-bar" style="background: var(--slate);">
+        <span class="method internal">SCHEMA</span>
+        <span class="api-path">事件通用结构(所有事件共)</span>
+        <span class="api-desc">消息契约</span>
+      </div>
+      <div class="api-content">
+        <div class="json-block">
+          <span class="json-label">Common Envelope</span>
+{
+  <span class="jk">"event_id"</span>: <span class="jv">"uuid-v7"</span>,                     <span class="jc">// 唯一,消费侧去重</span>
+  <span class="jk">"event_type"</span>: <span class="jv">"UserFrozenEvent"</span>,
+  <span class="jk">"event_time"</span>: <span class="jv">"ISO 8601 UTC"</span>,
+  <span class="jk">"source"</span>: <span class="jv">"user-service"</span>,
+  <span class="jk">"trace_id"</span>: <span class="jv">"trace_a1b2c3"</span>,                  <span class="jc">// 全链路追踪</span>
+  <span class="jk">"entity_id"</span>: <span class="jn">1001</span>,                          <span class="jc">// 多租户隔离</span>
+  <span class="jk">"user_id"</span>: <span class="jn">10086</span>,
+  <span class="jk">"payload"</span>: { <span class="jv">"..."</span> }                          <span class="jc">// 业务字段</span>
+}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">
+  🪪 用户体系 API 接口设计 · User Service API · Generated 2026.06
+</div>
+
+</div><!-- end container -->
+
+</body>
+</html>

@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>通知系统 API 接口设计 - 场景式漫画文档</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+    --ink: #1a1a2e;
+    --paper: #fefcf3;
+    --blue: #dbeafe; --blue-mid: #93c5fd; --blue-deep: #2563eb; --blue-dark: #1e3a5f;
+    --green: #dcfce7; --green-mid: #86efac; --green-deep: #16a34a; --green-dark: #166534;
+    --yellow: #fef9c3; --yellow-mid: #fde047; --yellow-deep: #ca8a04; --yellow-dark: #854d0e;
+    --purple: #f3e8ff; --purple-mid: #c4b5fd; --purple-deep: #7c3aed; --purple-dark: #5b21b6;
+    --pink: #fce7f3; --pink-mid: #f9a8d4; --pink-deep: #ec4899; --pink-dark: #9d174d;
+    --orange: #ffedd5; --orange-mid: #fdba74; --orange-deep: #ea580c; --orange-dark: #9a3412;
+    --red: #fecaca; --red-deep: #dc2626; --red-dark: #991b1b;
+    --slate: #f1f5f9; --slate-deep: #475569;
+    --indigo: #e0e7ff; --indigo-deep: #4f46e5; --indigo-dark: #312e81;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    background-image: radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 22px 22px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: var(--ink);
+    padding: 24px;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  /* ===== HEADER ===== */
+  .hero { text-align: center; padding: 40px 20px 30px; position: relative; }
+  .hero h1 {
+    font-family: var(--font-hand);
+    font-size: 52px; font-weight: 400;
+    letter-spacing: 4px; color: var(--ink);
+    position: relative; display: inline-block;
+  }
+  .hero h1::after {
+    content: ''; position: absolute;
+    bottom: -2px; left: -12px; right: -12px; height: 6px;
+    background: linear-gradient(90deg, #818cf8, #f472b6, #fbbf24, #34d399);
+    border-radius: 4px; transform: rotate(-0.4deg); opacity: 0.8;
+  }
+  .hero .tagline {
+    font-family: var(--font-ui); font-size: 17px; font-weight: 600;
+    letter-spacing: 0.02em; color: #666; margin-top: 16px;
+    white-space: normal; max-width: 100%; line-height: 1.5;
+  }
+  .hero .badge-row {
+    display: flex; justify-content: center; gap: 10px; margin-top: 16px;
+    flex-wrap: wrap; overflow-x: visible; padding: 4px 0 8px;
+  }
+  .hero .badge {
+    display: inline-block; padding: 4px 16px; border-radius: 20px;
+    font-size: 14px; font-weight: 700; font-family: var(--font-ui);
+    border: 1.5px solid rgba(0,0,0,0.12);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    white-space: nowrap;
+  }
+
+  /* ===== NAV ===== */
+  .nav-bar {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+    margin: 10px auto 30px; max-width: 1200px;
+    overflow-x: visible; padding: 4px 0 10px;
+  }
+  .nav-bar a {
+    text-decoration: none; padding: 6px 18px; border: 1.5px solid #d1d5db;
+    border-radius: 14px; font-size: 15px; font-weight: 600; color: var(--ink); background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: all .2s;
+    white-space: nowrap;
+  }
+  .nav-bar a:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.10); border-color: var(--purple-mid); }
+
+  /* ===== SCENE ===== */
+  .scene {
+    background: #fff; border: 2.5px solid #d1d5db; border-radius: 22px;
+    margin-bottom: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden; position: relative;
+  }
+  .scene-header {
+    padding: 20px 28px 14px; display: flex; align-items: flex-start; gap: 16px;
+    border-bottom: 2px dashed #e5e7eb; flex-wrap: wrap;
+  }
+  .scene-num {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #818cf8, #6366f1);
+    color: #fff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; border: 2.5px solid #fff;
+    box-shadow: 0 3px 10px rgba(99,102,241,0.35);
+    font-family: var(--font-ui); flex-shrink: 0;
+  }
+  .scene-meta { flex: 1; min-width: 0; }
+  .scene-title {
+    font-family: var(--font-hand); font-size: 32px; font-weight: 400;
+    white-space: normal; line-height: 1.3;
+  }
+  .scene-subtitle { font-size: 15px; color: #555; font-family: var(--font-ui); font-weight: 600; letter-spacing: 0.02em; }
+  .scene-body { padding: 20px 28px 28px; }
+
+  .tape { position: absolute; width: 80px; height: 26px; background: rgba(255,222,89,0.55); border: 1.5px solid rgba(200,170,50,0.35); border-radius: 2px; z-index: 2; }
+  .tape-tr { top: -8px; right: 28px; transform: rotate(-32deg); }
+  .tape-tl { top: -8px; left: 28px; transform: rotate(32deg); }
+
+  .story {
+    padding: 14px 18px; border-radius: 14px; border: 1.5px dashed;
+    margin-bottom: 20px; font-size: 17px; line-height: 1.8; position: relative;
+  }
+  .story .char { font-size: 36px; float: left; margin-right: 10px; margin-top: -4px; }
+
+  /* ===== API CARD ===== */
+  .api-card {
+    border: 2px solid #e2e8f0; border-radius: 16px; margin-bottom: 20px;
+    overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    position: relative; transition: box-shadow .2s;
+  }
+  .api-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .api-card:last-child { margin-bottom: 0; }
+  .api-bar {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 18px; font-size: 17px; font-weight: 600;
+    border-bottom: 1.5px solid #e2e8f0;
+    flex-wrap: wrap; overflow-x: visible;
+  }
+  .method {
+    display: inline-block; padding: 3px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: 0.5px; border: 1.5px solid; flex-shrink: 0;
+  }
+  .method.get { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .method.post { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .method.put { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+  .method.delete { background: var(--red); color: var(--red-dark); border-color: var(--red-deep); }
+  .method.internal { background: var(--purple); color: var(--purple-dark); border-color: var(--purple-deep); }
+  .api-path {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 14px; font-weight: 500; color: var(--ink);
+    white-space: normal;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+  .api-desc {
+    margin-left: auto; font-size: 14px; font-weight: 600; color: #666;
+    white-space: normal; flex: 0 1 auto; text-align: right; min-width: 120px;
+  }
+  .api-content { padding: 16px 18px; }
+
+  .param-section { margin-bottom: 16px; }
+  .param-label {
+    font-size: 16px; font-weight: bold; padding: 4px 12px;
+    border-radius: 8px; display: inline-block; margin-bottom: 8px; border: 1.5px solid;
+  }
+  .param-label.req { background: var(--blue); color: var(--blue-dark); border-color: var(--blue-deep); }
+  .param-label.res { background: var(--green); color: var(--green-dark); border-color: var(--green-deep); }
+  .param-label.header { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-deep); }
+
+  .ptable {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; font-size: 15px;
+  }
+  .ptable th {
+    background: linear-gradient(135deg, #f1f5f9, #e8edf3); color: #475569;
+    padding: 8px 12px; text-align: left; font-size: 13px;
+    font-family: var(--font-ui); font-weight: 600;
+    letter-spacing: 0.3px; border-bottom: 1.5px solid #cbd5e1;
+  }
+  .ptable td { padding: 7px 12px; border-bottom: 1.5px dashed #e2e8f0; vertical-align: top; }
+  .ptable tr:last-child td { border-bottom: none; }
+  .ptable tr:nth-child(even) td { background: #fafafa; }
+  .ptable .fname {
+    font-weight: 600; color: var(--blue-deep);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px;
+  }
+  .ptable .ftype {
+    font-family: monospace; font-size: 13px; color: var(--purple-deep);
+    background: var(--purple); padding: 1px 6px; border-radius: 4px;
+  }
+  .ptable .freq { color: var(--red-deep); font-weight: bold; font-size: 12px; }
+  .ptable .fopt { color: #999; font-size: 12px; }
+
+  .json-block {
+    background: #f8fafc; color: #334155; border-radius: 12px; padding: 16px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px; line-height: 1.6; overflow-x: visible;
+    white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;
+    border: 1.5px solid #e2e8f0; position: relative; margin-top: 8px;
+  }
+  .json-block .jk { color: #2563eb; }
+  .json-block .jv { color: #16a34a; }
+  .json-block .jn { color: #d97706; }
+  .json-block .jc { color: #94a3b8; font-style: italic; }
+  .json-block .jb { color: #c026d3; }
+  .json-label {
+    position: absolute; top: 8px; right: 12px; font-size: 11px; color: #94a3b8;
+    font-family: var(--font-ui); letter-spacing: 0.5px; font-weight: 600;
+  }
+
+  .scene-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    height: auto; min-height: 44px; position: relative;
+    padding: 6px 0 10px;
+  }
+  .scene-arrow .sa-line {
+    width: 3px; flex: 0 0 28px; min-height: 28px;
+    background: repeating-linear-gradient(to bottom, #94a3b8 0px, #94a3b8 5px, transparent 5px, transparent 10px);
+  }
+  .scene-arrow .sa-head {
+    width: 0; height: 0;
+    border-left: 10px solid transparent; border-right: 10px solid transparent;
+    border-top: 14px solid #94a3b8;
+    flex-shrink: 0;
+  }
+  .scene-arrow .sa-label {
+    position: static; margin-top: 8px; background: #fff;
+    border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 4px 14px;
+    font-size: 14px; font-weight: 600; font-family: var(--font-ui); color: #475569;
+    white-space: normal; max-width: 100%; overflow-x: visible; text-align: center; line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .tip {
+    padding: 10px 16px; border-radius: 12px; font-size: 15px;
+    margin-top: 12px; border: 1.5px solid; border-left-width: 4px;
+  }
+  .tip.warn { background: #fef3c7; border-color: #d97706; color: #92400e; }
+  .tip.info { background: #dbeafe; border-color: #2563eb; color: #1e3a5f; }
+  .tip.ok { background: #dcfce7; border-color: #16a34a; color: #166534; }
+  .tip.danger { background: #fecaca; border-color: #dc2626; color: #991b1b; }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:900px){
+    .duo { grid-template-columns: 1fr; }
+    .hero .tagline { white-space: normal; }
+    .scene-title { white-space: normal; }
+  }
+
+  .enum-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .enum-item {
+    background: #fff; border: 1.5px solid #d1d5db; border-radius: 8px;
+    padding: 2px 10px; font-size: 13px; color: #475569;
+  }
+
+  .internal-arrow { text-align: center; padding: 8px 0; font-size: 18px; color: #94a3b8; }
+
+  .footer { text-align: center; margin-top: 40px; padding: 20px; color: #aaa; font-size: 15px; }
+
+  .scene.bg-blue { background: linear-gradient(135deg, #f0f7ff 0%, #fff 60%); }
+  .scene.bg-green { background: linear-gradient(135deg, #f0fdf4 0%, #fff 60%); }
+  .scene.bg-yellow { background: linear-gradient(135deg, #fefce8 0%, #fff 60%); }
+  .scene.bg-purple { background: linear-gradient(135deg, #faf5ff 0%, #fff 60%); }
+  .scene.bg-pink { background: linear-gradient(135deg, #fdf2f8 0%, #fff 60%); }
+  .scene.bg-orange { background: linear-gradient(135deg, #fff7ed 0%, #fff 60%); }
+  .scene.bg-indigo { background: linear-gradient(135deg, #eef2ff 0%, #fff 60%); }
+
+  .scene-tag {
+    display: inline-block; font-size: 12px; font-weight: bold;
+    padding: 2px 10px; border-radius: 6px; margin-left: 8px; vertical-align: middle;
+  }
+  .scene-tag.internal { background: var(--purple); color: var(--purple-deep); border: 1px solid var(--purple-mid); }
+  .scene-tag.client { background: var(--blue); color: var(--blue-deep); border: 1px solid var(--blue-mid); }
+  .scene-tag.admin { background: var(--pink); color: var(--pink-deep); border: 1px solid var(--pink-mid); }
+  .scene-tag.callback { background: var(--orange); color: var(--orange-deep); border: 1px solid var(--orange-mid); }
+
+  .corner-deco { position: fixed; pointer-events: none; z-index: 0; }
+  .corner-deco.tl { top: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.tr { top: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.bl { bottom: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.br { bottom: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+
+  /* ---- A4 打印稿 ---- */
+  @page {
+    size: A4 portrait;
+    margin: 10mm 11mm;
+  }
+
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      background-image: none !important;
+      font-size: 9.5pt;
+    }
+    .container {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .corner-deco,
+    .tape {
+      display: none !important;
+    }
+    .hero { padding: 4mm 0 !important; page-break-after: avoid; }
+    .hero h1 { font-size: 20pt !important; }
+    .hero .tagline { font-size: 9pt !important; }
+    .nav-bar {
+      justify-content: center !important;
+      gap: 6px !important;
+      page-break-inside: avoid;
+    }
+    .nav-bar a { padding: 4px 12px !important; font-size: 9pt !important; }
+    .scene {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      box-shadow: none !important;
+      margin-bottom: 6mm !important;
+      border-width: 1.5px !important;
+    }
+    .scene-header { padding: 10px 14px !important; }
+    .scene-body { padding: 12px 14px 16px !important; }
+    .scene-title { font-size: 13pt !important; }
+    .scene-subtitle { font-size: 9pt !important; }
+    .api-card { box-shadow: none !important; }
+    .api-bar { padding: 8px 12px !important; font-size: 10pt !important; }
+    .api-path { font-size: 9pt !important; }
+    .ptable { font-size: 9pt !important; }
+    .ptable th, .ptable td { padding: 5px 8px !important; }
+    .json-block {
+      font-size: 7.5pt !important;
+      line-height: 1.45 !important;
+      overflow: visible !important;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .story { font-size: 10pt !important; }
+    .duo { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .footer { margin-top: 6mm; font-size: 9pt; }
+    a { color: inherit !important; text-decoration: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="corner-deco tl">🔔</div>
+<div class="corner-deco tr">📨</div>
+<div class="corner-deco bl">🛡️</div>
+<div class="corner-deco br">📋</div>
+
+<div class="container">
+
+  <!-- ===== HERO ===== -->
+  <div class="hero">
+    <h1>🔔 通知系统 API 接口设计</h1>
+    <div class="tagline">Notification Center · Internal + Client + Admin · RESTful API · Idempotent</div>
+    <div class="badge-row">
+      <span class="badge" style="background: var(--purple); color: var(--purple-dark);">7 场景</span>
+      <span class="badge" style="background: var(--green); color: var(--green-dark);">20+ 接口</span>
+      <span class="badge" style="background: var(--yellow); color: var(--yellow-dark);">三层对象模型</span>
+      <span class="badge" style="background: var(--pink); color: var(--pink-dark);">mTLS 内部鉴权</span>
+      <span class="badge" style="background: var(--blue); color: var(--blue-dark);">多实体(多牌照)</span>
+    </div>
+  </div>
+
+  <!-- ===== NAV ===== -->
+  <div class="nav-bar">
+    <a href="#scene1">1. 事件接入</a>
+    <a href="#scene2">2. 站内信收件箱</a>
+    <a href="#scene3">3. 消息状态查询</a>
+    <a href="#scene4">4. 用户偏好 & 同意</a>
+    <a href="#scene5">5. 设备管理</a>
+    <a href="#scene6">6. 模板管理</a>
+    <a href="#scene7">7. 通道回执</a>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 1: EVENT INGESTION                                             -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-purple" id="scene1">
+    <div class="tape tape-tr"></div>
+    <div class="scene-header">
+      <div class="scene-num">1</div>
+      <div class="scene-meta">
+        <div class="scene-title">📥 事件接入 & 通知发送 <span class="scene-tag internal">INTERNAL</span></div>
+        <div class="scene-subtitle">Business systems publish notification events via internal API</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #faf5ff; border-color: var(--purple-deep);">
+        <span class="char">🏦</span>
+        风控引擎检测到用户追保预警，调用通知中心内部 API 发布事件。通知中心幂等校验后，按策略编排 → 模板渲染 → 多通道投递。上游系统只需关心"发事件"，通道选择、降级、限频全部由通知中心负责。
+      </div>
+
+      <!-- API: Event Submit -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/internal/v1/notification/events</span>
+          <span class="api-desc">业务事件上报</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label header">📋 Request Headers</div>
+            <table class="ptable">
+              <tr><th>Header</th><th>类型</th><th>必填</th><th>说明</th></tr>
+              <tr><td class="fname">X-Entity-Id</td><td><span class="ftype">Long</span></td><td class="freq">必填</td><td>法律实体ID</td></tr>
+              <tr><td class="fname">X-Trace-Id</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>全链路追踪ID</td></tr>
+              <tr><td class="fname">Idempotency-Key</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>幂等键，重复提交返回已处理结果</td></tr>
+              <tr><td class="fname">Authorization</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>mTLS 服务身份认证</td></tr>
+            </table>
+          </div>
+
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <table class="ptable">
+              <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+              <tr><td class="fname">eventId</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>事件唯一ID</td></tr>
+              <tr><td class="fname">sourceSystem</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>来源系统：RISK_ENGINE / TRADE_ENGINE / FUND_SYSTEM</td></tr>
+              <tr><td class="fname">eventType</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>事件类型：MARGIN_CALL / ORDER_FILLED / DEPOSIT</td></tr>
+              <tr><td class="fname">bizType</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>业务域：TRADE / FUND / RISK / ACCOUNT / ASSET / IB / MARKET / SERVICE / MARKETING</td></tr>
+              <tr><td class="fname">bizId</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>业务单号</td></tr>
+              <tr><td class="fname">userId</td><td><span class="ftype">Long</span></td><td class="freq">必填</td><td>目标用户ID</td></tr>
+              <tr><td class="fname">priority</td><td><span class="ftype">String</span></td><td class="freq">必填</td><td>优先级：P0 / P1 / P2 / P3</td></tr>
+              <tr><td class="fname">locale</td><td><span class="ftype">String</span></td><td class="fopt">选填</td><td>语言：zh-CN / zh-TW / en / ar / ja，默认 zh-CN</td></tr>
+              <tr><td class="fname">correlationId</td><td><span class="ftype">String</span></td><td class="fopt">选填</td><td>关联ID（同一业务流程多事件关联）</td></tr>
+              <tr><td class="fname">payload</td><td><span class="ftype">Object</span></td><td class="freq">必填</td><td>事件内容（模板变量数据源）</td></tr>
+              <tr><td class="fname">overrides</td><td><span class="ftype">Object</span></td><td class="fopt">选填</td><td>覆盖配置：templateCode / actionUrl / expireAt / channelPlanOverride</td></tr>
+            </table>
+          </div>
+
+          <div class="duo">
+            <div class="param-section">
+              <div class="param-label res">✅ Response (成功)</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"message"</span>: <span class="jv">"success"</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"accepted"</span>: <span class="jb">true</span>,
+    <span class="jk">"duplicate"</span>: <span class="jb">false</span>,
+    <span class="jk">"eventId"</span>: <span class="jv">"evt_20250409_risk_001"</span>,
+    <span class="jk">"messageId"</span>: <span class="jv">"msg_202504091029001"</span>,
+    <span class="jk">"traceId"</span>: <span class="jv">"tr_abc123"</span>,
+    <span class="jk">"status"</span>: <span class="jv">"RECEIVED"</span>,
+    <span class="jk">"estimatedDeliveryMs"</span>: <span class="jn">300</span>
+  }
+}
+              </div>
+            </div>
+            <div class="param-section">
+              <div class="param-label res">🔁 Response (幂等命中)</div>
+              <div class="json-block">
+                <span class="json-label">IDEMPOTENT</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"message"</span>: <span class="jv">"idempotent_hit"</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"accepted"</span>: <span class="jb">true</span>,
+    <span class="jk">"duplicate"</span>: <span class="jb">true</span>,
+    <span class="jk">"eventId"</span>: <span class="jv">"evt_20250409_risk_001"</span>,
+    <span class="jk">"messageId"</span>: <span class="jv">"msg_202504091029001"</span>,
+    <span class="jk">"status"</span>: <span class="jv">"SENT"</span>,
+    <span class="jk">"hint"</span>: <span class="jv">"Event already processed"</span>
+  }
+}
+              </div>
+            </div>
+          </div>
+
+          <div class="tip info">
+            📌 <strong>幂等机制</strong>：Redis SET NX (TTL=24h) 为第一道防线 + DB 唯一索引 (idempotency_key) 兜底。重复提交返回已处理结果，不会产生重复通知。
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- API: Manual Create -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/internal/v1/notifications</span>
+          <span class="api-desc">手动创建通知（运营/客服）</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"entityId"</span>: <span class="jn">1001</span>,
+  <span class="jk">"userId"</span>: <span class="jn">88001234</span>,
+  <span class="jk">"category"</span>: <span class="jv">"SERVICE"</span>,
+  <span class="jk">"msgType"</span>: <span class="jv">"MAINTENANCE_NOTICE"</span>,
+  <span class="jk">"priority"</span>: <span class="jv">"P3"</span>,
+  <span class="jk">"templateCode"</span>: <span class="jv">"TPL_SERVICE_MAINT_001"</span>,
+  <span class="jk">"locale"</span>: <span class="jv">"zh-CN"</span>,
+  <span class="jk">"payload"</span>: { <span class="jk">"startTime"</span>: <span class="jv">"2025-04-10 01:00"</span>, <span class="jk">"endTime"</span>: <span class="jv">"2025-04-10 03:00"</span> },
+  <span class="jk">"channelPlanOverride"</span>: { <span class="jk">"channels"</span>: [<span class="jv">"INBOX"</span>, <span class="jv">"EMAIL"</span>] }
+}
+            </div>
+          </div>
+          <div class="tip warn">⚠️ 人工通知必须记录审计日志（operator + reason），审批后方可发送。</div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- API: Retry & Cancel -->
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/messages/{messageId}/retry</span>
+            <span class="api-desc">消息重试</span>
+          </div>
+          <div class="api-content">
+            <div class="tip info">用于失败任务重试或人工补发，需鉴权 + 审计日志。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/messages/{messageId}/cancel</span>
+            <span class="api-desc">消息取消</span>
+          </div>
+          <div class="api-content">
+            <div class="tip warn">仅在未发送前 (status=RECEIVED/VALIDATED/RENDERED) 且业务允许时可取消。</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 2: INBOX                                                       -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-blue" id="scene2">
+    <div class="tape tape-tl"></div>
+    <div class="scene-header">
+      <div class="scene-num">2</div>
+      <div class="scene-meta">
+        <div class="scene-title">📬 站内信收件箱 <span class="scene-tag client">CLIENT</span></div>
+        <div class="scene-subtitle">User inbox: list, read, ack, delete, pin</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #eff6ff; border-color: var(--blue-deep);">
+        <span class="char">👤</span>
+        用户打开 App 站内信页面，看到未读消息列表。点击追保预警消息后标记已读，再点击"确认"按钮完成合规确认。系统记录确认时间戳，异步写入 WORM 合规存储。
+      </div>
+
+      <!-- API: Inbox List -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/inbox/messages?category={category}&status=unread&page=1&pageSize=20</span>
+          <span class="api-desc">查询收件箱</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"unreadCount"</span>: <span class="jn">3</span>,
+    <span class="jk">"unackedCount"</span>: <span class="jn">1</span>,
+    <span class="jk">"total"</span>: <span class="jn">128</span>,
+    <span class="jk">"page"</span>: <span class="jn">1</span>,
+    <span class="jk">"pageSize"</span>: <span class="jn">20</span>,
+    <span class="jk">"items"</span>: [
+      {
+        <span class="jk">"inboxId"</span>: <span class="jv">"inbox_1001"</span>,
+        <span class="jk">"messageId"</span>: <span class="jv">"msg_202504091029001"</span>,
+        <span class="jk">"category"</span>: <span class="jv">"RISK"</span>,
+        <span class="jk">"priority"</span>: <span class="jn">0</span>,
+        <span class="jk">"title"</span>: <span class="jv">"【追保预警】您的账户维持担保比例已降至128.5%"</span>,
+        <span class="jk">"contentPreview"</span>: <span class="jv">"请于T+1日14:30前补充担保物..."</span>,
+        <span class="jk">"actionUrl"</span>: <span class="jv">"app://margin/collateral"</span>,
+        <span class="jk">"ackPolicy"</span>: <span class="jv">"CONFIRM"</span>,
+        <span class="jk">"isRead"</span>: <span class="jb">false</span>,
+        <span class="jk">"isAcked"</span>: <span class="jb">false</span>,
+        <span class="jk">"isPinned"</span>: <span class="jb">true</span>,
+        <span class="jk">"createdAt"</span>: <span class="jv">"2025-04-09T09:29:00Z"</span>
+      }
+    ]
+  }
+}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/api/v1/inbox/messages/{inboxId}/read</span>
+            <span class="api-desc">标记已读</span>
+          </div>
+          <div class="api-content">
+            <div class="tip ok">更新 is_read=1，read_at=NOW()。同步更新对应 ChannelTask 的 read_at。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/api/v1/messages/{messageId}/ack</span>
+            <span class="api-desc">显式确认</span>
+          </div>
+          <div class="api-content">
+            <div class="param-section">
+              <div class="param-label req">📤 Request Body</div>
+              <div class="json-block">
+                <span class="json-label">JSON</span>
+{
+  <span class="jk">"clientTime"</span>: <span class="jv">"2025-04-09T09:31:50Z"</span>,
+  <span class="jk">"deviceId"</span>: <span class="jv">"iphone_abc123"</span>,
+  <span class="jk">"channel"</span>: <span class="jv">"INBOX"</span>
+}
+              </div>
+            </div>
+            <div class="tip danger">🔒 P0 风控/合规类消息必须确认。确认后异步写入 WORM（消息体+确认时间+设备ID）。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method delete">DELETE</span>
+          <span class="api-path">/api/v1/inbox/messages/{inboxId}</span>
+          <span class="api-desc">删除收件箱消息</span>
+        </div>
+        <div class="api-content">
+          <div class="tip warn">⚠️ 软删除（is_deleted=1），不可物理删除审计记录。用户删除后前端不再展示，后端审计数据保留。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 3: MESSAGE STATUS                                              -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-green" id="scene3">
+    <div class="tape tape-tr"></div>
+    <div class="scene-header">
+      <div class="scene-num">3</div>
+      <div class="scene-meta">
+        <div class="scene-title">🔍 消息状态查询 <span class="scene-tag internal">INTERNAL</span> <span class="scene-tag client">CLIENT</span></div>
+        <div class="scene-subtitle">Full lifecycle tracing: event → message → channel tasks</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #f0fdf4; border-color: var(--green-deep);">
+        <span class="char">🔍</span>
+        客服需要排查某条追保预警消息的投递情况。调用状态查询接口，可看到完整的通道任务列表：Push 失败（Token 失效）→ 降级 SMS 成功送达 → 用户在站内信确认。全链路可追踪。
+      </div>
+
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/messages/{messageId}/status</span>
+          <span class="api-desc">消息状态查询</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"messageId"</span>: <span class="jv">"msg_202504091029001"</span>,
+    <span class="jk">"eventId"</span>: <span class="jv">"evt_20250409_risk_001"</span>,
+    <span class="jk">"msgType"</span>: <span class="jv">"MARGIN_CALL_WARNING"</span>,
+    <span class="jk">"priority"</span>: <span class="jv">"P0"</span>,
+    <span class="jk">"userId"</span>: <span class="jn">88001234</span>,
+    <span class="jk">"status"</span>: <span class="jv">"COMPLETED"</span>,
+    <span class="jk">"ackPolicy"</span>: <span class="jv">"CONFIRM"</span>,
+    <span class="jk">"channelTasks"</span>: [
+      {
+        <span class="jk">"taskId"</span>: <span class="jv">"task_push_001"</span>,
+        <span class="jk">"channel"</span>: <span class="jv">"PUSH"</span>,
+        <span class="jk">"taskStatus"</span>: <span class="jv">"FAILED"</span>,
+        <span class="jk">"isFallback"</span>: <span class="jb">false</span>,
+        <span class="jk">"lastErrorCode"</span>: <span class="jv">"INVALID_TOKEN"</span>
+      },
+      {
+        <span class="jk">"taskId"</span>: <span class="jv">"task_inbox_001"</span>,
+        <span class="jk">"channel"</span>: <span class="jv">"INBOX"</span>,
+        <span class="jk">"taskStatus"</span>: <span class="jv">"ACKED"</span>,
+        <span class="jk">"isFallback"</span>: <span class="jb">false</span>,
+        <span class="jk">"deliveredAt"</span>: <span class="jv">"2025-04-09T09:29:00.050Z"</span>,
+        <span class="jk">"readAt"</span>: <span class="jv">"2025-04-09T09:31:45Z"</span>,
+        <span class="jk">"ackAt"</span>: <span class="jv">"2025-04-09T09:31:50Z"</span>
+      },
+      {
+        <span class="jk">"taskId"</span>: <span class="jv">"task_sms_001"</span>,
+        <span class="jk">"channel"</span>: <span class="jv">"SMS"</span>,
+        <span class="jk">"taskStatus"</span>: <span class="jv">"DELIVERED"</span>,
+        <span class="jk">"isFallback"</span>: <span class="jb">true</span>,
+        <span class="jk">"deliveredAt"</span>: <span class="jv">"2025-04-09T09:29:32Z"</span>
+      }
+    ],
+    <span class="jk">"timeline"</span>: {
+      <span class="jk">"createdAt"</span>: <span class="jv">"2025-04-09T09:29:00.000Z"</span>,
+      <span class="jk">"renderedAt"</span>: <span class="jv">"2025-04-09T09:29:00.050Z"</span>,
+      <span class="jk">"completedAt"</span>: <span class="jv">"2025-04-09T09:31:50.000Z"</span>
+    }
+  }
+}
+            </div>
+          </div>
+          <div class="tip info">📌 <strong>channelTasks</strong> 展示所有通道任务（含降级通道），<strong>isFallback=true</strong> 标识降级触发的任务。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 4: PREFERENCE & CONSENT                                        -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-yellow" id="scene4">
+    <div class="tape tape-tl"></div>
+    <div class="scene-header">
+      <div class="scene-num">4</div>
+      <div class="scene-meta">
+        <div class="scene-title">⚙️ 用户偏好 & 同意管理 <span class="scene-tag client">CLIENT</span></div>
+        <div class="scene-subtitle">Preference center + Consent management + Quiet hours</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #fefce8; border-color: var(--yellow-deep);">
+        <span class="char">👤</span>
+        用户进入通知设置页面，关闭营销类推送，设置静默时段 22:00-08:00。系统立即生效，后续营销消息仅走站内信。但风控/安全类消息不受偏好限制，始终强制发送。
+      </div>
+
+      <!-- Preference Query -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method get">GET</span>
+          <span class="api-path">/api/v1/users/{userId}/notification-preferences</span>
+          <span class="api-desc">查询通知偏好</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label res">✅ Response</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"code"</span>: <span class="jn">0</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"userId"</span>: <span class="jn">88001234</span>,
+    <span class="jk">"language"</span>: <span class="jv">"zh-CN"</span>,
+    <span class="jk">"timezone"</span>: <span class="jv">"Asia/Shanghai"</span>,
+    <span class="jk">"marketingOptIn"</span>: <span class="jb">false</span>,
+    <span class="jk">"quietHours"</span>: { <span class="jk">"enabled"</span>: <span class="jb">true</span>, <span class="jk">"start"</span>: <span class="jv">"22:00"</span>, <span class="jk">"end"</span>: <span class="jv">"08:00"</span> },
+    <span class="jk">"channelOpt"</span>: { <span class="jk">"PUSH"</span>: <span class="jb">true</span>, <span class="jk">"SMS"</span>: <span class="jb">false</span>, <span class="jk">"EMAIL"</span>: <span class="jb">true</span>, <span class="jk">"INBOX"</span>: <span class="jb">true</span> },
+    <span class="jk">"categoryOpt"</span>: { <span class="jk">"TRADE"</span>: <span class="jb">true</span>, <span class="jk">"FUND"</span>: <span class="jb">true</span>, <span class="jk">"RISK"</span>: <span class="jb">true</span>, <span class="jk">"MARKETING"</span>: <span class="jb">false</span> },
+    <span class="jk">"complianceLocked"</span>: [
+      { <span class="jk">"category"</span>: <span class="jv">"RISK"</span>, <span class="jk">"note"</span>: <span class="jv">"合规强制，不可修改"</span> },
+      { <span class="jk">"category"</span>: <span class="jv">"ACCOUNT"</span>, <span class="jk">"note"</span>: <span class="jv">"安全类通知，不可关闭"</span> }
+    ]
+  }
+}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- Preference Update -->
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method put">PUT</span>
+          <span class="api-path">/api/v1/users/{userId}/notification-preferences</span>
+          <span class="api-desc">更新通知偏好</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"language"</span>: <span class="jv">"zh-CN"</span>,
+  <span class="jk">"timezone"</span>: <span class="jv">"Asia/Shanghai"</span>,
+  <span class="jk">"channelOpt"</span>: { <span class="jk">"PUSH"</span>: <span class="jb">true</span>, <span class="jk">"SMS"</span>: <span class="jb">false</span>, <span class="jk">"EMAIL"</span>: <span class="jb">true</span> },
+  <span class="jk">"categoryOpt"</span>: { <span class="jk">"MARKETING"</span>: <span class="jb">false</span> },
+  <span class="jk">"quietHours"</span>: { <span class="jk">"enabled"</span>: <span class="jb">true</span>, <span class="jk">"start"</span>: <span class="jv">"22:00"</span>, <span class="jk">"end"</span>: <span class="jv">"08:00"</span> }
+}
+            </div>
+          </div>
+          <div class="tip warn">⚠️ <strong>complianceLocked</strong> 分类的偏好由系统忽略，即使前端传入也不会生效。P0/P1 合规消息始终强制发送。</div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <!-- Consent -->
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/api/v1/users/{userId}/consents/marketing/grant</span>
+            <span class="api-desc">营销授权</span>
+          </div>
+          <div class="api-content">
+            <div class="tip ok">记录授权来源(APP/WEB)、时间、凭证引用。GDPR/个人信息保护法合规必备。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/api/v1/users/{userId}/consents/marketing/revoke</span>
+            <span class="api-desc">营销退订</span>
+          </div>
+          <div class="api-content">
+            <div class="tip danger">退订后 24h 内生效。仅影响 P2/P3 营销类消息，P0/P1 合规类不受影响。</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 5: DEVICE MANAGEMENT                                           -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-pink" id="scene5">
+    <div class="tape tape-tr"></div>
+    <div class="scene-header">
+      <div class="scene-num">5</div>
+      <div class="scene-meta">
+        <div class="scene-title">📱 Push 设备管理 <span class="scene-tag client">CLIENT</span></div>
+        <div class="scene-subtitle">Device token registration, update & deregistration</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #fdf2f8; border-color: var(--pink-deep);">
+        <span class="char">📱</span>
+        用户安装 App 并登录后，客户端自动注册设备 Token。一个用户可绑定多个设备（手机+平板+Web），Push 时向所有有效设备发送。Token 失效时，通过回执自动标记 INVALID 并记录失败原因。
+      </div>
+
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/api/v1/push/devices</span>
+          <span class="api-desc">注册 Push 设备</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body</div>
+            <div class="json-block">
+              <span class="json-label">JSON</span>
+{
+  <span class="jk">"appId"</span>: <span class="jv">"broker-app"</span>,
+  <span class="jk">"platform"</span>: <span class="jv">"IOS"</span>,        <span class="jc">// IOS / ANDROID / WEB</span>
+  <span class="jk">"pushProvider"</span>: <span class="jv">"APNS"</span>,    <span class="jc">// APNS / FCM / HMS / MIPUSH / OPPO / VIVO / WEBPUSH</span>
+  <span class="jk">"deviceFingerprint"</span>: <span class="jv">"fp_iphone15_abc123"</span>,
+  <span class="jk">"deviceToken"</span>: <span class="jv">"apns_token_abc123xyz"</span>,
+  <span class="jk">"environment"</span>: <span class="jv">"PROD"</span>,     <span class="jc">// PROD / UAT / DEV</span>
+  <span class="jk">"appVersion"</span>: <span class="jv">"5.2.1"</span>
+}
+            </div>
+          </div>
+          <div class="tip info">📌 唯一键：(entity_id, user_id, app_id, device_fingerprint, push_provider)。重复注册则更新 Token。</div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method delete">DELETE</span>
+          <span class="api-path">/api/v1/push/devices/{deviceId}</span>
+          <span class="api-desc">注销设备</span>
+        </div>
+        <div class="api-content">
+          <div class="tip ok">用户退出登录时调用。标记 token_status=INVALID，后续不再向该设备推送。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 6: TEMPLATE MANAGEMENT                                         -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-indigo" id="scene6">
+    <div class="tape tape-tl"></div>
+    <div class="scene-header">
+      <div class="scene-num">6</div>
+      <div class="scene-meta">
+        <div class="scene-title">📝 模板管理 <span class="scene-tag admin">ADMIN</span></div>
+        <div class="scene-subtitle">Template versioning, approval flow, publish & retire</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #eef2ff; border-color: var(--indigo-deep);">
+        <span class="char">📋</span>
+        运营团队需要修改追保预警的短信模板措辞。创建新版本 v4 → 提交审批 → 合规团队审批通过 → 发布上线。旧版本 v3 自动标记为 RETIRED。全程版本化追踪，任何时刻可回溯历史版本。
+      </div>
+
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/internal/v1/templates</span>
+          <span class="api-desc">创建模板</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body (核心字段)</div>
+            <table class="ptable">
+              <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+              <tr><td class="fname">templateCode</td><td><span class="ftype">String</span></td><td>模板代码：MARGIN_CALL_WARNING</td></tr>
+              <tr><td class="fname">category</td><td><span class="ftype">String</span></td><td>所属业务域</td></tr>
+              <tr><td class="fname">audienceType</td><td><span class="ftype">String</span></td><td>TRANSACTIONAL / REGULATORY / MARKETING / SERVICE</td></tr>
+              <tr><td class="fname">jurisdiction</td><td><span class="ftype">String</span></td><td>司法辖区：CN / HK / SG / US / EU</td></tr>
+              <tr><td class="fname">defaultPriority</td><td><span class="ftype">Integer</span></td><td>默认优先级：0=P0 1=P1 2=P2 3=P3</td></tr>
+              <tr><td class="fname">allowUnsubscribe</td><td><span class="ftype">Boolean</span></td><td>是否允许退订</td></tr>
+              <tr><td class="fname">approvalRequired</td><td><span class="ftype">Boolean</span></td><td>变更是否需审批</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method post">POST</span>
+          <span class="api-path">/internal/v1/templates/{templateCode}/versions</span>
+          <span class="api-desc">创建模板版本</span>
+        </div>
+        <div class="api-content">
+          <div class="param-section">
+            <div class="param-label req">📤 Request Body (核心字段)</div>
+            <table class="ptable">
+              <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+              <tr><td class="fname">version</td><td><span class="ftype">String</span></td><td>版本号：v4</td></tr>
+              <tr><td class="fname">locale</td><td><span class="ftype">String</span></td><td>语言：zh-CN</td></tr>
+              <tr><td class="fname">channelContentJson</td><td><span class="ftype">Object</span></td><td>各通道内容模板（见下方示例）</td></tr>
+              <tr><td class="fname">variablesSchemaJson</td><td><span class="ftype">Array</span></td><td>变量定义：[{"name":"amount","type":"decimal","required":true}]</td></tr>
+              <tr><td class="fname">renderEngine</td><td><span class="ftype">String</span></td><td>渲染引擎（白名单）：mustache / handlebars</td></tr>
+              <tr><td class="fname">changeDesc</td><td><span class="ftype">String</span></td><td>变更说明</td></tr>
+            </table>
+          </div>
+          <div class="json-block" style="margin-top: 12px;">
+            <span class="json-label">channelContentJson 示例</span>
+{
+  <span class="jk">"push"</span>: { <span class="jk">"title"</span>: <span class="jv">"【追保预警】担保比降至{{ratio}}"</span>, <span class="jk">"body"</span>: <span class="jv">"请于{{deadline}}前补充{{amount}}元"</span> },
+  <span class="jk">"sms"</span>: { <span class="jk">"body"</span>: <span class="jv">"【XX证券】追保预警：担保比{{ratio}}，请于{{deadline}}前补充"</span> },
+  <span class="jk">"email"</span>: { <span class="jk">"subject"</span>: <span class="jv">"追保预警通知"</span>, <span class="jk">"bodyHtml"</span>: <span class="jv">"&lt;p&gt;尊敬的客户...&lt;/p&gt;"</span> },
+  <span class="jk">"inbox"</span>: { <span class="jk">"title"</span>: <span class="jv">"追保预警"</span>, <span class="jk">"body"</span>: <span class="jv">"&lt;p&gt;...&lt;/p&gt;"</span> },
+  <span class="jk">"voice"</span>: { <span class="jk">"tts"</span>: <span class="jv">"您好，您的账户担保比降至{{ratio}}..."</span> }
+}
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/templates/{code}/versions/{ver}/approve</span>
+            <span class="api-desc">审批模板版本</span>
+          </div>
+          <div class="api-content">
+            <div class="tip warn">交易/风控/合规类模板必须经合规团队审批。审批记录（审批人+时间）不可删除。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/templates/{code}/versions/{ver}/publish</span>
+            <span class="api-desc">发布模板版本</span>
+          </div>
+          <div class="api-content">
+            <div class="tip ok">发布后即为 PUBLISHED 状态，新消息使用此版本渲染。旧版本自动 RETIRED。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="api-card">
+        <div class="api-bar">
+          <span class="method get">GET</span>
+          <span class="api-path">/internal/v1/templates/{templateCode}/versions/{version}?locale=zh-CN</span>
+          <span class="api-desc">查询模板版本</span>
+        </div>
+        <div class="api-content">
+          <div class="tip info">📌 状态流转：DRAFT → PENDING_APPROVAL → APPROVED → PUBLISHED → RETIRED。已发布版本不可修改，只能创建新版本。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!--  SCENE 7: CHANNEL CALLBACKS                                           -->
+  <!-- ===================================================================== -->
+  <div class="scene bg-orange" id="scene7">
+    <div class="tape tape-tr"></div>
+    <div class="scene-header">
+      <div class="scene-num">7</div>
+      <div class="scene-meta">
+        <div class="scene-title">📩 通道回执 & 回调 <span class="scene-tag callback">CALLBACK</span></div>
+        <div class="scene-subtitle">Delivery receipt, open tracking, bounce & unsubscribe</div>
+      </div>
+    </div>
+    <div class="scene-body">
+
+      <div class="story" style="background: #fff7ed; border-color: var(--orange-deep);">
+        <span class="char">📩</span>
+        APNs/FCM/SMS 供应商通过 Webhook 回调通知送达结果。通知中心接收回执后更新通道任务状态，触发后续流程（已送达 → 停止降级 / 失败 → 触发降级）。所有回调必须验签+防重放+幂等。
+      </div>
+
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/callbacks/{providerCode}/delivery</span>
+            <span class="api-desc">送达回执</span>
+          </div>
+          <div class="api-content">
+            <div class="tip ok">供应商确认已送达用户设备。更新 task_status=DELIVERED，记录 delivered_at。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/callbacks/{providerCode}/open</span>
+            <span class="api-desc">打开/阅读回执</span>
+          </div>
+          <div class="api-content">
+            <div class="tip info">邮件追踪像素/短信阅读回执。更新 task_status=READ，记录 read_at。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="internal-arrow">▼ ▼ ▼</div>
+
+      <div class="duo">
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/callbacks/{providerCode}/bounce</span>
+            <span class="api-desc">失败/退信回执</span>
+          </div>
+          <div class="api-content">
+            <div class="tip danger">Hard bounce → 标记地址无效 + 加入 suppression。Soft bounce → 可重试。</div>
+          </div>
+        </div>
+        <div class="api-card">
+          <div class="api-bar">
+            <span class="method post">POST</span>
+            <span class="api-path">/internal/v1/callbacks/{providerCode}/unsubscribe</span>
+            <span class="api-desc">用户退订回调</span>
+          </div>
+          <div class="api-content">
+            <div class="tip warn">邮件退订链接触发。记录 consent REVOKED + suppression ACTIVE。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip danger" style="margin-top: 20px;">
+        🔒 <strong>安全要求</strong>：所有回调接口必须 1) 验签（供应商签名验证）2) 防重放（timestamp + nonce 校验）3) 幂等（provider_msg_id 去重）
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <div class="footer">
+    <div style="font-size: 32px; margin-bottom: 8px;">🔔📨📬🛡️</div>
+    <div>通知系统 (Notification Center) API 接口设计</div>
+    <div style="margin-top: 4px;">7 Scenes · 20+ APIs · Internal + Client + Admin + Callback</div>
+    <div style="margin-top: 8px; font-size: 14px; color: #bbb;">Generated on 2026-04-09</div>
+  </div>
+
+</div><!-- end container -->
+
+</body>
+</html>

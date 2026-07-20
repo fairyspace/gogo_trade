@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>杠杆配置系统架构流程图</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
+
+  :root {
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', 'SimKai', cursive;
+    --font-ui: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'SimHei', 'Noto Sans SC', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #fefcf3;
+    background-image: radial-gradient(circle, #e8e4d9 1px, transparent 1px);
+    background-size: 24px 24px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    color: #2d2d2d;
+    min-height: 100vh;
+    padding: 30px;
+  }
+
+  /* Title */
+  .main-title { text-align: center; margin-bottom: 10px; }
+  .main-title h1 {
+    font-family: var(--font-hand); font-size: 52px; color: #333;
+    letter-spacing: 6px; text-shadow: 3px 3px 0 #ffd36e;
+    position: relative; display: inline-block; font-weight: 400;
+  }
+  .main-title h1::after {
+    content: ''; position: absolute; bottom: -4px; left: -10px; right: -10px;
+    height: 6px; background: #ff6b6b; border-radius: 3px; transform: rotate(-0.5deg);
+  }
+  .main-title .subtitle {
+    font-size: 18px; color: #555; margin-top: 14px;
+    font-weight: 600; line-height: 1.5;
+  }
+
+  /* Section Title */
+  .section-title {
+    font-family: var(--font-hand); font-size: 34px; font-weight: 400;
+    color: #2d2d2d; margin: 40px 0 20px 0; padding: 8px 20px;
+    border-left: 8px solid #ff6b6b;
+    background: linear-gradient(90deg, #fff3cd 0%, transparent 100%);
+    border-radius: 0 12px 12px 0; display: inline-block;
+  }
+
+  .flow-container { max-width: 1300px; margin: 0 auto; position: relative; }
+
+  /* DB Overview */
+  .db-overview {
+    display: flex; justify-content: center; gap: 20px;
+    flex-wrap: wrap; margin-bottom: 30px; padding: 4px 0 8px;
+  }
+  .db-group {
+    background: #fff; border: 3.5px solid #2d2d2d; border-radius: 18px;
+    padding: 20px 22px; flex: 1 1 280px; max-width: 400px;
+    min-width: min(100%, 260px); position: relative;
+    box-shadow: 5px 5px 0 #2d2d2d;
+  }
+  .db-group-title {
+    font-family: var(--font-hand); font-size: 22px; font-weight: 400;
+    color: #fff; background: #2d2d2d; display: inline-block;
+    padding: 4px 16px; border-radius: 10px; margin-bottom: 14px;
+  }
+  .db-group.config { background: #dbeafe; }
+  .db-group.template { background: #dcfce7; }
+  .db-group.override { background: #f3e8ff; }
+  .db-group.event { background: #fee2e2; }
+  .db-group.audit { background: #fef3c7; }
+  .db-table {
+    font-size: 15px; padding: 6px 0; border-bottom: 2px dashed #bbb;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .db-table:last-child { border-bottom: none; }
+  .db-table .tname { font-weight: bold; color: #1e40af; word-break: break-word; }
+  .db-table .tdesc { color: #555; }
+  .db-group.template .db-table .tname { color: #16a34a; }
+  .db-group.override .db-table .tname { color: #7c3aed; }
+  .db-group.event .db-table .tname { color: #b91c1c; }
+  .db-group.audit .db-table .tname { color: #b45309; }
+
+  /* Flow Steps */
+  .flow-steps {
+    position: relative; display: flex; flex-direction: column;
+    align-items: center; gap: 0;
+  }
+
+  .step-card {
+    background: #fff; border: 3.5px solid #2d2d2d; border-radius: 20px;
+    padding: 24px 30px; width: 90%; max-width: 900px;
+    position: relative; box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
+    margin-bottom: 0;
+  }
+
+  .step-card.blue { background: #dbeafe; }
+  .step-card.green { background: #dcfce7; }
+  .step-card.yellow { background: #fef9c3; }
+  .step-card.purple { background: #f3e8ff; }
+  .step-card.pink { background: #fce7f3; }
+  .step-card.orange { background: #ffedd5; }
+  .step-card.red { background: #fee2e2; }
+
+  .step-num {
+    position: absolute; top: -18px; left: 24px;
+    background: #ff6b6b; color: #fff; font-size: 18px; font-weight: 700;
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 3px solid #2d2d2d; box-shadow: 2px 2px 0 #2d2d2d;
+  }
+
+  .step-title {
+    font-family: var(--font-hand); font-size: 28px; font-weight: 400;
+    color: #1a1a2e; margin-bottom: 10px; padding-left: 36px; line-height: 1.35;
+  }
+  .step-body { font-size: 17px; line-height: 1.65; color: #333; }
+
+  .role-tag {
+    display: inline-block; background: #fbbf24; color: #78350f;
+    font-size: 14px; padding: 2px 10px; border-radius: 8px;
+    border: 2px solid #78350f; margin-right: 6px; font-weight: bold;
+  }
+  .role-tag.sys { background: #93c5fd; color: #1e3a5f; border-color: #1e3a5f; }
+  .role-tag.risk { background: #fca5a5; color: #7f1d1d; border-color: #7f1d1d; }
+  .role-tag.ext { background: #c4b5fd; color: #3b0764; border-color: #3b0764; }
+  .role-tag.engine { background: #6ee7b7; color: #064e3b; border-color: #064e3b; }
+  .role-tag.compliance { background: #f9a8d4; color: #831843; border-color: #831843; }
+
+  .table-tags {
+    margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .table-tag {
+    background: #1e293b; color: #e2e8f0; font-size: 13px;
+    padding: 3px 12px; border-radius: 10px;
+    font-family: 'JetBrains Mono', 'Consolas', var(--font-ui);
+    letter-spacing: 0.3px; white-space: nowrap;
+  }
+
+  /* Arrow */
+  .arrow-down {
+    display: flex; flex-direction: column; align-items: center;
+    height: auto; min-height: 48px; padding: 6px 0 10px;
+  }
+  .arrow-down .arrow-line {
+    width: 5px; flex: 0 0 32px; min-height: 32px;
+    background: repeating-linear-gradient(to bottom,
+      #2d2d2d 0px, #2d2d2d 8px, transparent 8px, transparent 14px);
+    border-radius: 3px;
+  }
+  .arrow-down .arrow-head {
+    width: 0; height: 0;
+    border-left: 14px solid transparent; border-right: 14px solid transparent;
+    border-top: 18px solid #2d2d2d;
+  }
+  .arrow-label {
+    margin-top: 8px; background: #fff7ed; border: 2px solid #ea580c;
+    border-radius: 10px; padding: 4px 14px; font-size: 15px;
+    font-weight: 600; color: #9a3412; text-align: center;
+    line-height: 1.4; box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  }
+
+  /* Decision Box */
+  .decision-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 14px;
+  }
+  .decision-item {
+    background: #fff; border: 3px solid #2d2d2d; border-radius: 14px;
+    padding: 16px; text-align: center; box-shadow: 3px 3px 0 rgba(0,0,0,0.12);
+  }
+  .decision-item.pass { background: #bbf7d0; border-color: #16a34a; }
+  .decision-item.warn { background: #fef9c3; border-color: #ca8a04; }
+  .decision-item.fail { background: #fecaca; border-color: #dc2626; }
+  .decision-item.info { background: #e9d5ff; border-color: #7c3aed; }
+  .decision-item .di-icon { font-size: 32px; margin-bottom: 6px; }
+  .decision-item .di-title { font-size: 20px; font-weight: bold; }
+  .decision-item .di-desc { font-size: 15px; color: #555; margin-top: 4px; }
+
+  /* Pipeline visual */
+  .pipeline {
+    display: flex; align-items: center; gap: 8px; margin: 16px 0;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .pp-stage {
+    background: #fff; border: 3px solid #2d2d2d; border-radius: 14px;
+    padding: 10px 16px; text-align: center; min-width: 120px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.12);
+  }
+  .pp-stage.cap { background: #fecaca; border-color: #dc2626; }
+  .pp-stage.event { background: #fce7f3; border-color: #e11d48; }
+  .pp-stage.tier { background: #fef3c7; border-color: #ca8a04; }
+  .pp-stage.account { background: #f3e8ff; border-color: #7c3aed; }
+  .pp-stage.client { background: #ddd6fe; border-color: #6d28d9; }
+  .pp-stage.group { background: #dbeafe; border-color: #2563eb; }
+  .pp-stage.symbol { background: #dcfce7; border-color: #16a34a; }
+  .pp-stage.symgroup { background: #d1fae5; border-color: #047857; }
+  .pp-stage.fallback { background: #f1f5f9; border-color: #475569; }
+  .pp-stage .pp-name { font-size: 17px; font-weight: bold; }
+  .pp-stage .pp-desc { font-size: 13px; color: #555; }
+  .pp-arrow { font-size: 24px; color: #2d2d2d; font-weight: bold; }
+
+  /* Status Flow */
+  .status-flow {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    justify-content: center; margin: 20px 0; padding: 6px 0 8px;
+  }
+  .sf-node {
+    background: #fff; border: 3px solid #2d2d2d; border-radius: 14px;
+    padding: 10px 14px; text-align: center; min-width: 110px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .sf-node.active { background: #bbf7d0; border-color: #16a34a; }
+  .sf-node.pending { background: #fef9c3; border-color: #ca8a04; }
+  .sf-node.fail { background: #fecaca; border-color: #dc2626; }
+  .sf-node.replaced { background: #e9d5ff; border-color: #7c3aed; }
+  .sf-node .sf-code { font-size: 18px; font-weight: bold; }
+  .sf-node .sf-label { font-size: 13px; color: #555; }
+  .sf-arrow {
+    font-size: 26px; color: #2d2d2d; margin: 0 4px; font-weight: bold;
+  }
+
+  /* Cascade Layer */
+  .cascade-layers {
+    display: flex; flex-direction: column; gap: 6px; margin: 16px 0;
+  }
+  .cascade-layer {
+    background: #fff; border: 3px solid #2d2d2d; border-radius: 12px;
+    padding: 12px 18px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .cascade-layer.l1 { background: #f3e8ff; border-color: #7c3aed; }
+  .cascade-layer.l2 { background: #ddd6fe; border-color: #6d28d9; }
+  .cascade-layer.l3 { background: #dbeafe; border-color: #2563eb; }
+  .cascade-layer.l4 { background: #dcfce7; border-color: #16a34a; }
+  .cascade-icon { font-size: 28px; }
+  .cascade-title { font-size: 18px; font-weight: bold; min-width: 140px; }
+  .cascade-desc { color: #555; font-size: 15px; flex: 1; }
+
+  /* Cache Layers */
+  .cache-stack {
+    display: flex; flex-direction: column; gap: 8px; align-items: stretch;
+  }
+  .cache-layer {
+    border: 3px solid #2d2d2d; border-radius: 14px;
+    padding: 14px 18px; display: grid;
+    grid-template-columns: 60px 130px 1fr 100px;
+    align-items: center; gap: 14px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .cache-layer.l1 { background: #dbeafe; border-color: #2563eb; }
+  .cache-layer.l2 { background: #fce7f3; border-color: #e11d48; }
+  .cache-layer.l3 { background: #fef9c3; border-color: #ca8a04; }
+  .cache-layer.db { background: #dcfce7; border-color: #16a34a; }
+  .cache-icon { font-size: 36px; text-align: center; }
+  .cache-name { font-weight: bold; font-size: 17px; }
+  .cache-detail { color: #555; font-size: 14px; line-height: 1.4; }
+  .cache-sla {
+    background: #1e293b; color: #f1f5f9; padding: 4px 10px;
+    border-radius: 8px; font-size: 13px; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* SLA Table */
+  .sla-table {
+    width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 14px;
+    border: 3px solid #2d2d2d; border-radius: 14px; overflow: hidden;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  .sla-table th {
+    background: #1e293b; color: #f1f5f9; padding: 10px 14px;
+    font-size: 17px; text-align: left;
+  }
+  .sla-table td {
+    padding: 10px 14px; font-size: 16px;
+    border-bottom: 2px dashed #ddd; background: #fff;
+  }
+  .sla-table tr:last-child td { border-bottom: none; }
+  .sla-table td:first-child { font-weight: bold; color: #1e40af; }
+  .sla-table .ok { color: #16a34a; font-weight: bold; }
+  .sla-table .warn-th { color: #ca8a04; font-weight: bold; }
+
+  /* Footer */
+  .footer {
+    text-align: center; margin-top: 50px; padding: 20px;
+    color: #999; font-size: 16px;
+  }
+
+  /* Tape */
+  .tape {
+    position: absolute; width: 80px; height: 28px;
+    background: rgba(255, 222, 89, 0.6);
+    border: 1.5px solid rgba(200, 170, 50, 0.4);
+    transform: rotate(-35deg); top: -10px; right: 30px;
+    border-radius: 2px; z-index: 2;
+  }
+
+  /* Corner Deco */
+  .corner-deco {
+    position: fixed; pointer-events: none; z-index: 0;
+  }
+  .corner-deco.tl { top: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.tr { top: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.bl { bottom: 10px; left: 10px; font-size: 60px; opacity: 0.08; }
+  .corner-deco.br { bottom: 10px; right: 10px; font-size: 60px; opacity: 0.08; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .decision-grid { grid-template-columns: 1fr; }
+    .step-card { width: 98%; padding: 18px; }
+    .db-overview { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+    .db-group { min-width: auto; width: 95%; flex-shrink: 1; }
+    .main-title h1 { font-size: 36px; }
+    .cache-layer { grid-template-columns: 1fr; text-align: center; }
+  }
+
+  /* Print */
+  @page { size: A4 portrait; margin: 10mm 11mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body {
+      background: #fff !important; background-image: none !important;
+      font-size: 10.5pt; padding: 0 !important;
+    }
+    .flow-container { max-width: 100% !important; padding: 0 !important; }
+    .corner-deco, .tape { display: none !important; }
+    .main-title { margin-bottom: 5mm; page-break-after: avoid; }
+    .main-title h1 { font-size: 22pt !important; letter-spacing: 2px !important; }
+    .main-title .subtitle { font-size: 9.5pt !important; }
+    .section-title { font-size: 15pt !important; margin: 6mm 0 4mm !important; page-break-after: avoid; }
+    .db-overview { flex-wrap: wrap !important; justify-content: center !important; }
+    .db-group {
+      flex: 1 1 48% !important; max-width: 100% !important; min-width: 0 !important;
+      box-shadow: none !important; border-width: 2px !important; page-break-inside: avoid;
+    }
+    .db-table { font-size: 9.5pt !important; }
+    .step-card {
+      width: 100% !important; max-width: 100% !important;
+      box-shadow: none !important; border-width: 2px !important;
+      page-break-inside: avoid; padding: 10px 12px !important;
+    }
+    .step-title { font-size: 13pt !important; padding-left: 28px !important; }
+    .step-body { font-size: 10pt !important; }
+    .arrow-down { padding: 3mm 0 !important; }
+    .decision-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
+    .sla-table { font-size: 9.5pt !important; }
+    .sla-table th, .sla-table td { padding: 6px 8px !important; }
+    .cache-layer { padding: 8px 12px !important; }
+    .footer { margin-top: 8mm; font-size: 9pt; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Corner Decorations -->
+<div class="corner-deco tl">⚖️</div>
+<div class="corner-deco tr">📊</div>
+<div class="corner-deco bl">🏛️</div>
+<div class="corner-deco br">⚡</div>
+
+<div class="flow-container">
+
+  <!-- ==================== TITLE ==================== -->
+  <div class="main-title">
+    <h1>⚖️ 杠杆配置系统架构流程图</h1>
+    <div class="subtitle">Leverage Configuration · db_leverage_config · 14 Tables · L0~L8 Resolve · Caffeine+Redis · AOP Audit · MiFID II Ready</div>
+  </div>
+
+  <!-- ==================== SECTION 1: DB OVERVIEW ==================== -->
+  <div class="section-title">📦 数据库架构总览 (db_leverage_config)</div>
+
+  <div class="db-overview">
+    <!-- Config Layer (Regulatory) -->
+    <div class="db-group config">
+      <div class="tape"></div>
+      <div class="db-group-title">⚖️ 监管层 (2张)</div>
+      <div class="db-table"><span class="tname">t_jurisdiction</span><span class="tdesc">监管管辖区</span></div>
+      <div class="db-table"><span class="tname">t_jurisdiction_leverage_limit</span><span class="tdesc">监管×品种组×客户类别 上限</span></div>
+      <div style="margin-top: 14px; font-size: 14px; color: #555; line-height: 1.6;">
+        ⚖️ ESMA / FCA / ASIC / CYSEC / FSCA / SFC / FSA_JP / CFTC / SEC / CSRC<br>
+        🔒 杠杆解析 <b>L8 绝对天花板</b><br>
+        📜 MiFID II / Reg T / 融资融券细则
+      </div>
+    </div>
+
+    <!-- Template Layer -->
+    <div class="db-group template">
+      <div class="tape"></div>
+      <div class="db-group-title">📦 模板层 (2张)</div>
+      <div class="db-table"><span class="tname">t_leverage_template</span><span class="tdesc">杠杆模板（挂账户组）</span></div>
+      <div class="db-table"><span class="tname">t_leverage_tier</span><span class="tdesc">动态分层（仅挂模板）</span></div>
+      <div style="margin-top: 14px; font-size: 14px; color: #555; line-height: 1.6;">
+        🧰 LeverageBlock 8 字段标准化<br>
+        🪜 按敞口阶梯收紧（TIERED/FLAT）<br>
+        ✏️ 拒绝多态关联反模式
+      </div>
+    </div>
+
+    <!-- Default + Override Layer -->
+    <div class="db-group override">
+      <div class="tape"></div>
+      <div class="db-group-title">🎯 默认+覆盖层 (5张)</div>
+      <div class="db-table"><span class="tname">t_symbol_group_leverage_default</span><span class="tdesc">L1 品种组默认</span></div>
+      <div class="db-table"><span class="tname">t_symbol_leverage_default</span><span class="tdesc">L2 品种默认+Reg T</span></div>
+      <div class="db-table"><span class="tname">t_account_group_leverage_rule</span><span class="tdesc">L3 账户组×品种 ★ 核心</span></div>
+      <div class="db-table"><span class="tname">t_client_leverage_override</span><span class="tdesc">L4 客户级（双人审批）</span></div>
+      <div class="db-table"><span class="tname">t_account_leverage_override</span><span class="tdesc">L5 账户级（含 PDT 触发）</span></div>
+    </div>
+
+    <!-- Event + Advanced Layer -->
+    <div class="db-group event">
+      <div class="tape"></div>
+      <div class="db-group-title">🏗️ 事件+高级 (4张)</div>
+      <div class="db-table"><span class="tname">t_margin_event_config</span><span class="tdesc">L7 假期/事件保证金</span></div>
+      <div class="db-table"><span class="tname">t_margin_requirement_rule</span><span class="tdesc">SPAN/PM/Tick波动率</span></div>
+      <div class="db-table"><span class="tname">t_collateral_haircut_rule</span><span class="tdesc">A 股担保品折算</span></div>
+      <div class="db-table"><span class="tname">t_concentration_rule</span><span class="tdesc">集中度控制</span></div>
+    </div>
+
+    <!-- Audit Layer -->
+    <div class="db-group audit">
+      <div class="tape"></div>
+      <div class="db-group-title">📝 审计层 (1张)</div>
+      <div class="db-table"><span class="tname">t_leverage_change_log</span><span class="tdesc">全链路杠杆变更审计</span></div>
+      <div style="margin-top: 14px; font-size: 14px; color: #555; line-height: 1.6;">
+        🔒 应用层 AOP 拦截写入<br>
+        📋 MiFID II / SEC 17a-4 / CSRC<br>
+        🗂️ 按月分区, 三年归档 OSS/S3<br>
+        🔍 operator + approver + workflow_no
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 2: FULL FLOW ==================== -->
+  <div class="section-title">🗺️ 完整杠杆生命周期 (10步)</div>
+
+  <div class="flow-steps">
+
+    <!-- ========== STEP 1 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">1</div>
+      <div class="step-title">⚖️ 监管基线录入 (L8 绝对天花板)</div>
+      <div class="step-body">
+        <span class="role-tag compliance">合规</span><span class="role-tag">运营</span> 维护全球 10 大监管管辖区与 <code>(jurisdiction × symbol_group × client_category)</code> 三维上限矩阵<br><br>
+        <span class="role-tag sys">系统</span> 校验 <code>max_leverage &gt; 0</code>、<code>margin_closeout_level ≤ margin_call_level</code>、同维度 effective_date 不重叠
+        <div style="margin-top: 10px; background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 10px; padding: 10px 14px; font-size: 16px;">
+          📌 <strong>核心约束：</strong>任何账户组规则 / 客户覆盖 / 账户覆盖最终生效杠杆 <b>不得突破</b> 对应监管区上限<br>
+          ⛔ ESMA 散户 FOREX_MAJOR 上限 30:1 / SEC Reg T 4:1 / CSRC 两融 1:1（靠担保品折算放大）<br>
+          🔒 <strong>负余额保护：</strong>ESMA 散户必须开启 <code>negative_balance_protection=1</code>
+        </div>
+        <div class="table-tags">
+          <span class="table-tag">📄 t_jurisdiction (CRUD)</span>
+          <span class="table-tag">📄 t_jurisdiction_leverage_limit (CRUD)</span>
+          <span class="table-tag">📝 t_leverage_change_log (INSERT)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">监管基线确定 → 创建模板与动态分层 📦</div>
+    </div>
+
+    <!-- ========== STEP 2 ========== -->
+    <div class="step-card green">
+      <div class="step-num">2</div>
+      <div class="step-title">📦 杠杆模板 + 动态分层 (按敞口阶梯收紧)</div>
+      <div class="step-body">
+        <span class="role-tag">运营</span> 预定义"杠杆参数包"挂在 <code>t_account_group.leverage_template_id</code> 上批量生效<br><br>
+        <span class="role-tag sys">系统</span> 校验 <code>min ≤ base ≤ max</code>，分层校验 <code>threshold_from &lt; threshold_to</code>，<code>leverage_value &gt; 0</code>
+
+        <div style="margin-top: 12px; background: #f0fdf4; border: 2px dashed #22c55e; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>关键设计 - 动态分层只挂模板：</strong>避免"同时挂多张表"的多态关联反模式<br>
+          🪜 <strong>分层口径（threshold_type）：</strong> VOLUME_LOTS / NOTIONAL_VALUE / NOTIONAL_VALUE_USD / POSITION_COUNT / MARGIN_USED / ACCOUNT_EQUITY<br>
+          📐 <strong>计算方式：</strong>TIERED 阶梯累加 (MT5 经典模式) / FLAT 就高不就低<br>
+          🧬 <strong>克隆模板：</strong>ESMA_RETAIL → FCA_RETAIL 一键复制，仅微调阈值即可上线
+        </div>
+
+        <div class="status-flow" style="margin-top: 12px;">
+          <div class="sf-node pending"><div class="sf-code">Tier 1</div><div class="sf-label">0~50K USD<br>500:1</div></div>
+          <span class="sf-arrow">→</span>
+          <div class="sf-node pending"><div class="sf-code">Tier 2</div><div class="sf-label">50K~200K<br>200:1</div></div>
+          <span class="sf-arrow">→</span>
+          <div class="sf-node pending"><div class="sf-code">Tier 3</div><div class="sf-label">200K~1M<br>100:1</div></div>
+          <span class="sf-arrow">→</span>
+          <div class="sf-node pending"><div class="sf-code">Tier 4</div><div class="sf-label">1M+<br>50:1</div></div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_leverage_template (CRUD)</span>
+          <span class="table-tag">📄 t_leverage_tier (CRUD)</span>
+          <span class="table-tag">🔗 t_account_group.leverage_template_id</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">模板创建完成 → 配置品种维度默认 📊</div>
+    </div>
+
+    <!-- ========== STEP 3 ========== -->
+    <div class="step-card yellow">
+      <div class="step-num">3</div>
+      <div class="step-title">📊 品种维度默认值 (L1 + L2 含 Reg T 双杠杆)</div>
+      <div class="step-body">
+        <span class="role-tag">运营</span> 按 <code>(jurisdiction × account_group_code_pattern)</code> 矩阵化配置"出厂默认值"<br><br>
+        <span class="role-tag sys">系统</span> 校验：①不超监管上限；②min ≤ default ≤ max；③同唯一维度仅一条生效
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">📁 L1 品种组默认</div>
+            <span class="role-tag">运营</span> 维度：<br>
+            &nbsp;&nbsp;• symbol_group_id<br>
+            &nbsp;&nbsp;• jurisdiction_id<br>
+            &nbsp;&nbsp;• account_group_code_pattern<br>
+            <em>例：(ESMA, FOREX_MAJOR, STD_USD) → 30:1</em>
+          </div>
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">📌 L2 品种默认 + Reg T</div>
+            <span class="role-tag">运营</span> 同上 + 品种维度精细<br>
+            &nbsp;&nbsp;✨ <strong>intraday_leverage</strong> 4.00<br>
+            &nbsp;&nbsp;🌙 <strong>overnight_leverage</strong> 2.00<br>
+            <em>满足 SEC Rule 220.12</em>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #fffbeb; border: 2px dashed #ca8a04; border-radius: 10px; padding: 12px; font-size: 15px;">
+          🔑 <strong>关键设计：</strong>L2 优先级高于 L1。同维度仅一条生效（uk_symbol_jur_acct）<br>
+          📐 <strong>账户组通配：</strong><code>account_group_code_pattern</code> 支持 LIKE 通配，如 <code>LIVE_STD_%</code> 匹配所有标准账户组
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_symbol_group_leverage_default (CRUD)</span>
+          <span class="table-tag">📄 t_symbol_leverage_default (CRUD)</span>
+          <span class="table-tag">📦 batch import (≤ 2000)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">默认值就绪 → 账户组×品种 核心覆盖 🎯</div>
+    </div>
+
+    <!-- ========== STEP 4 ========== -->
+    <div class="step-card purple">
+      <div class="step-num">4</div>
+      <div class="step-title">🎯 账户组×品种 核心覆盖 (L3 ★ 用户痛点核心)</div>
+      <div class="step-body">
+        <span class="role-tag">运营</span> 直接对应"同品种在不同账户组下杠杆不同"的核心需求 —— 一行规则一个目标<br><br>
+        <span class="role-tag sys">系统</span> 校验：<code>symbol_id XOR symbol_group_id</code>（允许都为空表示该组所有品种），不超 L8 cap
+
+        <div class="cascade-layers" style="margin-top: 14px;">
+          <div class="cascade-layer l1">
+            <div class="cascade-icon">💎</div>
+            <div class="cascade-title">VIP_OFFSHORE</div>
+            <div class="cascade-desc">× METALS_SPOT → <strong>500:1</strong>（priority=100，VIP 客户营销活动）</div>
+          </div>
+          <div class="cascade-layer l2">
+            <div class="cascade-icon">🥈</div>
+            <div class="cascade-title">STD_OFFSHORE</div>
+            <div class="cascade-desc">× METALS_SPOT → <strong>200:1</strong>（priority=50，标准客户）</div>
+          </div>
+          <div class="cascade-layer l3">
+            <div class="cascade-icon">🇪🇺</div>
+            <div class="cascade-title">STD_ESMA_EUR</div>
+            <div class="cascade-desc">× METALS_SPOT → <strong>20:1</strong>（priority=100，ESMA 散户监管要求）</div>
+          </div>
+          <div class="cascade-layer l4">
+            <div class="cascade-icon">🇺🇸</div>
+            <div class="cascade-title">US_RETAIL</div>
+            <div class="cascade-desc">× STOCKS_US_MARGIN → 日内 4:1 / 隔夜 2:1 (Reg T)</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #faf5ff; border: 2px dashed #7c3aed; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>核心机制：</strong><br>
+          &nbsp;&nbsp;• 🎯 <strong>XOR 约束</strong> — <code>chk_aglr_xor (symbol_id XOR symbol_group_id 或都为空)</code><br>
+          &nbsp;&nbsp;• 🏆 <strong>优先级排序</strong> — 同账户组多条规则按 priority DESC, effective_from DESC<br>
+          &nbsp;&nbsp;• 📐 <strong>覆盖范围</strong> — 单品种 / 品种组 / 该组全部品种 三选一<br>
+          &nbsp;&nbsp;• 🛡️ <strong>互补 t_account_group_symbol_config</strong> — 后者只能配 max_leverage_override，本表配置完整 LeverageBlock + Reg T + 区间
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_account_group_leverage_rule (CRUD)</span>
+          <span class="table-tag">📦 batch import (≤ 500)</span>
+          <span class="table-tag">⚖️ RegulatoryComplianceValidator</span>
+          <span class="table-tag">📨 失效 account_group 维度缓存</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">账户组规则就绪 → 客户/账户级覆盖 👤</div>
+    </div>
+
+    <!-- ========== STEP 5 ========== -->
+    <div class="step-card pink">
+      <div class="step-num">5</div>
+      <div class="step-title">👤 客户级 + 账户级覆盖 (L4 + L5 含 PDT/风控反向触发)</div>
+      <div class="step-body">
+        <span class="role-tag">运营</span><span class="role-tag risk">风控</span><span class="role-tag engine">引擎</span> 三种发起源都进入此层 —— 客户级双人审批；账户级支持系统自动触发<br><br>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px;">
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">L4 客户级覆盖（双人审批）</div>
+            <div style="font-size: 14px; line-height: 1.7;">
+              ✅ 强制 <code>approved_by + approved_at + workflow_no</code><br>
+              ✅ 5 种 override_type：<br>
+              &nbsp;&nbsp;PERMANENT / TEMPORARY / PROMOTIONAL<br>
+              &nbsp;&nbsp;REGULATORY_EXEMPTION / VIP_BENEFIT<br>
+              <em>例：客户签 ESMA 专业协议 → REGULATORY_EXEMPTION 200:1</em>
+            </div>
+          </div>
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">L5 账户级覆盖（系统可自动）</div>
+            <div style="font-size: 14px; line-height: 1.7;">
+              ⚡ <code>trigger_event</code> 必填<br>
+              ⚡ 5 种 override_type：<br>
+              &nbsp;&nbsp;CLIENT_REQUEST / PDT_RESTRICTION<br>
+              &nbsp;&nbsp;RISK_CONTROL / TEMPORARY / PERMANENT<br>
+              <em>例：风控引擎检测到 5 日 4 次日内交易 → 自动 PDT 2:1</em>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #fdf2f8; border: 2px dashed #ec4899; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>PDT 自动触发链路：</strong><br>
+          &nbsp;&nbsp;1️⃣ 风控引擎 5 日 4 次日内交易计数<br>
+          &nbsp;&nbsp;2️⃣ 写入 <code>t_account_leverage_override</code> (override_type=PDT_RESTRICTION, trigger_event=PDT_TRIGGERED, approved_by=NULL)<br>
+          &nbsp;&nbsp;3️⃣ Outbox+CDC 失效该账户 ResolvedLeverage 缓存<br>
+          &nbsp;&nbsp;4️⃣ 下一笔下单 can-open 返回 effective_leverage=2.00 + reason=PDT_RESTRICTED<br>
+          🛡️ <strong>主表零侵入：</strong>不在 <code>t_trading_account</code> 增加 is_pdt_flagged 字段，避免主表字段膨胀
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_client_leverage_override (CRUD + workflow_no)</span>
+          <span class="table-tag">📄 t_account_leverage_override (CRUD + trigger_event)</span>
+          <span class="table-tag">⚡ 风控引擎自动触发</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">用户/账户覆盖就绪 → 事件期临时收紧 / 高级保证金 🏗️</div>
+    </div>
+
+    <!-- ========== STEP 6 ========== -->
+    <div class="step-card orange">
+      <div class="step-num">6</div>
+      <div class="step-title">🏗️ 假期事件 + 高级保证金 + 担保品 + 集中度</div>
+      <div class="step-body">
+        <span class="role-tag">运营</span><span class="role-tag sys">系统</span> 圣诞/春节临时收紧 + SPAN 文件 ETL + A 股担保品折算 + 集中度阀值控制
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">📅 L7 假期/事件保证金</div>
+            <div style="font-size: 14px; line-height: 1.7;">
+              ⭐ 三种调整方式优先级：<br>
+              &nbsp;&nbsp;<code>absolute_leverage</code> &gt; <code>leverage_factor</code> &gt; <code>margin_multiplier</code><br>
+              📢 <code>notification_hours_before</code> 客户预通知<br>
+              🎯 4 维范围：品种/品种组/账户组/监管区
+            </div>
+          </div>
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">🧮 多模式保证金 calc_mode</div>
+            <div style="font-size: 14px; line-height: 1.7;">
+              ⚡ FIXED_RATE / FIXED_AMOUNT<br>
+              ⚡ <strong>SPAN</strong>（每日 ETL 导入）<br>
+              ⚡ <strong>PORTFOLIO_MARGIN</strong>（cross_margin_group）<br>
+              ⚡ TICK_VOLATILITY（期权）<br>
+              ⚡ COLLATERAL_BASED（A 股两融）<br>
+              ⚡ CUSTOM_FORMULA（自定义公式）
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #fff7ed; border: 2px dashed #ea580c; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>A 股融资融券链路：</strong><br>
+          &nbsp;&nbsp;1️⃣ <code>t_collateral_haircut_rule</code> 配置担保品折算率（国债 95% / ETF 80% / 主板股 70% / 三板 50% / 仙股 30%）<br>
+          &nbsp;&nbsp;2️⃣ <code>t_concentration_rule</code> 控制单一标的占比（如 ≤30%, BLOCK_OPEN）<br>
+          &nbsp;&nbsp;3️⃣ <strong>担保品价值 = SUM(market_value × haircut_rate)</strong><br>
+          &nbsp;&nbsp;4️⃣ <strong>维持担保比例 = (现金 + 担保品价值) / 融资融券负债 × 100%</strong><br>
+          &nbsp;&nbsp;5️⃣ 跌破 <code>minimum_collateral_ratio</code>（如 110%）即触发强平
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📄 t_margin_event_config</span>
+          <span class="table-tag">📄 t_margin_requirement_rule (SPAN ETL)</span>
+          <span class="table-tag">📄 t_collateral_haircut_rule</span>
+          <span class="table-tag">📄 t_concentration_rule</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">所有配置就绪 → 八级解析链 ⚡</div>
+    </div>
+
+    <!-- ========== STEP 7 ========== -->
+    <div class="step-card red">
+      <div class="step-num">7</div>
+      <div class="step-title">⚡ 八级解析链 L8→L7→L6→L5→L4→L3→L2→L1→L0</div>
+      <div class="step-body">
+        <span class="role-tag engine">引擎</span> <code>LeverageResolver.resolve(account_id, symbol_id, now)</code> 按优先级自下而上找第一个命中，最后由 L8 监管 cap 封顶
+
+        <div class="pipeline">
+          <div class="pp-stage cap"><div class="pp-name">L8</div><div class="pp-desc">监管 cap<br>必查</div></div>
+          <span class="pp-arrow">↓</span>
+          <div class="pp-stage event"><div class="pp-name">L7</div><div class="pp-desc">事件叠加<br>multiplier/factor</div></div>
+          <span class="pp-arrow">↓</span>
+          <div class="pp-stage tier"><div class="pp-name">L6</div><div class="pp-desc">动态分层<br>按敞口</div></div>
+        </div>
+        <div class="pipeline">
+          <div class="pp-stage account"><div class="pp-name">L5</div><div class="pp-desc">账户覆盖<br>PDT/风控</div></div>
+          <span class="pp-arrow">→</span>
+          <div class="pp-stage client"><div class="pp-name">L4</div><div class="pp-desc">客户覆盖<br>VIP/豁免</div></div>
+          <span class="pp-arrow">→</span>
+          <div class="pp-stage group"><div class="pp-name">L3 ★</div><div class="pp-desc">账户组×品种<br>核心层</div></div>
+        </div>
+        <div class="pipeline">
+          <div class="pp-stage symbol"><div class="pp-name">L2</div><div class="pp-desc">品种默认<br>+Reg T</div></div>
+          <span class="pp-arrow">→</span>
+          <div class="pp-stage symgroup"><div class="pp-name">L1</div><div class="pp-desc">品种组<br>默认</div></div>
+          <span class="pp-arrow">→</span>
+          <div class="pp-stage fallback"><div class="pp-name">L0</div><div class="pp-desc">兜底<br>模板/SYSTEM_FALLBACK</div></div>
+        </div>
+
+        <div style="margin-top: 14px; background: #fee2e2; border: 2px dashed #dc2626; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>三段执行（与时间配置的 INTERSECT/UNION/OVERRIDE 同源思想）：</strong><br>
+          &nbsp;&nbsp;① <strong>L5→L0 链式查找</strong>：找第一个非空命中（短路求值）<br>
+          &nbsp;&nbsp;② <strong>L6 动态分层叠加</strong>：<code>resolved = MIN(resolved, tier.leverage_value)</code><br>
+          &nbsp;&nbsp;③ <strong>L7 事件叠加</strong>：<code>absolute_leverage</code> &gt; 否则 <code>resolved *= leverage_factor</code><br>
+          &nbsp;&nbsp;④ <strong>L8 监管 cap 封顶</strong>：<code>resolved = MIN(resolved, cap.max_leverage)</code><br>
+          🎯 <strong>排错神器：</strong><code>resolved_from + resolved_from_id</code> 让"为什么我账户杠杆不是 500 而是 30"工单直接定位到具体记录
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">🧠 LeverageResolver</span>
+          <span class="table-tag">📤 ResolvedLeverage</span>
+          <span class="table-tag">📖 8 张配置表 + 1 张分层表</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">解析完成 → 二级缓存写回 🔴</div>
+    </div>
+
+    <!-- ========== STEP 8 ========== -->
+    <div class="step-card blue">
+      <div class="step-num">8</div>
+      <div class="step-title">🔴 二级缓存 + CDC 失效拓扑</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span> Caffeine + Redis 二级缓存；写入路径 Outbox + Debezium CDC + Kafka 通知失效
+
+        <div class="cache-stack" style="margin-top: 14px;">
+          <div class="cache-layer l1">
+            <div class="cache-icon">⚡</div>
+            <div class="cache-name">L1 Caffeine<br>JVM 进程内</div>
+            <div class="cache-detail">Key: leverage:resolved:{account_id}:{symbol_id}<br>TTL: 30s · 10万 entry · 命中率 &gt; 80%</div>
+            <div class="cache-sla">P50 &lt; 200μs</div>
+          </div>
+          <div class="cache-layer l2">
+            <div class="cache-icon">🔴</div>
+            <div class="cache-name">L2 Redis Cluster<br>分布式</div>
+            <div class="cache-detail">100万 entry · 无 TTL（CDC 主动失效）· 命中率 &gt; 95%</div>
+            <div class="cache-sla">P50 &lt; 2ms</div>
+          </div>
+          <div class="cache-layer db">
+            <div class="cache-icon">🗄️</div>
+            <div class="cache-name">L3 MySQL<br>主库回源</div>
+            <div class="cache-detail">8 步主键索引扫描 + Caffeine/Redis 写回</div>
+            <div class="cache-sla">P99 &lt; 5ms</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔄 <strong>失效链路（写入路径）：</strong><br>
+          &nbsp;&nbsp;1️⃣ <code>LeverageConfigService</code> 在 <code>@Transactional</code> 内同时写业务表 + outbox 表<br>
+          &nbsp;&nbsp;2️⃣ <strong>Debezium CDC</strong> 监听 outbox 表（毫秒级延迟，至少一次投递）<br>
+          &nbsp;&nbsp;3️⃣ <strong>Kafka 主题 leverage.config.changed</strong> 广播变更事件<br>
+          &nbsp;&nbsp;4️⃣ <code>LeverageCacheManager</code> 消费事件 → 精确失效 L1+L2 缓存（按账户组/客户/账户/品种维度）<br>
+          &nbsp;&nbsp;5️⃣ 整体失效延迟 P99 &lt; 500ms（含跨数据中心同步）<br>
+          🎯 <strong>失效粒度：</strong> ACCOUNT / CLIENT / ACCOUNT_GROUP / SYMBOL / SYMBOL_GROUP / TEMPLATE / ALL
+        </div>
+
+        <div class="decision-grid">
+          <div class="decision-item pass">
+            <div class="di-icon">⚡</div>
+            <div class="di-title">L1 命中</div>
+            <div class="di-desc">P50 &lt; 200μs<br>P99 &lt; 1ms<br>99% 流量</div>
+          </div>
+          <div class="decision-item info">
+            <div class="di-icon">🔴</div>
+            <div class="di-title">L2 命中</div>
+            <div class="di-desc">P50 &lt; 2ms<br>P99 &lt; 5ms<br>~5% 流量</div>
+          </div>
+          <div class="decision-item warn">
+            <div class="di-icon">🗄️</div>
+            <div class="di-title">回源 DB</div>
+            <div class="di-desc">P99 &lt; 50ms<br>L1+L2 写回<br>&lt; 1% 流量</div>
+          </div>
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">⚡ Caffeine + Redis Cluster</span>
+          <span class="table-tag">📨 Outbox + Debezium CDC</span>
+          <span class="table-tag">📡 Kafka leverage.config.changed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">缓存就绪 → 撮合下单热路径调用 🎬</div>
+    </div>
+
+    <!-- ========== STEP 9 ========== -->
+    <div class="step-card green">
+      <div class="step-num">9</div>
+      <div class="step-title">🎬 撮合下单 can-open 决策（微秒级）</div>
+      <div class="step-body">
+        <span class="role-tag engine">引擎</span> 下单时调用 <code>/internal/v1/leverage/can-open</code>，返回 ALLOWED / REDUCE_ONLY / BLOCKED 三态决策
+
+        <div class="decision-grid">
+          <div class="decision-item pass">
+            <div class="di-icon">✅</div>
+            <div class="di-title">ALLOWED</div>
+            <div class="di-desc">decision=ALLOWED<br>reason=NORMAL<br>正常开仓</div>
+          </div>
+          <div class="decision-item warn">
+            <div class="di-icon">⚠️</div>
+            <div class="di-title">REDUCE_ONLY</div>
+            <div class="di-desc">decision=REDUCE_ONLY<br>仅允许平仓<br>事件期/集中度超标</div>
+          </div>
+          <div class="decision-item fail">
+            <div class="di-icon">🛑</div>
+            <div class="di-title">BLOCKED</div>
+            <div class="di-desc">decision=BLOCKED<br>所有订单拒绝<br>PDT/合规违规</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #f0fdf4; border: 2px dashed #22c55e; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>reason_code 分类：</strong><br>
+          &nbsp;&nbsp;✅ NORMAL — 正常开仓<br>
+          &nbsp;&nbsp;⚠️ PDT_RESTRICTED — 美股 PDT 限制（强制 2:1）<br>
+          &nbsp;&nbsp;⚠️ CONCENTRATION_EXCEEDED — A 股单一标的超 30%<br>
+          &nbsp;&nbsp;⚠️ REGULATORY_CAP — 客户请求杠杆超监管 cap<br>
+          &nbsp;&nbsp;⚠️ EVENT_MARGIN_TIGHTEN — 圣诞/春节事件期临时收紧<br>
+          &nbsp;&nbsp;⚠️ INSUFFICIENT_COLLATERAL — A 股担保品不足，担保比例触线<br>
+          ⚡ <strong>SLA：</strong>P99 &lt; 1ms (L1 命中) / P50 &lt; 100μs，撮合热路径专用
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">⚡ /internal/v1/leverage/can-open</span>
+          <span class="table-tag">📖 ResolvedLeverage (L1 cache)</span>
+          <span class="table-tag">📊 MarginCalculator</span>
+          <span class="table-tag">🎯 PositionUpdated 事件回推</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+      <div class="arrow-label">下单完成 → AOP 全链路审计 🔍</div>
+    </div>
+
+    <!-- ========== STEP 10 ========== -->
+    <div class="step-card yellow">
+      <div class="step-num">10</div>
+      <div class="step-title">🔍 AOP 全链路审计 + 每日违规扫描（合规闭环）</div>
+      <div class="step-body">
+        <span class="role-tag sys">系统</span><span class="role-tag compliance">合规</span> 所有杠杆配置变更 → AOP 自动写入 <code>t_leverage_change_log</code>；每日凌晨扫描违规
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">📝 t_leverage_change_log</div>
+            <div style="font-size: 14px; line-height: 1.6;">
+              ✓ target_table + target_id<br>
+              ✓ change_type (13 种变更对象)<br>
+              ✓ operation INSERT/UPDATE/DELETE/BATCH<br>
+              ✓ field_name + old_value + new_value<br>
+              ✓ change_payload JSON (≤ 4KB)<br>
+              ✓ change_reason (必填) + change_source<br>
+              ✓ operator + approved_by + workflow_no<br>
+              ✓ ip_address + user_agent + trace_id<br>
+              <span style="color: #b91c1c; font-weight: bold;">→ MiFID II / SEC 17a-4 / CSRC 合规</span><br>
+              <span style="color: #16a34a;">🗂️ 按月分区, 三年归档 OSS/S3</span>
+            </div>
+          </div>
+          <div style="background: #fff; border: 3px solid #2d2d2d; border-radius: 14px; padding: 14px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);">
+            <div style="font-size: 19px; margin-bottom: 8px; font-weight: bold;">🚨 每日违规扫描</div>
+            <div style="font-size: 14px; line-height: 1.6;">
+              ⏰ 每日 02:00 UTC 触发<br>
+              🔍 扫描 5 个覆盖/默认值表：<br>
+              &nbsp;&nbsp;• account_group_rules<br>
+              &nbsp;&nbsp;• client_overrides<br>
+              &nbsp;&nbsp;• account_overrides<br>
+              &nbsp;&nbsp;• symbol_defaults<br>
+              &nbsp;&nbsp;• symbol_group_defaults<br>
+              📊 JOIN t_jurisdiction_leverage_limit 检测 max_leverage 超限<br>
+              📤 输出违规工单到工单系统<br>
+              <span style="color: #b91c1c;">🛑 auto_freeze=true 时直接 status=0 冻结</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; background: #fffbeb; border: 2px dashed #ca8a04; border-radius: 10px; padding: 12px; font-size: 15px; line-height: 1.7;">
+          🔑 <strong>为什么用 AOP 而不是触发器（v1.0 → v2.0 关键改进）：</strong><br>
+          &nbsp;&nbsp;❌ 触发器拿不到应用层上下文（operator / IP / Trace ID）<br>
+          &nbsp;&nbsp;❌ 14 张表的触发器维护成本极高，DDL 变更需同步改触发器<br>
+          &nbsp;&nbsp;❌ 触发器不利于回放、降级、单元测试<br>
+          &nbsp;&nbsp;✅ AOP + Outbox 模式既能拿到完整上下文，又保证与缓存失效的最终一致性<br>
+          &nbsp;&nbsp;✅ 数据库仅保留 CHECK 约束做兜底校验
+        </div>
+
+        <div class="table-tags">
+          <span class="table-tag">📝 t_leverage_change_log (INSERT only)</span>
+          <span class="table-tag">🎯 @LeverageAudit AOP</span>
+          <span class="table-tag">🚨 ComplianceScanService</span>
+          <span class="table-tag">📡 Prometheus / Grafana</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== SECTION 3: KEY MECHANISMS ==================== -->
+  <div class="section-title">🎯 核心机制专题</div>
+
+  <!-- Mechanism 1: 八级解析链优先级 -->
+  <div class="step-card" style="background: #fff7ed; border-color: #2d2d2d; width: 90%; max-width: 900px; margin: 0 auto 16px;">
+    <div class="step-num" style="background: #ea580c;">🧠</div>
+    <div class="step-title">八级解析链优先级 — 多源杠杆配置的确定性合并</div>
+    <div class="step-body">
+      <table class="sla-table">
+        <tr>
+          <th>优先级</th>
+          <th>层级</th>
+          <th>数据来源</th>
+          <th>叠加方式</th>
+        </tr>
+        <tr><td><strong>L8</strong></td><td class="warn-th">监管 cap</td><td>t_jurisdiction_leverage_limit</td><td>MIN 封顶（必查）</td></tr>
+        <tr><td><strong>L7</strong></td><td class="warn-th">假期/事件</td><td>t_margin_event_config</td><td>absolute / factor / multiplier</td></tr>
+        <tr><td><strong>L6</strong></td><td class="warn-th">动态分层</td><td>t_leverage_tier</td><td>MIN(resolved, tier.leverage_value)</td></tr>
+        <tr><td><strong>L5</strong></td><td>账户级覆盖</td><td>t_account_leverage_override</td><td>第一命中即停止</td></tr>
+        <tr><td><strong>L4</strong></td><td>客户级覆盖</td><td>t_client_leverage_override</td><td>第一命中即停止</td></tr>
+        <tr><td><strong>L3</strong></td><td class="ok">账户组×品种 ★ 核心</td><td>t_account_group_leverage_rule</td><td>第一命中即停止</td></tr>
+        <tr><td><strong>L2</strong></td><td>品种默认</td><td>t_symbol_leverage_default</td><td>第一命中即停止</td></tr>
+        <tr><td><strong>L1</strong></td><td>品种组默认</td><td>t_symbol_group_leverage_default</td><td>第一命中即停止</td></tr>
+        <tr><td><strong>L0</strong></td><td>兜底</td><td>t_account_group.default_leverage 或 t_leverage_template.base_leverage 或 SYSTEM_FALLBACK 100:1</td><td>最终兜底</td></tr>
+      </table>
+
+      <div style="margin-top: 14px; font-size: 15px; line-height: 1.7;">
+        <strong>执行示例：</strong>ESMA 客户在 VIP_OFFSHORE 账户组下交易 XAUUSD，敞口 800K USD，圣诞事件期<br>
+        → L3 命中 (VIP_OFFSHORE × METALS = 500:1) → L6 分层 Tier 3 (500K-1M = 100:1) → L7 圣诞 leverage_factor=0.5 → L8 ESMA RETAIL METALS cap=20:1<br>
+        → <strong>最终 effective_leverage = MIN(500 × 100 × 0.5 → 50, 20) = 20:1</strong>，<code>resolved_from=ACCOUNT_GROUP_RULE, dynamic_tier_level=3, active_margin_event_code=CHRISTMAS_2026</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mechanism 2: 缓存失效拓扑 -->
+  <div class="step-card" style="background: #f0f9ff; border-color: #2d2d2d; width: 90%; max-width: 900px; margin: 0 auto 16px;">
+    <div class="step-num" style="background: #2563eb;">🔄</div>
+    <div class="step-title">缓存失效拓扑 — Outbox + CDC + Kafka 三段桥接</div>
+    <div class="step-body">
+      <div class="pipeline">
+        <div class="pp-stage" style="background:#dbeafe; border-color:#2563eb;">
+          <div class="pp-name">业务表</div>
+          <div class="pp-desc">14 张配置表<br>INSERT/UPDATE</div>
+        </div>
+        <span class="pp-arrow">→</span>
+        <div class="pp-stage" style="background:#fef9c3; border-color:#ca8a04;">
+          <div class="pp-name">outbox 表</div>
+          <div class="pp-desc">同事务写入<br>原子性保证</div>
+        </div>
+        <span class="pp-arrow">→</span>
+        <div class="pp-stage" style="background:#fce7f3; border-color:#e11d48;">
+          <div class="pp-name">Debezium CDC</div>
+          <div class="pp-desc">监听 binlog<br>毫秒级延迟</div>
+        </div>
+        <span class="pp-arrow">→</span>
+        <div class="pp-stage" style="background:#dcfce7; border-color:#16a34a;">
+          <div class="pp-name">Kafka 主题</div>
+          <div class="pp-desc">leverage.config<br>.changed</div>
+        </div>
+        <span class="pp-arrow">→</span>
+        <div class="pp-stage" style="background:#f3e8ff; border-color:#7c3aed;">
+          <div class="pp-name">缓存消费者</div>
+          <div class="pp-desc">L1+L2 失效<br>精确粒度</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 14px; font-size: 15px; line-height: 1.7;">
+        <strong>失效粒度（按变更对象）：</strong>
+      </div>
+      <div class="cascade-layers" style="margin-top: 8px;">
+        <div class="cascade-layer l1">
+          <div class="cascade-icon">⚖️</div>
+          <div class="cascade-title">监管层变更</div>
+          <div class="cascade-desc">该监管区下所有账户的 ResolvedLeverage 全部失效</div>
+        </div>
+        <div class="cascade-layer l2">
+          <div class="cascade-icon">🎯</div>
+          <div class="cascade-title">账户组规则</div>
+          <div class="cascade-desc">该账户组下所有账户失效（按 account_group_id）</div>
+        </div>
+        <div class="cascade-layer l3">
+          <div class="cascade-icon">👤</div>
+          <div class="cascade-title">客户/账户覆盖</div>
+          <div class="cascade-desc">该客户所有账户 / 该单一账户 精确失效</div>
+        </div>
+        <div class="cascade-layer l4">
+          <div class="cascade-icon">📊</div>
+          <div class="cascade-title">持仓变化（运行时事件）</div>
+          <div class="cascade-desc">PositionUpdated 事件 → 重新匹配动态分层 (L6) → 写回</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 12px; background: #fff; border: 2px dashed #2563eb; border-radius: 10px; padding: 12px; font-size: 14px; line-height: 1.7;">
+        🔑 <strong>一致性保证：</strong><br>
+        ① 业务表 + outbox 表同一本地事务（原子性）<br>
+        ② Debezium CDC 至少一次投递；消费者按 <code>change_id</code> 去重幂等<br>
+        ③ Redis 不可用 → 自动降级回源 MySQL（可用性优先于性能）<br>
+        ④ 整体失效 P99 &lt; 500ms（含跨数据中心异步同步）
+      </div>
+    </div>
+  </div>
+
+  <!-- Mechanism 3: 监管合规闭环 -->
+  <div class="step-card" style="background: #fef2f2; border-color: #2d2d2d; width: 90%; max-width: 900px; margin: 0 auto 16px;">
+    <div class="step-num" style="background: #dc2626;">🛡️</div>
+    <div class="step-title">监管合规闭环 — 写入双层校验 + 每日违规扫描</div>
+    <div class="step-body">
+      <div class="status-flow">
+        <div class="sf-node pending"><div class="sf-code">写入请求</div><div class="sf-label">运营/API/批量</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node active"><div class="sf-code">应用层校验</div><div class="sf-label">RegulatoryValidator</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node active"><div class="sf-code">DB CHECK</div><div class="sf-label">兜底约束</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node pending"><div class="sf-code">事务提交</div><div class="sf-label">业务+outbox</div></div>
+      </div>
+
+      <div class="status-flow" style="margin-top: 16px;">
+        <div class="sf-node pending"><div class="sf-code">每日扫描</div><div class="sf-label">02:00 UTC cron</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node fail"><div class="sf-code">违规检出</div><div class="sf-label">JOIN cap 表</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node replaced"><div class="sf-code">工单生成</div><div class="sf-label">通知业主</div></div>
+        <span class="sf-arrow">→</span>
+        <div class="sf-node fail"><div class="sf-code">auto_freeze</div><div class="sf-label">status=0 + audit</div></div>
+      </div>
+
+      <div style="margin-top: 14px; font-size: 15px; line-height: 1.7;">
+        <strong>双层校验：</strong><br>
+        ① <strong>Step 1 应用层 RegulatoryComplianceValidator</strong> — 写入前查询 <code>t_jurisdiction_leverage_limit</code>，对比 max_leverage / default_leverage，不满足直接抛 <code>RegulatoryViolationException</code><br>
+        ② <strong>Step 2 DB CHECK 约束兜底</strong> — leverage &gt; 0, threshold_from &lt; threshold_to, effective_to &gt; effective_from 等<br>
+        ③ <strong>Step 3 @Transactional 内</strong> — INSERT/UPDATE 业务表 + AOP 自动写 <code>t_leverage_change_log</code> + 写 outbox<br>
+        <br>
+        <strong>违规处置策略：</strong>WARN（仅工单）→ FREEZE（status=0 冻结）→ NOTIFY（通知客户）→ REGULATORY_REPORT（监管报送）
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 4: SLA ==================== -->
+  <div class="section-title">🎯 关键指标 SLA</div>
+
+  <div style="max-width: 900px; margin: 0 auto;">
+    <table class="sla-table">
+      <tr>
+        <th>指标</th>
+        <th>目标</th>
+        <th>告警阈值</th>
+        <th>测量点</th>
+      </tr>
+      <tr>
+        <td>can-open P99 延迟</td>
+        <td class="ok">&lt; 1ms</td>
+        <td>&gt; 5ms</td>
+        <td>撮合引擎下单链路</td>
+      </tr>
+      <tr>
+        <td>can-open P50 延迟</td>
+        <td class="ok">&lt; 100μs</td>
+        <td>&gt; 500μs</td>
+        <td>L1 缓存命中场景</td>
+      </tr>
+      <tr>
+        <td>resolve P99 延迟</td>
+        <td class="ok">&lt; 5ms</td>
+        <td>&gt; 50ms</td>
+        <td>风控/前端账户面板</td>
+      </tr>
+      <tr>
+        <td>L1 Caffeine 命中率</td>
+        <td class="ok">&gt; 80%</td>
+        <td>&lt; 70%</td>
+        <td>JVM 进程内</td>
+      </tr>
+      <tr>
+        <td>L2 Redis 命中率</td>
+        <td class="ok">&gt; 95%</td>
+        <td>&lt; 90%</td>
+        <td>L1+L2 综合</td>
+      </tr>
+      <tr>
+        <td>CDC 失效全网延迟</td>
+        <td class="ok">&lt; 500ms</td>
+        <td>&gt; 2s</td>
+        <td>业务写入 → 全网失效</td>
+      </tr>
+      <tr>
+        <td>AOP 审计成功率</td>
+        <td class="ok">&gt; 99.99%</td>
+        <td>&lt; 99.9%</td>
+        <td>t_leverage_change_log 落库率</td>
+      </tr>
+      <tr>
+        <td>Outbox 投递成功率</td>
+        <td class="ok">100%</td>
+        <td>积压 &gt; 1000</td>
+        <td>Debezium lag 监控</td>
+      </tr>
+      <tr>
+        <td>监管违规扫描</td>
+        <td class="ok">每日 02:00 UTC 成功</td>
+        <td>失败 / 漏单</td>
+        <td>ComplianceScanService</td>
+      </tr>
+      <tr>
+        <td>SPAN 文件 ETL</td>
+        <td class="ok">收盘后 30min 内完成</td>
+        <td>超时 / 解析失败</td>
+        <td>CME/SHFE 文件导入</td>
+      </tr>
+      <tr>
+        <td>合规审计 1000 万条查询</td>
+        <td class="ok">&lt; 200ms</td>
+        <td>&gt; 1s</td>
+        <td>按月分区 + 索引优化</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    杠杆配置系统架构流程图 · v2 重构稿 · 14 Tables · 10 Steps · L0~L8 Resolve · Caffeine+Redis · AOP Audit · MiFID II / SEC 17a-4 / CSRC Ready
+  </div>
+
+</div>
+
+</body>
+</html>
